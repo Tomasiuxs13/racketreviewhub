@@ -151,6 +151,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Helper function to normalize column names
+  function normalizeKey(key: string): string {
+    return key
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove punctuation
+      .replace(/\s+/g, '_')     // Replace spaces with underscore
+      .trim();
+  }
+
+  // Helper function to parse numbers from localized strings
+  function parseLocalizedNumber(value: any): number | undefined {
+    if (value === null || value === undefined || value === '') return undefined;
+    if (typeof value === 'number') return value;
+    
+    // Convert to string and clean
+    const str = String(value)
+      .replace(/[€$£¥\s]/g, '')  // Remove currency symbols and spaces
+      .replace(/,/g, '.')          // Replace comma with dot for EU format
+      .trim();
+    
+    if (str === '') return undefined;
+    const num = Number(str);
+    return isNaN(num) ? undefined : num;
+  }
+
+  // Helper function to normalize shape values
+  function normalizeShape(value: any): string {
+    if (!value) return '';
+    const normalized = String(value).toLowerCase().trim();
+    // Map common variations
+    if (normalized.includes('diamond') || normalized.includes('diamante')) return 'diamond';
+    if (normalized.includes('round') || normalized.includes('redonda')) return 'round';
+    if (normalized.includes('teardrop') || normalized.includes('tear') || normalized.includes('lágrima')) return 'teardrop';
+    return normalized;
+  }
+
   // Admin endpoints
   app.post("/api/admin/upload-rackets", upload.single("file"), async (req, res) => {
     try {
@@ -171,27 +207,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
         preview: [] as ExcelRacket[],
       };
 
+      // Log found columns for debugging
+      if (rawData.length > 0) {
+        const firstRow = rawData[0] as any;
+        const foundColumns = Object.keys(firstRow);
+        console.log('Found Excel columns:', foundColumns);
+        console.log('Normalized columns:', foundColumns.map(normalizeKey));
+      }
+
       // Process each row
       for (let i = 0; i < rawData.length; i++) {
         const row = rawData[i] as any;
         
         try {
-          // Map Excel columns to our schema (handle both camelCase and PascalCase)
+          // Create a normalized key map for easier lookup
+          const normalizedRow: any = {};
+          Object.keys(row).forEach(key => {
+            normalizedRow[normalizeKey(key)] = row[key];
+          });
+
+          // Map columns using normalized keys with fallbacks
+          const getBrand = () => normalizedRow.brand || normalizedRow.brand_name || normalizedRow.marca;
+          const getModel = () => normalizedRow.model || normalizedRow.model_name || normalizedRow.modelo;
+          const getYear = () => parseLocalizedNumber(normalizedRow.year || normalizedRow.ano || normalizedRow.year_released);
+          const getShape = () => normalizeShape(normalizedRow.shape || normalizedRow.forma || normalizedRow.shape_type);
+          
+          // Ratings - try multiple column name patterns
+          const getPower = () => parseLocalizedNumber(
+            normalizedRow.power_rating || normalizedRow.powerrating || normalizedRow.power || 
+            normalizedRow.potencia || normalizedRow.rating_power
+          );
+          const getControl = () => parseLocalizedNumber(
+            normalizedRow.control_rating || normalizedRow.controlrating || normalizedRow.control ||
+            normalizedRow.rating_control
+          );
+          const getRebound = () => parseLocalizedNumber(
+            normalizedRow.rebound_rating || normalizedRow.reboundrating || normalizedRow.rebound ||
+            normalizedRow.salida || normalizedRow.rating_rebound
+          );
+          const getManeuverability = () => parseLocalizedNumber(
+            normalizedRow.maneuverability_rating || normalizedRow.maneuverabilityrating || 
+            normalizedRow.maneuverability || normalizedRow.maniobrabilidad || 
+            normalizedRow.rating_maneuverability
+          );
+          const getSweetSpot = () => parseLocalizedNumber(
+            normalizedRow.sweet_spot_rating || normalizedRow.sweetspotrating || 
+            normalizedRow.sweetspot || normalizedRow.sweet_spot || normalizedRow.punto_dulce ||
+            normalizedRow.rating_sweetspot
+          );
+          
+          // Prices - handle EU format and currency symbols
+          const getCurrentPrice = () => parseLocalizedNumber(
+            normalizedRow.current_price || normalizedRow.currentprice || normalizedRow.price ||
+            normalizedRow.precio || normalizedRow.precio_actual
+          );
+          const getOriginalPrice = () => parseLocalizedNumber(
+            normalizedRow.original_price || normalizedRow.originalprice || 
+            normalizedRow.precio_original || normalizedRow.rrp
+          );
+          
+          // Optional fields
+          const getImageUrl = () => normalizedRow.image_url || normalizedRow.imageurl || normalizedRow.image || normalizedRow.photo;
+          const getAffiliateLink = () => normalizedRow.affiliate_link || normalizedRow.affiliatelink || normalizedRow.link || normalizedRow.url;
+          const getReview = () => normalizedRow.review_content || normalizedRow.reviewcontent || normalizedRow.review || normalizedRow.description;
+
           const racketData: any = {
-            brand: row.brand || row.Brand,
-            model: row.model || row.Model,
-            year: Number(row.year || row.Year),
-            shape: (row.shape || row.Shape || "").toLowerCase(),
-            powerRating: Number(row.powerRating || row.PowerRating || row.power_rating || row.power),
-            controlRating: Number(row.controlRating || row.ControlRating || row.control_rating || row.control),
-            reboundRating: Number(row.reboundRating || row.ReboundRating || row.rebound_rating || row.rebound),
-            maneuverabilityRating: Number(row.maneuverabilityRating || row.ManeuverabilityRating || row.maneuverability_rating || row.maneuverability),
-            sweetSpotRating: Number(row.sweetSpotRating || row.SweetSpotRating || row.sweet_spot_rating || row.sweetSpot || row.sweetspot),
-            currentPrice: Number(row.currentPrice || row.CurrentPrice || row.current_price || row.price),
-            originalPrice: row.originalPrice || row.OriginalPrice || row.original_price ? Number(row.originalPrice || row.OriginalPrice || row.original_price) : undefined,
-            imageUrl: row.imageUrl || row.ImageUrl || row.image_url || row.image || undefined,
-            affiliateLink: row.affiliateLink || row.AffiliateLink || row.affiliate_link || row.link || undefined,
-            reviewContent: row.reviewContent || row.ReviewContent || row.review_content || row.review || undefined,
+            brand: getBrand(),
+            model: getModel(),
+            year: getYear() || new Date().getFullYear(), // Default to current year if missing
+            shape: getShape(),
+            powerRating: getPower(),
+            controlRating: getControl(),
+            reboundRating: getRebound(),
+            maneuverabilityRating: getManeuverability(),
+            sweetSpotRating: getSweetSpot(),
+            currentPrice: getCurrentPrice(),
+            originalPrice: getOriginalPrice(),
+            imageUrl: getImageUrl(),
+            affiliateLink: getAffiliateLink(),
+            reviewContent: getReview(),
           };
 
           // Validate with Zod
@@ -238,8 +332,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             results.created++;
           }
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : "Unknown error";
-          results.errors.push(`Row ${i + 2}: ${errorMessage}`);
+          // Better error reporting for Zod validation errors
+          if (error && typeof error === 'object' && 'issues' in error) {
+            const zodError = error as any;
+            const issues = zodError.issues.map((issue: any) => 
+              `${issue.path.join('.')}: ${issue.message}`
+            ).join(', ');
+            results.errors.push(`Row ${i + 2}: ${issues}`);
+          } else {
+            const errorMessage = error instanceof Error ? error.message : "Unknown error";
+            results.errors.push(`Row ${i + 2}: ${errorMessage}`);
+          }
         }
       }
 
