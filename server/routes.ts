@@ -4,9 +4,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import AdmZip from "adm-zip";
 import { storage } from "./storage";
-import { excelRacketSchema, type ExcelRacket, insertRacketSchema } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./replitAuth";
-import { generateRacketReview } from "./aiService";
+import { excelRacketSchema, type ExcelRacket } from "@shared/schema";
 
 // Simple hash function to create deterministic pseudo-random values
 function hashString(str: string): number {
@@ -95,22 +93,7 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication
-  await setupAuth(app);
-
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
-
-  // Public rackets endpoints
+  // Rackets endpoints
   app.get("/api/rackets", async (req, res) => {
     try {
       const rackets = await storage.getAllRackets();
@@ -471,69 +454,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to process Excel file" 
       });
-    }
-  });
-
-  // Protected Admin CRUD endpoints for rackets
-  app.post("/api/admin/rackets", isAuthenticated, async (req, res) => {
-    try {
-      const validated = insertRacketSchema.parse(req.body);
-      const racket = await storage.createRacket(validated);
-      res.json(racket);
-    } catch (error) {
-      console.error("Error creating racket:", error);
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create racket" });
-    }
-  });
-
-  app.put("/api/admin/rackets/:id", isAuthenticated, async (req, res) => {
-    try {
-      const racket = await storage.updateRacket(req.params.id, req.body);
-      if (!racket) {
-        return res.status(404).json({ error: "Racket not found" });
-      }
-      res.json(racket);
-    } catch (error) {
-      console.error("Error updating racket:", error);
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to update racket" });
-    }
-  });
-
-  app.delete("/api/admin/rackets/:id", isAuthenticated, async (req, res) => {
-    try {
-      const deleted = await storage.deleteRacket(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ error: "Racket not found" });
-      }
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Error deleting racket:", error);
-      res.status(500).json({ error: "Failed to delete racket" });
-    }
-  });
-
-  // AI generation endpoint
-  app.post("/api/admin/generate-review", isAuthenticated, async (req, res) => {
-    try {
-      const { brand, model, year, shape, currentPrice, originalPrice } = req.body;
-      
-      if (!brand || !model || !year || !shape || !currentPrice) {
-        return res.status(400).json({ error: "Missing required fields" });
-      }
-
-      const generatedContent = await generateRacketReview({
-        brand,
-        model,
-        year,
-        shape,
-        currentPrice,
-        originalPrice,
-      });
-
-      res.json(generatedContent);
-    } catch (error) {
-      console.error("Error generating review:", error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to generate review" });
     }
   });
 

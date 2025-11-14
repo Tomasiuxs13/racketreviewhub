@@ -5,7 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { useAuth } from "@/hooks/useAuth";
 
 // Pages
 import HomePage from "@/pages/HomePage";
@@ -21,17 +20,6 @@ import AdminPage from "@/pages/AdminPage";
 import NotFound from "@/pages/not-found";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  if (isLoading || !isAuthenticated) {
-    return (
-      <Switch>
-        <Route path="/" component={HomePage} />
-        <Route component={NotFound} />
-      </Switch>
-    );
-  }
-
   return (
     <Switch>
       <Route path="/" component={HomePage} />
