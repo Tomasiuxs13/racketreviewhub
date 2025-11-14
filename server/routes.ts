@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import * as XLSX from "xlsx";
+import AdmZip from "adm-zip";
 import { storage } from "./storage";
 import { excelRacketSchema, type ExcelRacket } from "@shared/schema";
 
@@ -11,12 +12,12 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit (increased for .numbers files)
   },
   fileFilter: (req, file, cb) => {
-    const allowedExtensions = ['.xlsx', '.xls'];
+    const allowedExtensions = ['.xlsx', '.xls', '.numbers'];
     const ext = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
     if (allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Only Excel files (.xlsx, .xls) are allowed. For Numbers files, please export to Excel format first.'));
+      cb(new Error('Only Excel (.xlsx, .xls) or Numbers (.numbers) files are allowed.'));
     }
   },
 });

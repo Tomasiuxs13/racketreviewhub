@@ -70,13 +70,13 @@ export default function AdminPage() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       const fileName = droppedFile.name.toLowerCase();
-      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
+      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls") || fileName.endsWith(".numbers")) {
         setFile(droppedFile);
         setResult(null);
       } else {
         toast({
           title: "Invalid file type",
-          description: "Please upload an Excel file (.xlsx or .xls)",
+          description: "Please upload an Excel (.xlsx, .xls) or Numbers (.numbers) file",
           variant: "destructive",
         });
       }
@@ -137,7 +137,7 @@ export default function AdminPage() {
               </p>
               <input
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.numbers,application/vnd.apple.numbers,application/x-iwork-numbers-sffnumbers"
                 onChange={handleFileChange}
                 className="hidden"
                 id="file-upload"
@@ -190,14 +190,10 @@ export default function AdminPage() {
               <CardContent className="p-6">
                 <h4 className="font-semibold mb-3">Supported Formats & Required Columns:</h4>
                 <p className="text-sm text-muted-foreground mb-3">
-                  <strong>File Types:</strong> Excel (.xlsx, .xls)
+                  <strong>File Types:</strong> Excel (.xlsx, .xls) or Apple Numbers (.numbers)
                 </p>
                 <p className="text-sm text-muted-foreground mb-2">
-                  <strong>Apple Numbers Users:</strong> Export your file to Excel format first:
-                  <br />1. Open your file in Numbers app
-                  <br />2. Go to File → Export To → Excel
-                  <br />3. Save as .xlsx
-                  <br />4. Upload the .xlsx file here
+                  <strong>Note:</strong> Numbers files work best when uploaded via drag-and-drop. If you experience issues, export to Excel format (File → Export To → Excel in Numbers app).
                 </p>
                 <p className="text-sm text-muted-foreground mb-2 mt-4">
                   Your file should contain these columns:
