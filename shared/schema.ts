@@ -104,15 +104,16 @@ export const excelRacketSchema = z.object({
   model: z.string().min(1),
   year: z.number().int().min(2000).max(2030),
   shape: z.enum(["diamond", "round", "teardrop"]),
-  powerRating: z.number().int().min(0).max(100),
-  controlRating: z.number().int().min(0).max(100),
-  reboundRating: z.number().int().min(0).max(100),
-  maneuverabilityRating: z.number().int().min(0).max(100),
-  sweetSpotRating: z.number().int().min(0).max(100),
+  // Ratings are optional with default value of 50 (neutral)
+  powerRating: z.number().int().min(0).max(100).default(50),
+  controlRating: z.number().int().min(0).max(100).default(50),
+  reboundRating: z.number().int().min(0).max(100).default(50),
+  maneuverabilityRating: z.number().int().min(0).max(100).default(50),
+  sweetSpotRating: z.number().int().min(0).max(100).default(50),
   originalPrice: z.number().optional(),
   currentPrice: z.number(),
-  imageUrl: z.string().url().optional(),
-  affiliateLink: z.string().url().optional(),
+  imageUrl: z.string().optional(),
+  affiliateLink: z.string().optional(),
   reviewContent: z.string().optional(),
 });
 
