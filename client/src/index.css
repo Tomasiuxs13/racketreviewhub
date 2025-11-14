@@ -43,9 +43,10 @@
   --chart-3: 210 85% 38%;
   --chart-4: 280 75% 42%;
   --chart-5: 340 80% 45%;
-  --font-sans: Open Sans, sans-serif;
+  --font-sans: Inter, system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
+  --font-heading: 'Space Grotesk', system-ui, sans-serif;
   --radius: .5rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
