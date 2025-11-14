@@ -248,13 +248,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Helper function to normalize shape values
   function normalizeShape(value: any): string {
-    if (!value) return '';
+    if (!value) return 'round'; // Default to round if no shape specified
     const normalized = String(value).toLowerCase().trim();
     // Map common variations
-    if (normalized.includes('diamond') || normalized.includes('diamante')) return 'diamond';
-    if (normalized.includes('round') || normalized.includes('redonda')) return 'round';
-    if (normalized.includes('teardrop') || normalized.includes('tear') || normalized.includes('lágrima')) return 'teardrop';
-    return normalized;
+    if (normalized.includes('diamond') || normalized.includes('diamante') || normalized.includes('diaman')) return 'diamond';
+    if (normalized.includes('round') || normalized.includes('redonda') || normalized.includes('circular')) return 'round';
+    if (normalized.includes('teardrop') || normalized.includes('tear') || normalized.includes('lágrima') || normalized.includes('hybrid')) return 'teardrop';
+    // Default to round for unknown shapes (most versatile)
+    return 'round';
   }
 
   // Admin endpoints
@@ -290,6 +291,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const row = rawData[i] as any;
         
         try {
+          // Skip completely empty rows
+          const hasAnyData = Object.values(row).some(val => val !== null && val !== undefined && val !== '');
+          if (!hasAnyData) {
+            continue;
+          }
+
           // Create a normalized key map for easier lookup
           const normalizedRow: any = {};
           Object.keys(row).forEach(key => {
@@ -424,6 +431,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             results.errors.push(`Row ${i + 2}: ${errorMessage}`);
           }
         }
+      }
+
+      // Add error summary for better user feedback
+      const errorSummary: Record<string, number> = {};
+      results.errors.forEach(error => {
+        if (error.includes('shape:')) errorSummary['Invalid shape value'] = (errorSummary['Invalid shape value'] || 0) + 1;
+        else if (error.includes('currentPrice:')) errorSummary['Missing or invalid price'] = (errorSummary['Missing or invalid price'] || 0) + 1;
+        else if (error.includes('brand:')) errorSummary['Missing brand'] = (errorSummary['Missing brand'] || 0) + 1;
+        else if (error.includes('model:')) errorSummary['Missing model'] = (errorSummary['Missing model'] || 0) + 1;
+        else errorSummary['Other errors'] = (errorSummary['Other errors'] || 0) + 1;
+      });
+
+      console.log(`Upload complete: ${results.created} created, ${results.updated} updated, ${results.errors.length} errors`);
+      if (Object.keys(errorSummary).length > 0) {
+        console.log('Error summary:', errorSummary);
       }
 
       res.json(results);
