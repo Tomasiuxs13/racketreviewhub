@@ -195,14 +195,16 @@ export default function AdminPage() {
                 <p className="text-sm text-muted-foreground mb-2">
                   <strong>Note:</strong> Numbers files work best when uploaded via drag-and-drop. If you experience issues, export to Excel format (File → Export To → Excel in Numbers app).
                 </p>
+                <p className="text-sm text-primary/80 mb-2 mt-4 font-medium">
+                  ✨ Automatic Rating Estimation: If your file doesn't include performance ratings, they will be automatically estimated based on brand reputation and industry standards.
+                </p>
                 <p className="text-sm text-muted-foreground mb-2 mt-4">
                   Your file should contain these columns:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>brand, model, year, shape (diamond/round/teardrop)</li>
-                  <li>powerRating, controlRating, reboundRating, maneuverabilityRating, sweetSpotRating (0-100)</li>
-                  <li>currentPrice (required), originalPrice (optional)</li>
-                  <li>imageUrl, affiliateLink, reviewContent (all optional)</li>
+                  <li><strong>Required:</strong> brand, model, shape (diamond/round/teardrop), currentPrice</li>
+                  <li><strong>Auto-estimated if missing:</strong> powerRating, controlRating, reboundRating, maneuverabilityRating, sweetSpotRating (0-100)</li>
+                  <li><strong>Optional:</strong> year, originalPrice, imageUrl, affiliateLink, reviewContent</li>
                 </ul>
               </CardContent>
             </Card>

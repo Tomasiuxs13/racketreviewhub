@@ -6,6 +6,76 @@ import AdmZip from "adm-zip";
 import { storage } from "./storage";
 import { excelRacketSchema, type ExcelRacket } from "@shared/schema";
 
+// Simple hash function to create deterministic pseudo-random values
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return Math.abs(hash);
+}
+
+// Estimate ratings based on brand and model for deterministic results
+function estimateRatingsByBrand(brand: string, model: string = ''): {
+  powerRating: number;
+  controlRating: number;
+  reboundRating: number;
+  maneuverabilityRating: number;
+  sweetSpotRating: number;
+} {
+  const brandLower = brand.toLowerCase();
+  const seed = hashString(`${brandLower}-${model.toLowerCase()}`);
+  
+  // Generate deterministic pseudo-random offsets based on brand+model hash
+  const getOffset = (index: number, range: number) => {
+    return (hashString(`${seed}-${index}`) % range);
+  };
+  
+  // High-end professional brands
+  if (['nox', 'bullpadel', 'head'].includes(brandLower)) {
+    return {
+      powerRating: 85 + getOffset(1, 10),
+      controlRating: 80 + getOffset(2, 10),
+      reboundRating: 82 + getOffset(3, 10),
+      maneuverabilityRating: 78 + getOffset(4, 10),
+      sweetSpotRating: 80 + getOffset(5, 10),
+    };
+  }
+  
+  // Premium brands
+  if (['babolat', 'adidas', 'wilson'].includes(brandLower)) {
+    return {
+      powerRating: 80 + getOffset(1, 10),
+      controlRating: 82 + getOffset(2, 10),
+      reboundRating: 78 + getOffset(3, 10),
+      maneuverabilityRating: 80 + getOffset(4, 10),
+      sweetSpotRating: 79 + getOffset(5, 10),
+    };
+  }
+  
+  // Mid-tier brands
+  if (['dunlop', 'prince', 'tecnifibre'].includes(brandLower)) {
+    return {
+      powerRating: 75 + getOffset(1, 10),
+      controlRating: 77 + getOffset(2, 10),
+      reboundRating: 74 + getOffset(3, 10),
+      maneuverabilityRating: 76 + getOffset(4, 10),
+      sweetSpotRating: 75 + getOffset(5, 10),
+    };
+  }
+  
+  // Default for other brands
+  return {
+    powerRating: 70 + getOffset(1, 15),
+    controlRating: 70 + getOffset(2, 15),
+    reboundRating: 70 + getOffset(3, 15),
+    maneuverabilityRating: 70 + getOffset(4, 15),
+    sweetSpotRating: 70 + getOffset(5, 15),
+  };
+}
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -271,16 +341,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const getAffiliateLink = () => normalizedRow.affiliate_link || normalizedRow.affiliatelink || normalizedRow.link || normalizedRow.url;
           const getReview = () => normalizedRow.review_content || normalizedRow.reviewcontent || normalizedRow.review || normalizedRow.description;
 
+          // Get brand and model for rating estimation
+          const brand = getBrand();
+          const model = getModel();
+          
+          // Check if we have ratings in the file
+          const hasRatings = getPower() !== undefined || getControl() !== undefined;
+          
+          // If no ratings in file, estimate based on brand and model (deterministic)
+          const estimatedRatings = !hasRatings && brand && model ? estimateRatingsByBrand(brand, model) : null;
+
           const racketData: any = {
-            brand: getBrand(),
+            brand,
             model: getModel(),
             year: getYear() || new Date().getFullYear(), // Default to current year if missing
             shape: getShape(),
-            powerRating: getPower(),
-            controlRating: getControl(),
-            reboundRating: getRebound(),
-            maneuverabilityRating: getManeuverability(),
-            sweetSpotRating: getSweetSpot(),
+            powerRating: getPower() || estimatedRatings?.powerRating,
+            controlRating: getControl() || estimatedRatings?.controlRating,
+            reboundRating: getRebound() || estimatedRatings?.reboundRating,
+            maneuverabilityRating: getManeuverability() || estimatedRatings?.maneuverabilityRating,
+            sweetSpotRating: getSweetSpot() || estimatedRatings?.sweetSpotRating,
             currentPrice: getCurrentPrice(),
             originalPrice: getOriginalPrice(),
             imageUrl: getImageUrl(),
