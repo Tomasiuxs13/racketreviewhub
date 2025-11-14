@@ -7,10 +7,16 @@ import {
   type InsertBlogPost,
   type Brand,
   type InsertBrand,
+  type User,
+  type UpsertUser,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
+  // Users (required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
   // Rackets
   getAllRackets(): Promise<Racket[]>;
   getRacket(id: string): Promise<Racket | undefined>;
@@ -20,6 +26,7 @@ export interface IStorage {
   getRacketsByBrand(brand: string): Promise<Racket[]>;
   createRacket(racket: InsertRacket): Promise<Racket>;
   updateRacket(id: string, racket: Partial<InsertRacket>): Promise<Racket | undefined>;
+  deleteRacket(id: string): Promise<boolean>;
   
   // Guides
   getAllGuides(): Promise<Guide[]>;
@@ -43,12 +50,14 @@ export class MemStorage implements IStorage {
   private guides: Map<string, Guide>;
   private blogPosts: Map<string, BlogPost>;
   private brands: Map<string, Brand>;
+  private users: Map<string, User>;
 
   constructor() {
     this.rackets = new Map();
     this.guides = new Map();
     this.blogPosts = new Map();
     this.brands = new Map();
+    this.users = new Map();
     
     // Initialize with some sample data
     this.seedData();
@@ -539,6 +548,48 @@ export class MemStorage implements IStorage {
 
     this.rackets.set(id, updated);
     return updated;
+  }
+
+  async deleteRacket(id: string): Promise<boolean> {
+    return this.rackets.delete(id);
+  }
+
+  // User methods
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async upsertUser(user: UpsertUser): Promise<User> {
+    const now = new Date();
+    
+    // If user has an id and exists, update it
+    if (user.id && this.users.has(user.id)) {
+      const existingUser = this.users.get(user.id)!;
+      const updatedUser: User = {
+        ...existingUser,
+        ...user,
+        id: user.id,
+        updatedAt: now,
+      };
+      this.users.set(user.id, updatedUser);
+      return updatedUser;
+    }
+    
+    // Otherwise, create a new user
+    const id = user.id || randomUUID();
+    const newUser: User = {
+      email: user.email || null,
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      profileImageUrl: user.profileImageUrl || null,
+      ...user,
+      id,
+      createdAt: now,
+      updatedAt: now,
+    };
+    
+    this.users.set(id, newUser);
+    return newUser;
   }
 
   // Guide methods
