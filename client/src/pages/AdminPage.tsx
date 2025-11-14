@@ -62,13 +62,14 @@ export default function AdminPage() {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile.name.endsWith(".xlsx") || droppedFile.name.endsWith(".xls")) {
+      const fileName = droppedFile.name.toLowerCase();
+      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls") || fileName.endsWith(".numbers")) {
         setFile(droppedFile);
         setResult(null);
       } else {
         toast({
           title: "Invalid file type",
-          description: "Please upload an Excel file (.xlsx or .xls)",
+          description: "Please upload an Excel (.xlsx, .xls) or Numbers (.numbers) file",
           variant: "destructive",
         });
       }
@@ -129,7 +130,7 @@ export default function AdminPage() {
               </p>
               <input
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx,.xls,.numbers"
                 onChange={handleFileChange}
                 className="hidden"
                 id="file-upload"
@@ -180,9 +181,15 @@ export default function AdminPage() {
             {/* Expected Format Info */}
             <Card className="bg-muted/50">
               <CardContent className="p-6">
-                <h4 className="font-semibold mb-3">Expected Excel Format:</h4>
+                <h4 className="font-semibold mb-3">Supported Formats & Required Columns:</h4>
+                <p className="text-sm text-muted-foreground mb-3">
+                  <strong>File Types:</strong> Excel (.xlsx, .xls) or Apple Numbers (.numbers)
+                </p>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Your Excel file should contain the following columns:
+                  <strong>Note:</strong> For best compatibility, export Numbers files as Excel format (File → Export To → Excel in Numbers app)
+                </p>
+                <p className="text-sm text-muted-foreground mb-2 mt-4">
+                  Your file should contain these columns:
                 </p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                   <li>brand, model, year, shape (diamond/round/teardrop)</li>
