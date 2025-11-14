@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import * as XLSX from "xlsx";
-import AdmZip from "adm-zip";
 import { storage } from "./storage";
 import { excelRacketSchema, type ExcelRacket } from "@shared/schema";
 
@@ -12,12 +11,12 @@ const upload = multer({
     fileSize: 10 * 1024 * 1024, // 10MB limit (increased for .numbers files)
   },
   fileFilter: (req, file, cb) => {
-    const allowedExtensions = ['.xlsx', '.xls', '.numbers'];
+    const allowedExtensions = ['.xlsx', '.xls'];
     const ext = file.originalname.toLowerCase().slice(file.originalname.lastIndexOf('.'));
     if (allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('Only .xlsx, .xls, and .numbers files are allowed'));
+      cb(new Error('Only Excel files (.xlsx, .xls) are allowed. For Numbers files, please export to Excel format first.'));
     }
   },
 });
@@ -158,48 +157,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      let rawData: any[];
-      const fileExt = req.file.originalname.toLowerCase().slice(req.file.originalname.lastIndexOf('.'));
-
-      // Handle .numbers files
-      if (fileExt === '.numbers') {
-        try {
-          // .numbers files are ZIP archives containing the spreadsheet data
-          const zip = new AdmZip(req.file.buffer);
-          const zipEntries = zip.getEntries();
-
-          // Find Index.zip which contains the actual data
-          const indexEntry = zipEntries.find(entry => entry.entryName === "Index.zip");
-          if (!indexEntry) {
-            return res.status(400).json({ 
-              error: "Invalid .numbers file. Please export as Excel (.xlsx) format: File → Export To → Excel in Numbers app" 
-            });
-          }
-
-          // Apple Numbers uses a complex IWA (iWork Archive) format with protobuf
-          // For now, recommend conversion to Excel which is more universally supported
-          return res.status(400).json({
-            error: "Apple Numbers files use a complex proprietary format. " +
-                   "Please convert to Excel format: " +
-                   "1. Open in Numbers app, " +
-                   "2. Go to File → Export To → Excel, " +
-                   "3. Save as .xlsx, " +
-                   "4. Upload the .xlsx file here. " +
-                   "This ensures maximum compatibility and reliability."
-          });
-
-        } catch (error) {
-          return res.status(400).json({ 
-            error: "Failed to process .numbers file. Please convert to Excel (.xlsx) format for best compatibility." 
-          });
-        }
-      }
-
       // Parse Excel files (.xlsx, .xls)
       const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      rawData = XLSX.utils.sheet_to_json(worksheet);
+      const rawData = XLSX.utils.sheet_to_json(worksheet);
 
       const results = {
         created: 0,

@@ -26,7 +26,8 @@ export default function AdminPage() {
     mutationFn: async (file: File) => {
       const formData = new FormData();
       formData.append("file", file);
-      return await apiRequest("POST", "/api/admin/upload-rackets", formData);
+      const response = await apiRequest("POST", "/api/admin/upload-rackets", formData);
+      return await response.json();
     },
     onSuccess: (data: UploadResult) => {
       setResult(data);
@@ -69,13 +70,13 @@ export default function AdminPage() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       const fileName = droppedFile.name.toLowerCase();
-      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls") || fileName.endsWith(".numbers")) {
+      if (fileName.endsWith(".xlsx") || fileName.endsWith(".xls")) {
         setFile(droppedFile);
         setResult(null);
       } else {
         toast({
           title: "Invalid file type",
-          description: "Please upload an Excel (.xlsx, .xls) or Numbers (.numbers) file",
+          description: "Please upload an Excel file (.xlsx or .xls)",
           variant: "destructive",
         });
       }
@@ -136,7 +137,7 @@ export default function AdminPage() {
               </p>
               <input
                 type="file"
-                accept=".xlsx,.xls,.numbers"
+                accept=".xlsx,.xls"
                 onChange={handleFileChange}
                 className="hidden"
                 id="file-upload"
@@ -189,10 +190,14 @@ export default function AdminPage() {
               <CardContent className="p-6">
                 <h4 className="font-semibold mb-3">Supported Formats & Required Columns:</h4>
                 <p className="text-sm text-muted-foreground mb-3">
-                  <strong>File Types:</strong> Excel (.xlsx, .xls) or Apple Numbers (.numbers)
+                  <strong>File Types:</strong> Excel (.xlsx, .xls)
                 </p>
                 <p className="text-sm text-muted-foreground mb-2">
-                  <strong>Note:</strong> For best compatibility, export Numbers files as Excel format (File → Export To → Excel in Numbers app)
+                  <strong>Apple Numbers Users:</strong> Export your file to Excel format first:
+                  <br />1. Open your file in Numbers app
+                  <br />2. Go to File → Export To → Excel
+                  <br />3. Save as .xlsx
+                  <br />4. Upload the .xlsx file here
                 </p>
                 <p className="text-sm text-muted-foreground mb-2 mt-4">
                   Your file should contain these columns:
