@@ -12,12 +12,12 @@ export default function BrandDetailPage() {
   const slug = params?.slug;
 
   const { data: brand, isLoading: brandLoading } = useQuery<Brand>({
-    queryKey: ["/api/brands", slug],
+    queryKey: [`/api/brands/${slug}`],
     enabled: !!slug,
   });
 
   const { data: topRackets, isLoading: racketsLoading } = useQuery<Racket[]>({
-    queryKey: ["/api/brands", slug, "rackets"],
+    queryKey: [`/api/brands/${slug}/rackets`],
     enabled: !!slug,
   });
 

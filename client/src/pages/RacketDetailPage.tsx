@@ -14,12 +14,12 @@ export default function RacketDetailPage() {
   const racketId = params?.id;
 
   const { data: racket, isLoading } = useQuery<Racket>({
-    queryKey: ["/api/rackets", racketId],
+    queryKey: [`/api/rackets/${racketId}`],
     enabled: !!racketId,
   });
 
   const { data: relatedRackets } = useQuery<Racket[]>({
-    queryKey: ["/api/rackets/related", racketId],
+    queryKey: [`/api/rackets/related/${racketId}`],
     enabled: !!racketId && !!racket,
   });
 

@@ -30,7 +30,13 @@ export default function AdminPage() {
     },
     onSuccess: (data: UploadResult) => {
       setResult(data);
-      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+      // Invalidate all racket and brand-related queries using robust predicate
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const keyString = JSON.stringify(query.queryKey);
+          return keyString.includes("/api/rackets") || keyString.includes("/api/brands");
+        },
+      });
       toast({
         title: "Upload successful",
         description: `Created ${data.created} rackets, updated ${data.updated} rackets`,

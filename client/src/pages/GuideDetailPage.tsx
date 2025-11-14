@@ -12,7 +12,7 @@ export default function GuideDetailPage() {
   const slug = params?.slug;
 
   const { data: guide, isLoading } = useQuery<Guide>({
-    queryKey: ["/api/guides", slug],
+    queryKey: [`/api/guides/${slug}`],
     enabled: !!slug,
   });
 
