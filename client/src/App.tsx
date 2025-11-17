@@ -16,8 +16,12 @@ import BrandsPage from "@/pages/BrandsPage";
 import BrandDetailPage from "@/pages/BrandDetailPage";
 import BlogPage from "@/pages/BlogPage";
 import BlogPostPage from "@/pages/BlogPostPage";
+import AuthorPage from "@/pages/AuthorPage";
 import AdminPage from "@/pages/AdminPage";
+import LoginPage from "@/pages/LoginPage";
+import SignupPage from "@/pages/SignupPage";
 import NotFound from "@/pages/not-found";
+import { AuthGuard } from "@/components/AuthGuard";
 
 function Router() {
   return (
@@ -31,7 +35,14 @@ function Router() {
       <Route path="/brands/:slug" component={BrandDetailPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />
-      <Route path="/admin" component={AdminPage} />
+      <Route path="/authors/:slug" component={AuthorPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/signup" component={SignupPage} />
+      <Route path="/admin">
+        <AuthGuard requireAdmin>
+          <AdminPage />
+        </AuthGuard>
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

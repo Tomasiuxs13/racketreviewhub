@@ -10,7 +10,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* About */}
           <div>
-            <h3 className="font-heading font-semibold text-lg mb-4">About PadelPro</h3>
+            <h3 className="font-heading font-semibold text-lg mb-4">About Padel Racket Reviews</h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Expert padel racket reviews with detailed ratings, honest comparisons, and the best prices. 
               Helping players find their perfect racket since 2024.
@@ -80,9 +80,7 @@ export function Footer() {
         {/* Bottom Section */}
         <div className="mt-12 pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground text-center md:text-left">
-            <p className="mb-2">
-              © 2024 PadelPro. All rights reserved.
-            </p>
+            <p className="mb-2">© 2024 Padel Racket Reviews. All rights reserved.</p>
             <p className="text-xs">
               As an Amazon Associate, we earn from qualifying purchases.
             </p>

@@ -1,8 +1,11 @@
 import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { RatingMetrics } from "./RatingBar";
+import { ExternalLink } from "lucide-react";
 import type { Racket } from "@shared/schema";
+import { getRacketSlug } from "@/lib/utils";
 
 interface RacketCardProps {
   racket: Racket;
@@ -20,17 +23,18 @@ export function RacketCard({ racket }: RacketCardProps) {
   };
 
   return (
-    <Link href={`/rackets/${racket.id}`} data-testid={`link-racket-${racket.id}`}>
+    <Link href={`/rackets/${getRacketSlug(racket)}`} data-testid={`link-racket-${racket.id}`}>
       <Card className="group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full cursor-pointer" data-testid={`card-racket-${racket.id}`}>
         <CardContent className="p-0">
           {/* Image Container */}
-          <div className="relative aspect-[3/4] bg-card overflow-hidden">
-            <div className="absolute inset-0 flex items-center justify-center p-6">
+          <div className="relative aspect-square bg-card overflow-hidden">
+            <div className="absolute inset-0 flex items-center justify-center p-4">
               {racket.imageUrl ? (
                 <img
                   src={racket.imageUrl}
                   alt={`${racket.brand} ${racket.model}`}
                   className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
                   data-testid={`img-racket-${racket.id}`}
                 />
               ) : (
@@ -39,11 +43,6 @@ export function RacketCard({ racket }: RacketCardProps) {
                 </div>
               )}
             </div>
-
-            {/* Brand Badge */}
-            <Badge className="absolute top-3 left-3 font-medium" data-testid={`badge-brand-${racket.id}`}>
-              {racket.brand}
-            </Badge>
 
             {/* Overall Rating Badge */}
             <div className="absolute top-3 right-3">
@@ -54,16 +53,18 @@ export function RacketCard({ racket }: RacketCardProps) {
               </div>
             </div>
 
-            {/* Year Badge */}
+            {/* Year Ribbon */}
             {racket.year >= new Date().getFullYear() && (
-              <Badge variant="secondary" className="absolute bottom-3 left-3">
+              <div className="absolute top-4 -left-5 z-10 -rotate-45">
+                <div className="bg-primary text-primary-foreground px-6 py-1 text-xs font-semibold shadow-lg whitespace-nowrap">
                 New {racket.year}
-              </Badge>
+                </div>
+              </div>
             )}
           </div>
 
           {/* Content */}
-          <div className="p-6 space-y-4">
+          <div className="px-6 pt-0 pb-6 space-y-4">
             {/* Title */}
             <div>
               <p className="text-sm text-muted-foreground mb-1">
@@ -85,20 +86,58 @@ export function RacketCard({ racket }: RacketCardProps) {
             />
 
             {/* Price */}
-            <div className="flex items-baseline gap-3 pt-2 border-t">
-              {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) && (
-                <>
-                  <span className="text-sm text-muted-foreground line-through">
-                    €{Number(racket.originalPrice).toFixed(0)}
+            <div className="pt-3 border-t space-y-2">
+              {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm text-muted-foreground line-through">
+                      €{Number(racket.originalPrice).toFixed(0)}
+                    </span>
+                    <Badge variant="destructive" className="text-xs font-semibold">
+                      -{discountPercentage}%
+                    </Badge>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
+                      €{Number(racket.currentPrice).toFixed(0)}
+                    </span>
+                    {racket.affiliateLink || racket.titleUrl ? (
+                      <Button
+                        size="default"
+                        className="shrink-0 px-4"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
+                        }}
+                        data-testid={`button-buy-now-${racket.id}`}
+                      >
+                        Buy Now
+                        <ExternalLink className="ml-1 h-3 w-3" />
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
+                    €{Number(racket.currentPrice).toFixed(0)}
                   </span>
-                  <Badge variant="destructive" className="text-xs">
-                    -{discountPercentage}%
-                  </Badge>
-                </>
+                  {racket.affiliateLink || racket.titleUrl ? (
+                    <Button
+                      size="sm"
+                      className="shrink-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
+                      }}
+                      data-testid={`button-buy-now-${racket.id}`}
+                    >
+                      Buy Now
+                      <ExternalLink className="ml-1 h-3 w-3" />
+                    </Button>
+                  ) : null}
+                </div>
               )}
-              <span className="text-2xl font-bold ml-auto" data-testid={`text-price-${racket.id}`}>
-                €{Number(racket.currentPrice).toFixed(0)}
-              </span>
             </div>
           </div>
         </CardContent>

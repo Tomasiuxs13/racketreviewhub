@@ -1,14 +1,65 @@
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/hooks/useAuth";
+import { useState, useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { Racket } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import { getRacketSlug } from "@/lib/utils";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function Header() {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { user, isAuthenticated, signOut } = useAuth();
+  const debouncedSearch = useDebounce(searchQuery, 300);
+
+  const handleSearchInputChange = (value: string) => {
+    setSearchQuery(value);
+    setShowSearchResults(value.trim().length > 0);
+  };
+
+  // Search query
+  const { data: searchResults = [] } = useQuery<Racket[]>({
+    queryKey: ["/api/rackets/search", debouncedSearch],
+    enabled: debouncedSearch.trim().length > 0,
+    queryFn: async () => {
+      const response = await apiRequest(
+        "GET",
+        `/api/rackets/search?q=${encodeURIComponent(debouncedSearch)}`,
+      );
+      return await response.json();
+    },
+  });
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false);
+      }
+    };
+
+    if (showSearchResults) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }
+  }, [showSearchResults]);
 
   const menuItems = [
     { label: "Padel Rackets", path: "/rackets" },
@@ -30,7 +81,9 @@ export function Header() {
                 <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-lg">P</span>
                 </div>
-                <span className="font-heading font-bold text-xl hidden sm:inline">PadelPro</span>
+                <span className="font-heading font-bold text-xl hidden sm:inline">
+                  Padel Racket Reviews
+                </span>
               </div>
             </div>
           </Link>
@@ -56,16 +109,62 @@ export function Header() {
           {/* Right Section */}
           <div className="flex items-center gap-3">
             {/* Search Bar - Desktop */}
-            <div className="hidden lg:flex items-center relative">
-              <Search className="absolute left-3 h-4 w-4 text-muted-foreground" />
+            <div className="hidden lg:flex items-center relative" ref={searchRef}>
+              <Search className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
                 placeholder="Search rackets..."
                 className="pl-9 w-64"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
+                onFocus={() => setShowSearchResults(true)}
                 data-testid="input-search"
               />
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchQuery.trim().length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-background border rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+                  {searchResults.length > 0 ? (
+                    <div className="p-2">
+                      {searchResults.map((racket) => (
+                        <Link
+                          key={racket.id}
+                          href={`/rackets/${getRacketSlug(racket)}`}
+                          onClick={() => {
+                            setShowSearchResults(false);
+                            setSearchQuery("");
+                          }}
+                        >
+                          <Card className="mb-2 hover-elevate cursor-pointer transition-all">
+                            <CardContent className="p-3">
+                              <div className="flex items-center gap-3">
+                                {racket.imageUrl && (
+                                  <img
+                                    src={racket.imageUrl}
+                                    alt={`${racket.brand} ${racket.model}`}
+                                    className="w-12 h-12 object-contain"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold truncate">
+                                    {racket.brand} {racket.model}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    €{Number(racket.currentPrice).toFixed(0)}
+                                  </p>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="p-4 text-center text-muted-foreground">
+                      No rackets found
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Trust Badge */}
@@ -73,17 +172,27 @@ export function Header() {
               1,200+ Rackets Reviewed
             </Badge>
 
-            {/* Admin Link */}
-            <Link href="/admin" data-testid="link-admin">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hidden md:flex"
-                data-testid="button-admin"
-              >
-                Admin
-              </Button>
-            </Link>
+            {/* Auth Section */}
+            {isAuthenticated && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="hidden md:flex">
+                    <User className="h-4 w-4 mr-2" />
+                    {user?.email?.split("@")[0] || "User"}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>
+                    {user?.email}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             {/* Mobile Menu Button */}
             <Button
@@ -103,15 +212,52 @@ export function Header() {
           <div className="md:hidden py-4 border-t">
             {/* Mobile Search */}
             <div className="mb-4 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
                 placeholder="Search rackets..."
                 className="pl-9"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => handleSearchInputChange(e.target.value)}
                 data-testid="input-search-mobile"
               />
+              {/* Mobile Search Results */}
+              {searchQuery.trim().length > 0 && searchResults.length > 0 && (
+                <div className="mt-2 bg-background border rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  {searchResults.map((racket) => (
+                    <Link
+                      key={racket.id}
+                      href={`/rackets/${getRacketSlug(racket)}`}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Card className="mb-2 hover-elevate cursor-pointer transition-all">
+                        <CardContent className="p-3">
+                          <div className="flex items-center gap-3">
+                            {racket.imageUrl && (
+                              <img
+                                src={racket.imageUrl}
+                                alt={`${racket.brand} ${racket.model}`}
+                                className="w-12 h-12 object-contain"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold truncate">
+                                {racket.brand} {racket.model}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                €{Number(racket.currentPrice).toFixed(0)}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Mobile Navigation */}
@@ -131,15 +277,17 @@ export function Header() {
                   </div>
                 </Link>
               ))}
-              <Link href="/admin">
+              {isAuthenticated && (
                 <div
                   className="px-4 py-3 rounded-md text-sm font-medium text-foreground/80 hover:text-foreground hover-elevate cursor-pointer"
-                  onClick={() => setMobileMenuOpen(false)}
-                  data-testid="link-mobile-admin"
+                  onClick={() => {
+                    signOut();
+                    setMobileMenuOpen(false);
+                  }}
                 >
-                  Admin
+                  Logout
                 </div>
-              </Link>
+              )}
             </nav>
           </div>
         )}

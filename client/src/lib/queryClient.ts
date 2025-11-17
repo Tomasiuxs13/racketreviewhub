@@ -1,10 +1,26 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabase } from "./supabase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    if (res.status === 401) {
+      // Redirect to login on 401
+      window.location.href = "/login";
+    }
     throw new Error(`${res.status}: ${text}`);
   }
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {};
+  
+  if (session?.access_token) {
+    headers["Authorization"] = `Bearer ${session.access_token}`;
+  }
+  
+  return headers;
 }
 
 export async function apiRequest(
@@ -14,11 +30,15 @@ export async function apiRequest(
 ): Promise<Response> {
   // Check if data is FormData (for file uploads)
   const isFormData = data instanceof FormData;
+  const authHeaders = await getAuthHeaders();
   
   const res = await fetch(url, {
     method,
     // Don't set Content-Type for FormData - browser will set it with boundary
-    headers: data && !isFormData ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...authHeaders,
+      ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
+    },
     // Don't stringify FormData - send it as-is
     body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
     credentials: "include",
@@ -34,7 +54,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(queryKey.join("/") as string, {
+      headers: authHeaders,
       credentials: "include",
     });
 
@@ -51,9 +73,10 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      staleTime: 1000 * 60 * 5,
+      retry: 2,
     },
     mutations: {
       retry: false,

@@ -8,6 +8,10 @@ import { RacketCard } from "@/components/RacketCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Racket, Guide } from "@shared/schema";
 import heroImage from "@assets/generated_images/Padel_court_hero_background_fd7eb556.png";
+import SEO from "@/components/SEO";
+import { StructuredData } from "@/components/StructuredData";
+import { useMemo } from "react";
+import { SITE_URL } from "@/lib/seo";
 
 export default function HomePage() {
   const { data: recentRackets, isLoading: racketsLoading } = useQuery<Racket[]>({
@@ -18,8 +22,64 @@ export default function HomePage() {
     queryKey: ["/api/guides/recent"],
   });
 
+  const seoData = {
+    title: "Padel Racket Reviews - Expert Reviews & Best Price Comparisons",
+    description:
+      "Expert padel racket reviews with detailed ratings, performance analysis, and affiliate links to the best prices. Compare top rackets from leading brands and find your perfect match.",
+    url: "/",
+    canonical: "/",
+  };
+
+  // Structured data
+  const structuredData = useMemo(() => {
+    const siteUrl = SITE_URL;
+    const schemas = [];
+
+    // WebSite schema with SearchAction
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Padel Racket Reviews",
+      "description": seoData.description,
+      "url": siteUrl,
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": `${siteUrl}/rackets?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
+    });
+
+    // Organization schema
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Padel Racket Reviews",
+      "description": "Expert padel racket reviews and buying guides",
+      "url": siteUrl,
+      "logo": `${siteUrl}/favicon.png`,
+      "sameAs": [],
+    });
+
+    // CollectionPage schema for homepage
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Padel Racket Reviews - Home",
+      "description": seoData.description,
+      "url": siteUrl,
+    });
+
+    return schemas;
+  }, [seoData.description]);
+
   return (
-    <div className="min-h-screen">
+    <>
+      <SEO {...seoData} />
+      <StructuredData data={structuredData} />
+      <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-[500px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
         {/* Background Image with Dark Overlay */}
@@ -28,6 +88,8 @@ export default function HomePage() {
             src={heroImage}
             alt="Padel court"
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
         </div>
@@ -102,8 +164,8 @@ export default function HomePage() {
           </div>
 
           {racketsLoading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              {Array.from({ length: 10 }).map((_, i) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {Array.from({ length: 8 }).map((_, i) => (
                 <Card key={i}>
                   <CardContent className="p-0">
                     <Skeleton className="aspect-[3/4] w-full" />
@@ -117,8 +179,8 @@ export default function HomePage() {
               ))}
             </div>
           ) : recentRackets && recentRackets.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-              {recentRackets.slice(0, 10).map((racket) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {recentRackets.slice(0, 8).map((racket) => (
                 <RacketCard key={racket.id} racket={racket} />
               ))}
             </div>
@@ -212,6 +274,7 @@ export default function HomePage() {
                             src={guide.featuredImage}
                             alt={guide.title}
                             className="w-full h-full object-cover"
+                            loading="lazy"
                             data-testid={`img-guide-${guide.id}`}
                           />
                         </div>
@@ -246,5 +309,6 @@ export default function HomePage() {
         </div>
       </section>
     </div>
+    </>
   );
 }

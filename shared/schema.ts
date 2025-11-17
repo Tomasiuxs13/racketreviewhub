@@ -3,6 +3,24 @@ import { pgTable, text, varchar, integer, decimal, timestamp } from "drizzle-orm
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Authors table
+export const authors = pgTable("authors", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  slug: text("slug").notNull().unique(),
+  bio: text("bio"),
+  avatarUrl: text("avatar_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAuthorSchema = createInsertSchema(authors).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertAuthor = z.infer<typeof insertAuthorSchema>;
+export type Author = typeof authors.$inferSelect;
+
 // Rackets table
 export const rackets = pgTable("rackets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -20,7 +38,22 @@ export const rackets = pgTable("rackets", {
   currentPrice: decimal("current_price", { precision: 10, scale: 2 }).notNull(),
   imageUrl: text("image_url"),
   affiliateLink: text("affiliate_link"),
+  titleUrl: text("title_url"), // Title_URL from Excel
   reviewContent: text("review_content"),
+  authorId: varchar("author_id"), // Foreign key to authors table
+  // Specification fields from Excel
+  color: text("color"),
+  balance: text("balance"),
+  surface: text("surface"),
+  hardness: text("hardness"),
+  finish: text("finish"),
+  playersCollection: text("players_collection"),
+  product: text("product"),
+  core: text("core"),
+  format: text("format"),
+  gameLevel: text("game_level"),
+  gameType: text("game_type"),
+  player: text("player"), // man, woman, or both
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -64,7 +97,8 @@ export const blogPosts = pgTable("blog_posts", {
   slug: text("slug").notNull().unique(),
   excerpt: text("excerpt").notNull(),
   content: text("content").notNull(),
-  author: text("author").notNull(),
+  author: text("author").notNull(), // Keep for backward compatibility
+  authorId: varchar("author_id"), // Foreign key to authors table
   featuredImage: text("featured_image"),
   publishedAt: timestamp("published_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -114,7 +148,21 @@ export const excelRacketSchema = z.object({
   currentPrice: z.number(),
   imageUrl: z.string().optional(),
   affiliateLink: z.string().optional(),
+  titleUrl: z.string().optional(),
   reviewContent: z.string().optional(),
+  // Specification fields (all optional)
+  color: z.string().optional(),
+  balance: z.string().optional(),
+  surface: z.string().optional(),
+  hardness: z.string().optional(),
+  finish: z.string().optional(),
+  playersCollection: z.string().optional(),
+  product: z.string().optional(),
+  core: z.string().optional(),
+  format: z.string().optional(),
+  gameLevel: z.string().optional(),
+  gameType: z.string().optional(),
+  player: z.enum(["man", "woman", "both"]).optional(),
 });
 
 export type ExcelRacket = z.infer<typeof excelRacketSchema>;

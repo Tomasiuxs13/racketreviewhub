@@ -4,18 +4,109 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Calendar, User } from "lucide-react";
-import type { BlogPost } from "@shared/schema";
+import type { BlogPost, Author } from "@shared/schema";
+import SEO from "@/components/SEO";
+import { StructuredData } from "@/components/StructuredData";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { useMemo } from "react";
+import { SITE_URL } from "@/lib/seo";
 
 export default function BlogPage() {
   const { data: posts, isLoading } = useQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
   });
 
+  // Fetch authors to map authorIds
+  const { data: authors } = useQuery<Author[]>({
+    queryKey: ["/api/authors"],
+  });
+
+  // SEO data
+  const seoData = {
+    title: "Padel Blog - News, Tips & Insights",
+    description:
+      "Latest news, tips, and insights from the padel world. Expert advice, equipment reviews, and buying guides to help you improve your game.",
+    url: "/blog",
+    canonical: "/blog",
+  };
+
+  // Structured data
+  const structuredData = useMemo(() => {
+    const siteUrl = SITE_URL;
+    const schemas = [];
+
+    // CollectionPage schema
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Padel Blog",
+      "description": seoData.description,
+      "url": seoData.canonical,
+    });
+
+    // ItemList schema for blog posts
+    if (posts && posts.length > 0) {
+      schemas.push({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": posts.slice(0, 20).map((post, index) => ({
+          "@type": "ListItem",
+          "position": index + 1,
+          "item": {
+            "@type": "BlogPosting",
+            "headline": post.title,
+            "description": post.excerpt,
+            "url": `${siteUrl}/blog/${post.slug}`,
+            "image": post.featuredImage || undefined,
+            "datePublished": new Date(post.publishedAt).toISOString(),
+            "dateModified": new Date(post.updatedAt).toISOString(),
+            "author": {
+              "@type": "Person",
+              "name": post.author,
+            },
+            "publisher": {
+              "@type": "Organization",
+              "name": "Padel Racket Reviews",
+            },
+          },
+        })),
+      });
+    }
+
+    // BreadcrumbList schema
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": siteUrl,
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Blog",
+          "item": `${siteUrl}${seoData.canonical}`,
+        },
+      ],
+    });
+
+    return schemas;
+  }, [posts, seoData.canonical, seoData.description]);
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
-        <div className="mb-8">
+    <>
+      <SEO {...seoData} />
+      <StructuredData data={structuredData} />
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Breadcrumbs */}
+          <Breadcrumbs items={[{ label: "Blog" }]} />
+
+          {/* Header */}
+          <div className="mb-8">
           <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3" data-testid="text-page-title">
             Blog
           </h1>
@@ -52,6 +143,7 @@ export default function BlogPage() {
                           src={post.featuredImage}
                           alt={post.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
                           data-testid={`img-post-${post.id}`}
                         />
                       </div>
@@ -68,7 +160,24 @@ export default function BlogPage() {
                       <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
                         <div className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          <span>{post.author}</span>
+                          {post.authorId && authors ? (
+                            (() => {
+                              const author = authors.find((a) => a.id === post.authorId);
+                              return author ? (
+                                <Link
+                                  href={`/authors/${author.slug}`}
+                                  className="hover:text-primary hover:underline transition-colors"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {author.name}
+                                </Link>
+                              ) : (
+                                <span>{post.author || "Padel Racket Reviews"}</span>
+                              );
+                            })()
+                          ) : (
+                            <span>{post.author || "Padel Racket Reviews"}</span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
@@ -96,7 +205,8 @@ export default function BlogPage() {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

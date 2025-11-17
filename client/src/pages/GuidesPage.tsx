@@ -1,10 +1,14 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Guide } from "@shared/schema";
+import SEO from "@/components/SEO";
+import { StructuredData } from "@/components/StructuredData";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { SITE_URL } from "@/lib/seo";
 
 export default function GuidesPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -19,9 +23,80 @@ export default function GuidesPage() {
     (guide) => selectedCategory === "All" || guide.category.toLowerCase() === selectedCategory.toLowerCase()
   );
 
+  const seoData = {
+    title: "Padel Racket Buying Guides - Expert Advice & Reviews",
+    description:
+      "Comprehensive padel racket buying guides for players of all levels. Expert advice on choosing the perfect racket, understanding shapes, ratings, and finding the best models for your game.",
+    url: "/guides",
+    canonical: "/guides",
+  };
+
+  // Structured data
+  const structuredData = useMemo(() => {
+    const siteUrl = SITE_URL;
+    const schemas = [];
+
+    // CollectionPage schema
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": "Padel Racket Buying Guides",
+      "description": seoData.description,
+      "url": seoData.canonical,
+    });
+
+    // ItemList schema for guides
+    if (filteredGuides && filteredGuides.length > 0) {
+      schemas.push({
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "itemListElement": filteredGuides.slice(0, 20).map((guide, index) => ({
+          "@type": "ListItem",
+          "position": index + 1,
+          "item": {
+            "@type": "Article",
+            "headline": guide.title,
+            "description": guide.excerpt,
+            "url": `${siteUrl}/guides/${guide.slug}`,
+            "image": guide.featuredImage || undefined,
+            "datePublished": guide.publishedAt ? new Date(guide.publishedAt).toISOString() : undefined,
+          },
+        })),
+      });
+    }
+
+    // BreadcrumbList schema
+    schemas.push({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": siteUrl,
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Guides",
+          "item": seoData.canonical,
+        },
+      ],
+    });
+
+    return schemas;
+  }, [filteredGuides, seoData.canonical, seoData.description]);
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
+        <SEO {...seoData} />
+        <StructuredData data={structuredData} />
+
+        {/* Breadcrumbs */}
+        <Breadcrumbs items={[{ label: "Guides" }]} />
+
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3" data-testid="text-page-title">
@@ -73,8 +148,9 @@ export default function GuidesPage() {
                       <div className="aspect-video w-full overflow-hidden">
                         <img
                           src={guide.featuredImage}
-                          alt={guide.title}
+                          alt={`${guide.title} - Featured image`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
                           data-testid={`img-guide-${guide.id}`}
                         />
                       </div>
