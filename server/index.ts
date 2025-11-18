@@ -1,7 +1,14 @@
 import "dotenv/config";
+import { setDefaultResultOrder } from "node:dns";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+
+// Render instances don't have IPv6 egress, but some managed Postgres
+// providers (e.g. Supabase) return IPv6 addresses first. Force IPv4
+// resolution order so database connections succeed instead of throwing
+// ENETUNREACH when Node tries IPv6 first.
+setDefaultResultOrder("ipv4first");
 
 const app = express();
 
