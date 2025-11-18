@@ -81,3 +81,4 @@ export function BrandTable({ brands, onEdit }: BrandTableProps) {
   );
 }
 
+

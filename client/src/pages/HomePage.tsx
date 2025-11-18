@@ -2,7 +2,6 @@ import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { ArrowRight, Star, TrendingUp, Shield } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -200,30 +199,22 @@ export default function HomePage() {
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="font-heading font-bold text-3xl md:text-4xl mb-4" data-testid="text-cta-title">
-            Join 25,000+ Padel Players
+            Getting Started with Padel?
           </h2>
           <p className="text-xl text-primary-foreground/90 mb-8">
-            Get exclusive reviews, expert tips, and special deals delivered to your inbox
+            Discover the best rackets for beginners with our comprehensive buying guide. Learn what to look for and find the perfect racket for your skill level.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <Input
-              type="email"
-              placeholder="Enter your email"
-              className="bg-white text-foreground border-0 flex-1"
-              data-testid="input-cta-email"
-            />
+          <Link href="/guides/best-padel-rackets-for-beginners-2025">
             <Button
               size="lg"
               variant="secondary"
               className="bg-white text-primary hover:bg-white/90"
-              data-testid="button-cta-subscribe"
+              data-testid="button-cta-beginner-guide"
             >
-              Subscribe
+              Best Rackets for Beginners
+              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-          </div>
-          <p className="text-sm text-primary-foreground/70 mt-4">
-            No spam. Unsubscribe anytime.
-          </p>
+          </Link>
         </div>
       </section>
 

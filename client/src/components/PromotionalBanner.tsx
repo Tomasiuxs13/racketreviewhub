@@ -76,3 +76,4 @@ export function PromotionalBanner({ variant = "default", className = "" }: Promo
   );
 }
 
+
