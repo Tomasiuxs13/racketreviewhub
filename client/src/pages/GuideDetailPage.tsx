@@ -264,7 +264,6 @@ export default function GuideDetailPage() {
                     dangerouslySetInnerHTML={{ __html: cleanedContent }}
                     data-testid="text-guide-content"
                   />
-                  <MentionedRackets content={cleanedContent} />
                 </article>
               </CardContent>
             </Card>
@@ -295,6 +294,9 @@ export default function GuideDetailPage() {
                   </Link>
                 </CardContent>
               </Card>
+
+              {/* Mentioned Rackets */}
+              <MentionedRackets content={cleanedContent} variant="sidebar" />
 
               {/* Quick Links */}
               <Card>

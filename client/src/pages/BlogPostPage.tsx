@@ -186,7 +186,6 @@ export default function BlogPostPage() {
                     dangerouslySetInnerHTML={{ __html: post.content }}
                     data-testid="text-post-content"
                   />
-                  <MentionedRackets content={post.content} />
                 </CardContent>
               </Card>
             </article>
@@ -197,7 +196,8 @@ export default function BlogPostPage() {
                 {/* Promotional Banner */}
                 <PromotionalBanner />
 
-                {/* Additional Sidebar Content can be added here */}
+                {/* Mentioned Rackets */}
+                <MentionedRackets content={post.content} variant="sidebar" />
               </div>
             </aside>
           </div>

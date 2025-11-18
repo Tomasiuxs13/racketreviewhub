@@ -1,5 +1,4 @@
 import { Link } from "wouter";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 
@@ -56,24 +55,17 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Newsletter */}
+          {/* Beginner Guide */}
           <div>
-            <h3 className="font-heading font-semibold text-lg mb-4">Newsletter</h3>
+            <h3 className="font-heading font-semibold text-lg mb-4">Getting Started</h3>
             <p className="text-sm text-muted-foreground mb-4">
-              Get the latest reviews and deals delivered to your inbox.
+              New to padel? Discover the best rackets for beginners with our comprehensive buying guide.
             </p>
-            <div className="flex gap-2">
-              <Input
-                type="email"
-                placeholder="Your email"
-                className="flex-1"
-                data-testid="input-newsletter-email"
-              />
-              <Button data-testid="button-newsletter-subscribe">Subscribe</Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-3">
-              Join 25,000+ players
-            </p>
+            <Link href="/guides/best-padel-rackets-for-beginners-2025">
+              <Button className="w-full" data-testid="button-beginner-guide">
+                Best Rackets for Beginners
+              </Button>
+            </Link>
           </div>
         </div>
 
