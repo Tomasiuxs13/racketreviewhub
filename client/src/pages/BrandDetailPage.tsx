@@ -97,9 +97,9 @@ export default function BrandDetailPage() {
   });
 
   // Get top 3 rackets for cards above Quick overview
-  const top3Rackets = allRackets?.slice(0, 3) || [];
+  const top3Rackets = useMemo(() => allRackets?.slice(0, 3) || [], [allRackets]);
   // Get top 10 rackets for the article section
-  const top10Rackets = allRackets?.slice(0, 10) || [];
+  const top10Rackets = useMemo(() => allRackets?.slice(0, 10) || [], [allRackets]);
 
   // SEO data - calculate even when brand is loading/undefined to keep hooks consistent
   const year = new Date().getFullYear();
@@ -263,24 +263,32 @@ export default function BrandDetailPage() {
   }
 
   // Use existing articleContent from database if available, otherwise generate it
-  const useExistingContent = brand.articleContent && brand.articleContent.trim().length > 0;
-  const articleIntroHtml = useExistingContent 
-    ? null 
-    : buildBrandSeoArticleIntro(brand, top10Rackets);
-  const articleRestHtml = useExistingContent
-    ? brand.articleContent
-    : buildBrandSeoArticleRest(brand, top10Rackets);
+  const useExistingContent = useMemo(
+    () => brand.articleContent && brand.articleContent.trim().length > 0,
+    [brand.articleContent]
+  );
   
   const sanitizedArticleIntro = useMemo(
-    () => articleIntroHtml ? DOMPurify.sanitize(articleIntroHtml) : null,
-    [articleIntroHtml],
+    () => {
+      if (useExistingContent || !brand) return null;
+      const articleIntroHtml = buildBrandSeoArticleIntro(brand, top10Rackets);
+      return articleIntroHtml ? DOMPurify.sanitize(articleIntroHtml) : null;
+    },
+    [useExistingContent, brand?.id, brand?.name, brand?.description, top10Rackets],
   );
+  
   const sanitizedArticleRest = useMemo(
     () => {
+      if (!brand) return null;
+      if (useExistingContent) {
+        if (!brand.articleContent) return null;
+        return DOMPurify.sanitize(brand.articleContent);
+      }
+      const articleRestHtml = buildBrandSeoArticleRest(brand, top10Rackets);
       if (!articleRestHtml) return null;
       return DOMPurify.sanitize(articleRestHtml);
     },
-    [articleRestHtml],
+    [useExistingContent, brand?.id, brand?.name, brand?.articleContent, top10Rackets],
   );
 
   return (
@@ -385,10 +393,10 @@ export default function BrandDetailPage() {
             )}
 
               {/* Article Content - use existing articleContent from database if available */}
-              {articleRestHtml && (
+              {sanitizedArticleRest && (
                 <div
                   className="prose prose-lg max-w-none prose-headings:font-heading prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-8 prose-img:object-cover prose-img:object-top mb-12"
-                  dangerouslySetInnerHTML={{ __html: sanitizedArticleRest || "" }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedArticleRest }}
                   data-testid="text-brand-article-rest"
                 />
               )}
