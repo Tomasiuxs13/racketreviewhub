@@ -262,10 +262,17 @@ export default function BrandDetailPage() {
     );
   }
 
-  const articleIntroHtml = buildBrandSeoArticleIntro(brand, top10Rackets);
-  const articleRestHtml = buildBrandSeoArticleRest(brand, top10Rackets);
+  // Use existing articleContent from database if available, otherwise generate it
+  const useExistingContent = brand.articleContent && brand.articleContent.trim().length > 0;
+  const articleIntroHtml = useExistingContent 
+    ? null 
+    : buildBrandSeoArticleIntro(brand, top10Rackets);
+  const articleRestHtml = useExistingContent
+    ? brand.articleContent
+    : buildBrandSeoArticleRest(brand, top10Rackets);
+  
   const sanitizedArticleIntro = useMemo(
-    () => DOMPurify.sanitize(articleIntroHtml),
+    () => articleIntroHtml ? DOMPurify.sanitize(articleIntroHtml) : null,
     [articleIntroHtml],
   );
   const sanitizedArticleRest = useMemo(
@@ -337,7 +344,7 @@ export default function BrandDetailPage() {
         <Card className="mb-12">
           <CardContent className="p-8 md:p-12">
             <article>
-              {/* Article Intro */}
+              {/* Article Intro - only show if using generated content */}
               {sanitizedArticleIntro && (
                 <div
                   className="prose prose-lg max-w-none mb-8"
@@ -374,10 +381,10 @@ export default function BrandDetailPage() {
               </div>
             )}
 
-              {/* Rest of Article (Quick overview and beyond) */}
+              {/* Article Content - use existing articleContent from database if available */}
               {sanitizedArticleRest && (
                 <div
-                  className="prose prose-lg max-w-none mb-12"
+                  className="prose prose-lg max-w-none prose-headings:font-heading prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-8 prose-img:object-cover prose-img:object-top mb-12"
                   dangerouslySetInnerHTML={{ __html: sanitizedArticleRest }}
                   data-testid="text-brand-article-rest"
                 />
