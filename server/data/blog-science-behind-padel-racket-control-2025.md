@@ -16,6 +16,8 @@ In this comprehensive guide, we'll explore:
 - Control vs power trade-offs and how to balance them
 - Equipment adjustments and techniques for better control
 
+![The Science Behind Padel Racket Control: Understanding Feel and Precision](/assets/the-science-behind-padel-racket-control.png)
+
 ## What Control Really Means in Padel
 
 Control in padel isn't just about hitting the ball where you want—it's about consistent, predictable ball response that allows you to execute shots with precision and confidence.

@@ -16,6 +16,8 @@ In this comprehensive guide, we'll explore:
 - What's worth the investment versus what's marketing
 - Future trends to watch in racket development
 
+![Padel Racket Technology Trends 2025: What's New in Racket Innovation](/assets/padel-racket-technology-trends-2025.png)
+
 ## Latest Material Innovations
 
 Material science drives many of the most significant advances in racket technology, with manufacturers constantly developing new composites and treatments.

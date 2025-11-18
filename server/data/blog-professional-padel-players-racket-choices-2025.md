@@ -16,6 +16,8 @@ In this comprehensive guide, we'll explore:
 - The relationship between sponsorship and personal preference
 - Lessons recreational players can learn from professional choices
 
+![Professional Padel Players' Racket Choices: What the Pros Use and Why](/assets/professional-padel-players-racket-choices.png)
+
 ## Rackets Used by Top Players
 
 Professional players' racket choices reflect their playing styles, technique requirements, and performance optimization needs.

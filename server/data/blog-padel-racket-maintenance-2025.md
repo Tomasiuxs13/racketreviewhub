@@ -15,6 +15,8 @@ In this comprehensive guide, we'll cover everything you need to know about maint
 - Common mistakes that shorten racket lifespan
 - Professional maintenance tips from experts
 
+![The Ultimate Guide to Padel Racket Maintenance: Keep Your Racket Performing Like New in 2025](/assets/the-ultimate-guide-to-padel-racket-maintenance.png)
+
 ## Understanding Your Racket's Components
 
 Before diving into maintenance routines, it's important to understand the key components of your padel racket and how they're affected by regular use.

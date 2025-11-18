@@ -122,6 +122,16 @@ function extractAuthor(markdown: string, filename: string): string {
   return "Padel Racket Reviews";
 }
 
+// Extract first image URL from markdown
+function extractFeaturedImage(markdown: string): string | null {
+  // Match first image markdown syntax: ![alt](url)
+  const imageMatch = markdown.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+  if (imageMatch && imageMatch[2]) {
+    return imageMatch[2];
+  }
+  return null;
+}
+
 async function loadBlogPosts() {
   // Import storage dynamically to ensure it uses the right implementation
   const storageModule = await import("../storage.js");
@@ -154,6 +164,7 @@ async function loadBlogPosts() {
       const excerpt = extractExcerpt(markdown);
       const author = extractAuthor(markdown, file);
       const content = markdownToHtml(markdown);
+      const featuredImage = extractFeaturedImage(markdown);
 
       // Check if blog post already exists
       const existing = await storage.getBlogPost(slug);
@@ -179,6 +190,7 @@ async function loadBlogPosts() {
               excerpt,
               content,
               author,
+              featuredImage,
               updatedAt: new Date(),
             })
             .where(eq(blogPosts.slug, slug));
@@ -200,7 +212,7 @@ async function loadBlogPosts() {
         excerpt,
         content,
         author,
-        featuredImage: null,
+        featuredImage,
       };
 
       const post = await storage.createBlogPost(postData);

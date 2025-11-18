@@ -16,6 +16,8 @@ In this comprehensive guide, we'll explore:
 - Common power generation mistakes and how to avoid them
 - Training tips for developing power with your equipment
 
+![Maximizing Power with Your Padel Racket: Technique Meets Equipment](/assets/maximizing-power-with-your-padel-racket.png)
+
 ## How Racket Features Contribute to Power
 
 Understanding how your racket's characteristics affect power helps you choose the right equipment and use it effectively.
