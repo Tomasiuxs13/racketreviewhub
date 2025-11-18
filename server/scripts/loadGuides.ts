@@ -112,6 +112,16 @@ function extractExcerpt(markdown: string): string {
     .trim();
 }
 
+// Extract first image URL from markdown
+function extractFeaturedImage(markdown: string): string | null {
+  // Match first image markdown syntax: ![alt](url)
+  const imageMatch = markdown.match(/!\[([^\]]*)\]\(([^)]+)\)/);
+  if (imageMatch && imageMatch[2]) {
+    return imageMatch[2];
+  }
+  return null;
+}
+
 // Determine category from filename or content
 function determineCategory(filename: string, content: string): string {
   const lowerFilename = filename.toLowerCase();
@@ -165,6 +175,7 @@ async function loadGuides() {
       const excerpt = extractExcerpt(markdown);
       const category = determineCategory(file, markdown);
       const content = markdownToHtml(markdown);
+      const featuredImage = extractFeaturedImage(markdown);
 
       // Check if guide already exists
       const existing = await storage.getGuide(slug);
@@ -175,7 +186,7 @@ async function loadGuides() {
         excerpt,
         content,
         category,
-        featuredImage: null,
+        featuredImage,
       };
 
       if (existing) {
@@ -198,6 +209,7 @@ async function loadGuides() {
               excerpt,
               content,
               category,
+              featuredImage,
               updatedAt: new Date(),
             })
             .where(eq(guides.slug, slug));
