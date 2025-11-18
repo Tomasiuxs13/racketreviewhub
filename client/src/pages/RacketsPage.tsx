@@ -298,25 +298,25 @@ export default function RacketsPage() {
       <SEO {...seoData} />
       <StructuredData data={structuredData} />
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           {/* Breadcrumbs */}
           <Breadcrumbs items={[{ label: "Rackets" }]} />
 
           {/* Header */}
           <div className="mb-8">
-          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3" data-testid="text-page-title">
+          <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
             Padel Racket Reviews
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base sm:text-lg">
             Discover padel rackets from renowned brands with detailed ratings and expert reviews
           </p>
         </div>
 
-        <div className="flex gap-8">
+        <div className="flex flex-col lg:flex-row gap-8">
           {/* Desktop Sidebar Filters */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <Card className="sticky top-24">
-              <CardContent className="p-6">
+              <CardContent className="p-5 sm:p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="font-semibold text-lg">Filters</h2>
                   {hasActiveFilters && (
@@ -353,11 +353,11 @@ export default function RacketsPage() {
                       )}
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side="left">
+                  <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm">
                     <SheetHeader>
                       <SheetTitle>Filters</SheetTitle>
                     </SheetHeader>
-                    <div className="mt-6">
+                    <div className="mt-6 pb-6 overflow-y-auto">
                       <FilterContent />
                     </div>
                   </SheetContent>

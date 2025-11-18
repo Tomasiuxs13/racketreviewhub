@@ -61,6 +61,23 @@ export function Header() {
     }
   }, [showSearchResults]);
 
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    if (mobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location]);
+
   const menuItems = [
     { label: "Padel Rackets", path: "/rackets" },
     { label: "Guides", path: "/guides" },
@@ -72,11 +89,11 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="max-w-7xl mx-auto px-6">
-        <div className="flex h-16 items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="flex h-14 sm:h-16 items-center justify-between gap-4">
           {/* Logo */}
           <Link href="/">
-            <div className="flex items-center gap-2 hover-elevate rounded-md px-3 py-2 -ml-3 cursor-pointer" data-testid="link-home">
+            <div className="flex items-center gap-2 hover-elevate rounded-md px-3 py-2 -ml-1 sm:-ml-3 cursor-pointer" data-testid="link-home">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-bold text-lg">P</span>
@@ -201,6 +218,7 @@ export function Header() {
               className="md:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               data-testid="button-menu-toggle"
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -209,9 +227,9 @@ export function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="md:hidden border-t pt-4 pb-6 space-y-4 max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain px-1">
             {/* Mobile Search */}
-            <div className="mb-4 relative">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"

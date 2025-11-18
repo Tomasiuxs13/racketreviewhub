@@ -90,7 +90,7 @@ export default function GuidesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <SEO {...seoData} />
         <StructuredData data={structuredData} />
 
@@ -99,10 +99,10 @@ export default function GuidesPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3" data-testid="text-page-title">
+          <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
             Buying Guides
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base sm:text-lg">
             Expert advice to help you choose the perfect padel racket for your playing style and level
           </p>
         </div>

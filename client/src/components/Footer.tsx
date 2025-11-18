@@ -4,9 +4,9 @@ import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 
 export function Footer() {
   return (
-    <footer className="border-t bg-card mt-24">
-      <div className="max-w-7xl mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+    <footer className="border-t bg-card mt-16 sm:mt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
           {/* About */}
           <div>
             <h3 className="font-heading font-semibold text-lg mb-4">About Padel Racket Reviews</h3>
@@ -70,7 +70,7 @@ export function Footer() {
         </div>
 
         {/* Bottom Section */}
-        <div className="mt-12 pt-8 border-t flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mt-10 sm:mt-12 pt-8 border-t flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="text-sm text-muted-foreground text-center md:text-left">
             <p className="mb-2">© 2024 Padel Racket Reviews. All rights reserved.</p>
             <p className="text-xs">

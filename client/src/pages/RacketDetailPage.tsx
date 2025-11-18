@@ -191,9 +191,9 @@ export default function RacketDetailPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           <Skeleton className="h-10 w-32 mb-8" />
-          <div className="grid lg:grid-cols-2 gap-12">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12">
             <Skeleton className="aspect-square w-full" />
             <div className="space-y-6">
               <Skeleton className="h-12 w-3/4" />
@@ -211,7 +211,7 @@ export default function RacketDetailPage() {
     return (
       <>
         {seoElement}
-        <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <Card>
           <CardContent className="p-12 text-center">
             <p className="text-muted-foreground mb-4">Racket not found</p>
@@ -234,7 +234,7 @@ export default function RacketDetailPage() {
       {seoElement}
       <StructuredData data={structuredData} />
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           {/* Breadcrumbs */}
           <Breadcrumbs
             items={[
@@ -245,19 +245,19 @@ export default function RacketDetailPage() {
 
           {/* Back Button */}
           <Link href="/rackets" data-testid="link-back-to-rackets">
-          <Button variant="ghost" className="mb-8 -ml-3" data-testid="button-back">
+          <Button variant="ghost" className="mb-6 sm:mb-8 -ml-2 sm:-ml-3" data-testid="button-back">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Rackets
           </Button>
         </Link>
 
         {/* Main Content */}
-        <div className="grid lg:grid-cols-5 gap-12 mb-16">
+        <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 mb-16">
           {/* Main Content Area - Image and Review */}
           <div className="lg:col-span-3 space-y-8">
             {/* Image */}
             <Card>
-              <CardContent className="p-12">
+              <CardContent className="p-6 sm:p-10">
                 <div className="aspect-square flex items-center justify-center">
                   {racket.imageUrl ? (
                     <img
@@ -279,7 +279,7 @@ export default function RacketDetailPage() {
 
             {/* Review Article */}
             <Card>
-              <CardContent className="p-8 prose prose-lg max-w-none">
+              <CardContent className="p-5 sm:p-8 prose prose-sm sm:prose lg:prose-lg max-w-none">
                 {racket.reviewContent ? (
                   <>
                     {author && (
@@ -321,9 +321,9 @@ export default function RacketDetailPage() {
                           €{Number(racket.originalPrice).toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-nowrap">
+                      <div className="flex flex-wrap items-baseline gap-2">
                         <p className="text-xs text-muted-foreground whitespace-nowrap">Current price:</p>
-                        <span className="text-4xl font-bold text-primary" data-testid="text-price">
+                        <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price">
                           €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                         <Badge variant="destructive" className="font-semibold whitespace-nowrap text-xs">
@@ -334,7 +334,7 @@ export default function RacketDetailPage() {
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-primary" data-testid="text-price">
+                        <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price">
                           €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                       </div>
@@ -343,7 +343,7 @@ export default function RacketDetailPage() {
                   )}
                 </div>
 
-                <div className="pt-2 border-t">
+                    <div className="pt-2 border-t">
                   {racket.affiliateLink || racket.titleUrl ? (
                     <Button
                       asChild
@@ -374,14 +374,14 @@ export default function RacketDetailPage() {
           <div className="lg:col-span-2 space-y-6">
             {/* Title & Brand */}
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <Badge data-testid="badge-brand">{racket.brand}</Badge>
                 <Badge variant="secondary">{racket.year}</Badge>
                 {racket.year >= new Date().getFullYear() && (
                   <Badge variant="outline">New</Badge>
                 )}
               </div>
-              <h1 className="font-heading font-bold text-4xl mb-2" data-testid="text-racket-title">
+              <h1 className="font-heading font-bold text-3xl sm:text-4xl mb-2" data-testid="text-racket-title">
                 {racket.model}
               </h1>
               <p className="text-muted-foreground capitalize mb-3">
@@ -433,9 +433,9 @@ export default function RacketDetailPage() {
                           €{Number(racket.originalPrice).toFixed(2)}
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-nowrap">
+                      <div className="flex flex-wrap items-baseline gap-2">
                         <p className="text-xs text-muted-foreground whitespace-nowrap">Current price:</p>
-                        <span className="text-4xl font-bold text-primary" data-testid="text-price-sidebar">
+                        <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price-sidebar">
                           €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                         <Badge variant="destructive" className="font-semibold whitespace-nowrap text-xs">
@@ -446,7 +446,7 @@ export default function RacketDetailPage() {
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-primary" data-testid="text-price-sidebar">
+                        <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price-sidebar">
                           €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                       </div>
@@ -499,7 +499,7 @@ export default function RacketDetailPage() {
             <Card>
               <CardContent className="p-6">
                 <h3 className="font-semibold mb-4">Specifications</h3>
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-3">
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                   <div>
                     <dt className="text-sm font-medium text-muted-foreground mb-1">Brand</dt>
                     <dd className="text-base" data-testid="spec-brand">{racket.brand || "-"}</dd>

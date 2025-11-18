@@ -64,7 +64,7 @@ export function RacketCard({ racket }: RacketCardProps) {
           </div>
 
           {/* Content */}
-          <div className="px-6 pt-0 pb-6 space-y-4">
+          <div className="px-5 sm:px-6 pt-0 pb-5 sm:pb-6 space-y-4">
             {/* Title */}
             <div>
               <p className="text-sm text-muted-foreground mb-1">
@@ -97,14 +97,14 @@ export function RacketCard({ racket }: RacketCardProps) {
                       -{discountPercentage}%
                     </Badge>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
                       €{Number(racket.currentPrice).toFixed(2)}
                     </span>
                     {racket.affiliateLink || racket.titleUrl ? (
                       <Button
                         size="default"
-                        className="shrink-0 px-4"
+                        className="shrink-0 w-full sm:w-auto px-4"
                         onClick={(e) => {
                           e.stopPropagation();
                           window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
@@ -118,14 +118,14 @@ export function RacketCard({ racket }: RacketCardProps) {
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
                     €{Number(racket.currentPrice).toFixed(2)}
                   </span>
                   {racket.affiliateLink || racket.titleUrl ? (
                     <Button
-                      size="sm"
-                      className="shrink-0"
+                      size="default"
+                      className="shrink-0 w-full sm:w-auto"
                       onClick={(e) => {
                         e.stopPropagation();
                         window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");

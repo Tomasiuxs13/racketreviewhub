@@ -17,13 +17,19 @@ export default function BrandsPage() {
 
   const filteredBrands = (brands || []).filter((brand) => isValidBrandName(brand.name));
 
-  const seoData = {
-    title: "Padel Racket Brands - Complete Guide to Top Manufacturers",
-    description:
-      "Explore comprehensive guides and reviews for all major padel racket brands. Find detailed articles, top racket recommendations, and buying guides for Babolat, Bullpadel, Head, and more.",
-    url: "/brands",
-    canonical: "/brands",
-  };
+  // Extract description to avoid recreating seoData object on every render
+  const seoDescription =
+    "Explore comprehensive guides and reviews for all major padel racket brands. Find detailed articles, top racket recommendations, and buying guides for Babolat, Bullpadel, Head, and more.";
+
+  const seoData = useMemo(
+    () => ({
+      title: "Padel Racket Brands - Complete Guide to Top Manufacturers",
+      description: seoDescription,
+      url: "/brands",
+      canonical: "/brands",
+    }),
+    [seoDescription]
+  );
 
   // Structured data
   const structuredData = useMemo(() => {
@@ -35,7 +41,7 @@ export default function BrandsPage() {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
       "name": "Padel Racket Brands",
-      "description": seoData.description,
+      "description": seoDescription,
       "url": `${siteUrl}/brands`,
     });
 
@@ -77,7 +83,7 @@ export default function BrandsPage() {
     });
 
     return schemas;
-  }, [filteredBrands, seoData.description]);
+  }, [filteredBrands, seoDescription]);
 
   return (
     <div className="min-h-screen bg-background">

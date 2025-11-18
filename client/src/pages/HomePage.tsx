@@ -80,7 +80,7 @@ export default function HomePage() {
       <StructuredData data={structuredData} />
       <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative min-h-[500px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[420px] sm:min-h-[520px] lg:min-h-[600px] flex items-center justify-center overflow-hidden py-16 sm:py-24">
         {/* Background Image with Dark Overlay */}
         <div className="absolute inset-0">
           <img
@@ -94,11 +94,11 @@ export default function HomePage() {
         </div>
 
         {/* Hero Content */}
-        <div className="relative z-10 max-w-4xl mx-auto px-6 text-center">
-          <h1 className="font-heading font-bold text-5xl md:text-6xl lg:text-7xl text-white mb-6" data-testid="text-hero-title">
+        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h1 className="font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white mb-6" data-testid="text-hero-title">
             Find Your Perfect Padel Racket
           </h1>
-          <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
             Expert reviews, detailed ratings, and the best prices for players of all levels
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -125,7 +125,7 @@ export default function HomePage() {
           </div>
 
           {/* Trust Indicators */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-white/80">
+          <div className="mt-10 sm:mt-12 flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-white/80 text-sm sm:text-base">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 text-yellow-400" />
               <span className="text-sm font-medium">1,200+ Reviews</span>
@@ -144,18 +144,18 @@ export default function HomePage() {
 
       {/* Recent Reviews Section */}
       <section className="py-16 bg-background">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="font-heading font-semibold text-3xl md:text-4xl mb-2" data-testid="text-recent-reviews-title">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 text-center md:text-left">
+            <div className="space-y-2">
+              <h2 className="font-heading font-semibold text-3xl md:text-4xl" data-testid="text-recent-reviews-title">
                 Latest Racket Reviews
               </h2>
               <p className="text-muted-foreground">
                 Our newest expert reviews and ratings
               </p>
             </div>
-            <Link href="/rackets" data-testid="link-view-all-reviews">
-              <Button variant="outline" data-testid="button-view-all-reviews">
+            <Link href="/rackets" data-testid="link-view-all-reviews" className="md:ml-auto">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-view-all-reviews">
                 View All
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -197,11 +197,11 @@ export default function HomePage() {
 
       {/* CTA Section */}
       <section className="py-16 bg-primary text-primary-foreground">
-        <div className="max-w-4xl mx-auto px-6 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="font-heading font-bold text-3xl md:text-4xl mb-4" data-testid="text-cta-title">
             Getting Started with Padel?
           </h2>
-          <p className="text-xl text-primary-foreground/90 mb-8">
+          <p className="text-lg sm:text-xl text-primary-foreground/90 mb-8">
             Discover the best rackets for beginners with our comprehensive buying guide. Learn what to look for and find the perfect racket for your skill level.
           </p>
           <Link href="/guides/best-padel-rackets-for-beginners-2025">
@@ -220,18 +220,18 @@ export default function HomePage() {
 
       {/* Recent Guides Section */}
       <section className="py-16 bg-background">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="font-heading font-semibold text-3xl md:text-4xl mb-2" data-testid="text-recent-guides-title">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 text-center md:text-left">
+            <div className="space-y-2">
+              <h2 className="font-heading font-semibold text-3xl md:text-4xl" data-testid="text-recent-guides-title">
                 Latest Buying Guides
               </h2>
               <p className="text-muted-foreground">
                 Expert advice to help you choose the right racket
               </p>
             </div>
-            <Link href="/guides" data-testid="link-view-all-guides">
-              <Button variant="outline" data-testid="button-view-all-guides">
+            <Link href="/guides" data-testid="link-view-all-guides" className="md:ml-auto">
+              <Button variant="outline" className="w-full sm:w-auto" data-testid="button-view-all-guides">
                 View All
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
