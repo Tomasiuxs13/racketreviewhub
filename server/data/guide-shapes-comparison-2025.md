@@ -15,6 +15,8 @@ By the end of this guide, you'll understand:
 - Real-world examples of each shape from current rackets
 - How to transition between shapes as your game improves
 
+![Complete Guide to Padel Racket Shapes: Round vs Teardrop vs Diamond](/assets/complete-guide-to-padel-racket-shapes.png)
+
 ## Understanding Racket Shapes
 
 Before diving into each shape's characteristics, it's important to understand the fundamental anatomy of a padel racket and how shape affects performance.

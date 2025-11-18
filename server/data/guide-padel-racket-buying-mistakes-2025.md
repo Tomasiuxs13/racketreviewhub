@@ -17,6 +17,8 @@ In this comprehensive guide, we'll explore:
 - Not testing rackets before buying when possible
 - Other common mistakes that lead to poor equipment choices
 
+![Padel Racket Buying Mistakes to Avoid: Learn from Common Errors](/assets/padel-racket-buying-mistakes.png)
+
 ## Mistake 1: Buying Based on Price Alone
 
 **The Mistake**: Choosing a racket primarily or solely based on price, assuming cheaper means better value or more expensive means better performance.

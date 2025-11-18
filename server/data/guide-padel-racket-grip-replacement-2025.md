@@ -16,6 +16,8 @@ In this comprehensive guide, we'll cover:
 - Grip customization options for optimal comfort and performance
 - How grip choice affects your game and playing experience
 
+![Padel Racket Grip Replacement Guide: When and How to Change Your Grip](/assets/padel-racket-grip-replacement-guide.png)
+
 ## Signs You Need a New Grip
 
 Recognizing when your grip needs replacement is crucial for maintaining optimal performance and comfort. The signs can be subtle at first but become more obvious as the grip deteriorates.

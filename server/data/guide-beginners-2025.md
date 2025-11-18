@@ -14,6 +14,8 @@ This comprehensive guide will walk you through everything you need to know about
 - Which specific rackets offer the best beginner experience
 - How to test and choose the right racket for you
 
+![Best Padel Rackets for Beginners 2025](/assets/best-padel-rackets-for-beginners-2025.png)
+
 ## Understanding Beginner Needs
 
 When you're just starting out in padel, your priorities are different from experienced players. While advanced players might seek maximum power or precision, beginners need something entirely different: forgiveness and ease of use.

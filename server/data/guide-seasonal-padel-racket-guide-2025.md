@@ -16,6 +16,8 @@ In this comprehensive guide, we'll explore:
 - Racket selection strategies for different climates and conditions
 - Storage considerations that vary by season
 
+![Seasonal Padel Racket Guide: Choosing the Right Racket for Different Conditions](/assets/seasonal-padel-racket-guide.png)
+
 ## Indoor vs Outdoor Court Considerations
 
 The playing environment—indoor or outdoor—significantly affects racket performance and durability.
