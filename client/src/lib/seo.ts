@@ -1,4 +1,4 @@
-const FALLBACK_SITE_URL = "https://padelracketreviews.com";
+const FALLBACK_SITE_URL = "https://racketreviewhub.com";
 
 const envSiteUrl = import.meta.env.VITE_SITE_URL?.trim();
 const normalizedSiteUrl = envSiteUrl
