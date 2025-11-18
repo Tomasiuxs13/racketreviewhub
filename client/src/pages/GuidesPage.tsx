@@ -149,7 +149,7 @@ export default function GuidesPage() {
                         <img
                           src={guide.featuredImage}
                           alt={`${guide.title} - Featured image`}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                           loading="lazy"
                           data-testid={`img-guide-${guide.id}`}
                         />
