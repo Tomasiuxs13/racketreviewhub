@@ -379,7 +379,7 @@ Proper maintenance extends your grip's lifespan and maintains optimal performanc
 ## Related Content
 
 - [The Ultimate Guide to Padel Racket Maintenance](/blog/padel-racket-maintenance-2025)
-- [When to Replace Your Padel Racket](/blog/when-to-replace-padel-racket-2025)
+- [When to Replace Your Padel Racket](/guides/when-to-replace-your-padel-racket-signs-it-s-time-for-an-upgrade)
 - [Best Padel Rackets for Beginners 2025](/guides/best-padel-rackets-beginners-2025)
 - [Browse All Rackets](/rackets)
 - [View All Guides](/guides)

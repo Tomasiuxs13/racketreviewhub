@@ -435,7 +435,7 @@ Adapting your approach based on conditions helps you perform consistently.
 ## Related Content
 
 - [The Ultimate Guide to Padel Racket Maintenance](/blog/padel-racket-maintenance-2025)
-- [When to Replace Your Padel Racket](/blog/when-to-replace-padel-racket-2025)
+- [When to Replace Your Padel Racket](/guides/when-to-replace-your-padel-racket-signs-it-s-time-for-an-upgrade)
 - [Padel Racket Buying Guide: Price Ranges and Value 2025](/guides/padel-racket-buying-guide-price-ranges-value-2025)
 - [Browse All Rackets](/rackets)
 - [View All Guides](/guides)
