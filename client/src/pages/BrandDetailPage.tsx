@@ -229,6 +229,28 @@ export default function BrandDetailPage() {
 
   const seoElement = <SEO {...seoData} />;
 
+  const { sanitizedIntro, sanitizedRest } = useMemo(() => {
+    if (!brand) {
+      return { sanitizedIntro: null, sanitizedRest: null };
+    }
+
+    const trimmedArticle = brand.articleContent?.trim();
+    if (trimmedArticle?.length) {
+      return {
+        sanitizedIntro: null,
+        sanitizedRest: DOMPurify.sanitize(trimmedArticle),
+      };
+    }
+
+    const articleIntroHtml = buildBrandSeoArticleIntro(brand, top10Rackets);
+    const articleRestHtml = buildBrandSeoArticleRest(brand, top10Rackets);
+
+    return {
+      sanitizedIntro: articleIntroHtml ? DOMPurify.sanitize(articleIntroHtml) : null,
+      sanitizedRest: articleRestHtml ? DOMPurify.sanitize(articleRestHtml) : null,
+    };
+  }, [brand, top10Rackets]);
+
   if (brandLoading) {
     return (
       <>
@@ -261,35 +283,6 @@ export default function BrandDetailPage() {
       </>
     );
   }
-
-  // Use existing articleContent from database if available, otherwise generate it
-  const useExistingContent = useMemo(
-    () => brand.articleContent && brand.articleContent.trim().length > 0,
-    [brand.articleContent]
-  );
-  
-  const sanitizedArticleIntro = useMemo(
-    () => {
-      if (useExistingContent || !brand) return null;
-      const articleIntroHtml = buildBrandSeoArticleIntro(brand, top10Rackets);
-      return articleIntroHtml ? DOMPurify.sanitize(articleIntroHtml) : null;
-    },
-    [useExistingContent, brand?.id, brand?.name, brand?.description, top10Rackets],
-  );
-  
-  const sanitizedArticleRest = useMemo(
-    () => {
-      if (!brand) return null;
-      if (useExistingContent) {
-        if (!brand.articleContent) return null;
-        return DOMPurify.sanitize(brand.articleContent);
-      }
-      const articleRestHtml = buildBrandSeoArticleRest(brand, top10Rackets);
-      if (!articleRestHtml) return null;
-      return DOMPurify.sanitize(articleRestHtml);
-    },
-    [useExistingContent, brand?.id, brand?.name, brand?.articleContent, top10Rackets],
-  );
 
   return (
     <>
@@ -356,10 +349,10 @@ export default function BrandDetailPage() {
           <CardContent className="p-8 md:p-12">
             <article>
               {/* Article Intro - only show if using generated content */}
-              {sanitizedArticleIntro && (
+              {sanitizedIntro && (
                 <div
                   className="prose prose-lg max-w-none mb-8"
-                  dangerouslySetInnerHTML={{ __html: sanitizedArticleIntro }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedIntro }}
                   data-testid="text-brand-article-intro"
                 />
               )}
@@ -393,10 +386,10 @@ export default function BrandDetailPage() {
             )}
 
               {/* Article Content - use existing articleContent from database if available */}
-              {sanitizedArticleRest && (
+              {sanitizedRest && (
                 <div
                   className="prose prose-lg max-w-none prose-headings:font-heading prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-8 prose-img:object-cover prose-img:object-top mb-12"
-                  dangerouslySetInnerHTML={{ __html: sanitizedArticleRest }}
+                  dangerouslySetInnerHTML={{ __html: sanitizedRest }}
                   data-testid="text-brand-article-rest"
                 />
               )}
