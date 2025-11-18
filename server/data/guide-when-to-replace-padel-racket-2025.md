@@ -16,6 +16,8 @@ In this comprehensive guide, we'll explore:
 - Cost-benefit analysis of repair versus replacement
 - Age and usage considerations for different racket types
 
+![When to Replace Your Padel Racket - Signs It's Time for an Upgrade](/assets/when-to-replace-padel-racket.png)
+
 ## Physical Signs of Wear
 
 The most obvious indicators that your racket needs replacement are visible physical changes. These signs often appear gradually, so regular inspection is crucial.
