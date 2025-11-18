@@ -184,6 +184,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rackets = await storage.getAllRackets();
       res.json(rackets);
     } catch (error) {
+      console.error("Error in GET /api/rackets:", error);
       res.status(500).json({ error: "Failed to fetch rackets" });
     }
   });
@@ -217,6 +218,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const rackets = await storage.getRecentRackets(10);
       res.json(rackets);
     } catch (error) {
+      console.error("Error in GET /api/rackets/recent:", error);
       res.status(500).json({ error: "Failed to fetch recent rackets" });
     }
   });
@@ -248,6 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const guides = await storage.getAllGuides();
       res.json(guides);
     } catch (error) {
+      console.error("Error in GET /api/guides:", error);
       res.status(500).json({ error: "Failed to fetch guides" });
     }
   });
@@ -257,6 +260,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const guides = await storage.getRecentGuides(8);
       res.json(guides);
     } catch (error) {
+      console.error("Error in GET /api/guides/recent:", error);
       res.status(500).json({ error: "Failed to fetch recent guides" });
     }
   });
@@ -292,6 +296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const brands = await storage.getAllBrands();
       res.json(brands);
     } catch (error) {
+      console.error("Error in GET /api/brands:", error);
       res.status(500).json({ error: "Failed to fetch brands" });
     }
   });
