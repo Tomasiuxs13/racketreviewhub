@@ -593,6 +593,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Guides endpoints
+  app.get("/api/admin/guides", requireAdmin, async (req, res) => {
+    try {
+      const guides = await storage.getAllGuides();
+      res.json(guides);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch guides" });
+    }
+  });
+
+  app.put("/api/admin/guides/:id", requireAdmin, async (req, res) => {
+    try {
+      const guide = await storage.updateGuide(req.params.id, req.body);
+      if (!guide) {
+        return res.status(404).json({ error: "Guide not found" });
+      }
+      res.json(guide);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update guide" });
+    }
+  });
+
+  // Admin Blog Posts endpoints
+  app.get("/api/admin/blog", requireAdmin, async (req, res) => {
+    try {
+      const posts = await storage.getAllBlogPosts();
+      res.json(posts);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch blog posts" });
+    }
+  });
+
+  app.put("/api/admin/blog/:id", requireAdmin, async (req, res) => {
+    try {
+      const post = await storage.updateBlogPost(req.params.id, req.body);
+      if (!post) {
+        return res.status(404).json({ error: "Blog post not found" });
+      }
+      res.json(post);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update blog post" });
+    }
+  });
+
+  // Admin Brands endpoints
+  app.get("/api/admin/brands", requireAdmin, async (req, res) => {
+    try {
+      const brands = await storage.getAllBrands();
+      res.json(brands);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch brands" });
+    }
+  });
+
+  app.put("/api/admin/brands/:id", requireAdmin, async (req, res) => {
+    try {
+      const brand = await storage.updateBrand(req.params.id, req.body);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+      res.json(brand);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update brand" });
+    }
+  });
+
   // Manual review generation endpoint
   app.post("/api/admin/generate-review/:id", requireAdmin, async (req, res) => {
     try {

@@ -167,7 +167,7 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                   
                   <div className="mt-2">
                     <div className="text-base font-bold text-primary mb-1">
-                      €{Number(racket.currentPrice).toFixed(0)}
+                      €{Number(racket.currentPrice).toFixed(2)}
                     </div>
                     <div className="text-xs text-muted-foreground mb-2">
                       Rating: {racket.overallRating}/100
@@ -245,7 +245,7 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                   <div className="flex items-center justify-between gap-2 mt-2">
                     <div>
                       <div className="text-lg font-bold text-primary">
-                        €{Number(racket.currentPrice).toFixed(0)}
+                        €{Number(racket.currentPrice).toFixed(2)}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Rating: {racket.overallRating}/100

@@ -310,7 +310,7 @@ export default function AuthorPage() {
                         </h3>
                         <div className="flex items-center justify-between">
                           <p className="text-lg font-bold">
-                            €{Number(racket.currentPrice).toFixed(0)}
+                            €{Number(racket.currentPrice).toFixed(2)}
                           </p>
                           <Badge variant="secondary" className="text-xs">
                             {racket.overallRating}/100

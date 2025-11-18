@@ -7,9 +7,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Plus, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
-import type { ExcelRacket, InsertRacket, Racket } from "@shared/schema";
+import type { ExcelRacket, InsertRacket, Racket, Guide, Brand, BlogPost, InsertGuide, InsertBrand, InsertBlogPost } from "@shared/schema";
 import { RacketForm } from "@/components/admin/RacketForm";
 import { RacketTable } from "@/components/admin/RacketTable";
+import { GuideForm } from "@/components/admin/GuideForm";
+import { GuideTable } from "@/components/admin/GuideTable";
+import { BrandForm } from "@/components/admin/BrandForm";
+import { BrandTable } from "@/components/admin/BrandTable";
+import { BlogPostForm } from "@/components/admin/BlogPostForm";
+import { BlogPostTable } from "@/components/admin/BlogPostTable";
 
 interface UploadResult {
   created: number;
@@ -44,13 +50,34 @@ export default function AdminPage() {
     return null;
   });
   const [editingRacket, setEditingRacket] = useState<Racket | undefined>(undefined);
+  const [editingGuide, setEditingGuide] = useState<Guide | undefined>(undefined);
+  const [editingBrand, setEditingBrand] = useState<Brand | undefined>(undefined);
+  const [editingPost, setEditingPost] = useState<BlogPost | undefined>(undefined);
   const [formOpen, setFormOpen] = useState(false);
+  const [guideFormOpen, setGuideFormOpen] = useState(false);
+  const [brandFormOpen, setBrandFormOpen] = useState(false);
+  const [postFormOpen, setPostFormOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Fetch rackets for the table
   const { data: rackets = [], isLoading: racketsLoading } = useQuery<Racket[]>({
     queryKey: ["/api/admin/rackets"],
+  });
+
+  // Fetch guides for the table
+  const { data: guides = [], isLoading: guidesLoading } = useQuery<Guide[]>({
+    queryKey: ["/api/admin/guides"],
+  });
+
+  // Fetch brands for the table
+  const { data: brands = [], isLoading: brandsLoading } = useQuery<Brand[]>({
+    queryKey: ["/api/admin/brands"],
+  });
+
+  // Fetch blog posts for the table
+  const { data: posts = [], isLoading: postsLoading } = useQuery<BlogPost[]>({
+    queryKey: ["/api/admin/blog"],
   });
 
   const uploadMutation = useMutation({
@@ -255,6 +282,111 @@ export default function AdminPage() {
     setFormOpen(true);
   };
 
+  // Guide mutations
+  const updateGuideMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertGuide> }) => {
+      const response = await apiRequest("PUT", `/api/admin/guides/${id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Guide updated",
+        description: "The guide has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/guides"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/guides"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleGuideSubmit = async (data: Partial<InsertGuide>) => {
+    if (editingGuide) {
+      await updateGuideMutation.mutateAsync({ id: editingGuide.id, data });
+    }
+    setEditingGuide(undefined);
+  };
+
+  const handleEditGuide = (guide: Guide) => {
+    setEditingGuide(guide);
+    setGuideFormOpen(true);
+  };
+
+  // Brand mutations
+  const updateBrandMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertBrand> }) => {
+      const response = await apiRequest("PUT", `/api/admin/brands/${id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Brand updated",
+        description: "The brand has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/brands"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/brands"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBrandSubmit = async (data: Partial<InsertBrand>) => {
+    if (editingBrand) {
+      await updateBrandMutation.mutateAsync({ id: editingBrand.id, data });
+    }
+    setEditingBrand(undefined);
+  };
+
+  const handleEditBrand = (brand: Brand) => {
+    setEditingBrand(brand);
+    setBrandFormOpen(true);
+  };
+
+  // Blog post mutations
+  const updatePostMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertBlogPost> }) => {
+      const response = await apiRequest("PUT", `/api/admin/blog/${id}`, data);
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Blog post updated",
+        description: "The blog post has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/blog"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/blog"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handlePostSubmit = async (data: Partial<InsertBlogPost>) => {
+    if (editingPost) {
+      await updatePostMutation.mutateAsync({ id: editingPost.id, data });
+    }
+    setEditingPost(undefined);
+  };
+
+  const handleEditPost = (post: BlogPost) => {
+    setEditingPost(post);
+    setPostFormOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -271,6 +403,9 @@ export default function AdminPage() {
         <Tabs defaultValue="manage" className="space-y-6">
           <TabsList>
             <TabsTrigger value="manage">Manage Rackets</TabsTrigger>
+            <TabsTrigger value="guides">Guides</TabsTrigger>
+            <TabsTrigger value="brands">Brands</TabsTrigger>
+            <TabsTrigger value="blog">Blog Posts</TabsTrigger>
             <TabsTrigger value="upload">Upload Excel</TabsTrigger>
           </TabsList>
 
@@ -484,6 +619,60 @@ export default function AdminPage() {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="guides" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Guides</h2>
+            </div>
+
+            {guidesLoading ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <GuideTable guides={guides} onEdit={handleEditGuide} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="brands" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Brands</h2>
+            </div>
+
+            {brandsLoading ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <BrandTable brands={brands} onEdit={handleEditBrand} />
+            )}
+          </TabsContent>
+
+          <TabsContent value="blog" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-semibold">Blog Posts</h2>
+            </div>
+
+            {postsLoading ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <BlogPostTable posts={posts} onEdit={handleEditPost} />
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Racket Form Dialog */}
@@ -492,6 +681,30 @@ export default function AdminPage() {
           open={formOpen}
           onOpenChange={setFormOpen}
           onSubmit={handleFormSubmit}
+        />
+
+        {/* Guide Form Dialog */}
+        <GuideForm
+          guide={editingGuide}
+          open={guideFormOpen}
+          onOpenChange={setGuideFormOpen}
+          onSubmit={handleGuideSubmit}
+        />
+
+        {/* Brand Form Dialog */}
+        <BrandForm
+          brand={editingBrand}
+          open={brandFormOpen}
+          onOpenChange={setBrandFormOpen}
+          onSubmit={handleBrandSubmit}
+        />
+
+        {/* Blog Post Form Dialog */}
+        <BlogPostForm
+          post={editingPost}
+          open={postFormOpen}
+          onOpenChange={setPostFormOpen}
+          onSubmit={handlePostSubmit}
         />
       </div>
     </div>

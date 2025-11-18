@@ -318,13 +318,13 @@ export default function RacketDetailPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-muted-foreground">Previous price:</p>
                         <span className="text-lg text-muted-foreground line-through">
-                          €{Number(racket.originalPrice).toFixed(0)}
+                          €{Number(racket.originalPrice).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-nowrap">
                         <p className="text-xs text-muted-foreground whitespace-nowrap">Current price:</p>
                         <span className="text-4xl font-bold text-primary" data-testid="text-price">
-                          €{Number(racket.currentPrice).toFixed(0)}
+                          €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                         <Badge variant="destructive" className="font-semibold whitespace-nowrap text-xs">
                           Save {discountPercentage}%
@@ -335,7 +335,7 @@ export default function RacketDetailPage() {
                     <>
                       <div className="flex items-baseline gap-2">
                         <span className="text-4xl font-bold text-primary" data-testid="text-price">
-                          €{Number(racket.currentPrice).toFixed(0)}
+                          €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">Current price</p>
@@ -430,13 +430,13 @@ export default function RacketDetailPage() {
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-muted-foreground">Previous price:</p>
                         <span className="text-lg text-muted-foreground line-through">
-                          €{Number(racket.originalPrice).toFixed(0)}
+                          €{Number(racket.originalPrice).toFixed(2)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2 flex-nowrap">
                         <p className="text-xs text-muted-foreground whitespace-nowrap">Current price:</p>
                         <span className="text-4xl font-bold text-primary" data-testid="text-price-sidebar">
-                          €{Number(racket.currentPrice).toFixed(0)}
+                          €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                         <Badge variant="destructive" className="font-semibold whitespace-nowrap text-xs">
                           Save {discountPercentage}%
@@ -447,7 +447,7 @@ export default function RacketDetailPage() {
                     <>
                       <div className="flex items-baseline gap-2">
                         <span className="text-4xl font-bold text-primary" data-testid="text-price-sidebar">
-                          €{Number(racket.currentPrice).toFixed(0)}
+                          €{Number(racket.currentPrice).toFixed(2)}
                         </span>
                       </div>
                       <p className="text-xs text-muted-foreground">Current price</p>
@@ -592,7 +592,7 @@ export default function RacketDetailPage() {
                         {relatedRacket.model}
                       </h3>
                       <p className="text-lg font-bold">
-                        €{Number(relatedRacket.currentPrice).toFixed(0)}
+                        €{Number(relatedRacket.currentPrice).toFixed(2)}
                       </p>
                     </CardContent>
                   </Card>

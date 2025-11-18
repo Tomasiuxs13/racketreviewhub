@@ -28,19 +28,25 @@ export interface IStorage {
   // Guides
   getAllGuides(): Promise<Guide[]>;
   getGuide(slug: string): Promise<Guide | undefined>;
+  getGuideById(id: string): Promise<Guide | undefined>;
   getRecentGuides(limit: number): Promise<Guide[]>;
   getRelatedGuides(guideId: string, category: string, limit: number): Promise<Guide[]>;
   createGuide(guide: InsertGuide): Promise<Guide>;
+  updateGuide(id: string, guide: Partial<InsertGuide>): Promise<Guide | undefined>;
   
   // Blog Posts
   getAllBlogPosts(): Promise<BlogPost[]>;
   getBlogPost(slug: string): Promise<BlogPost | undefined>;
+  getBlogPostById(id: string): Promise<BlogPost | undefined>;
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
+  updateBlogPost(id: string, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
   
   // Brands
   getAllBrands(): Promise<Brand[]>;
   getBrand(slug: string): Promise<Brand | undefined>;
+  getBrandById(id: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
+  updateBrand(id: string, brand: Partial<InsertBrand>): Promise<Brand | undefined>;
   
   // Authors
   getAllAuthors(): Promise<Author[]>;
@@ -915,6 +921,10 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     return Array.from(this.guides.values()).find(g => g.slug === slug);
   }
 
+  async getGuideById(id: string): Promise<Guide | undefined> {
+    return this.guides.get(id);
+  }
+
   async getRecentGuides(limit: number): Promise<Guide[]> {
     const all = await this.getAllGuides();
     return all.slice(0, limit);
@@ -942,6 +952,20 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     return guide;
   }
 
+  async updateGuide(id: string, updates: Partial<InsertGuide>): Promise<Guide | undefined> {
+    const guide = this.guides.get(id);
+    if (!guide) return undefined;
+
+    const updated: Guide = {
+      ...guide,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    this.guides.set(id, updated);
+    return updated;
+  }
+
   // Blog post methods
   async getAllBlogPosts(): Promise<BlogPost[]> {
     return Array.from(this.blogPosts.values()).sort((a, b) =>
@@ -951,6 +975,10 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getBlogPost(slug: string): Promise<BlogPost | undefined> {
     return Array.from(this.blogPosts.values()).find(p => p.slug === slug);
+  }
+
+  async getBlogPostById(id: string): Promise<BlogPost | undefined> {
+    return this.blogPosts.get(id);
   }
 
   async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
@@ -968,6 +996,20 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     return post;
   }
 
+  async updateBlogPost(id: string, updates: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
+    const post = this.blogPosts.get(id);
+    if (!post) return undefined;
+
+    const updated: BlogPost = {
+      ...post,
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    this.blogPosts.set(id, updated);
+    return updated;
+  }
+
   // Brand methods
   async getAllBrands(): Promise<Brand[]> {
     return Array.from(this.brands.values()).sort((a, b) =>
@@ -977,6 +1019,10 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getBrand(slug: string): Promise<Brand | undefined> {
     return Array.from(this.brands.values()).find(b => b.slug === slug);
+  }
+
+  async getBrandById(id: string): Promise<Brand | undefined> {
+    return this.brands.get(id);
   }
 
   async createBrand(insertBrand: InsertBrand): Promise<Brand> {
@@ -990,6 +1036,19 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
     this.brands.set(id, brand);
     return brand;
+  }
+
+  async updateBrand(id: string, updates: Partial<InsertBrand>): Promise<Brand | undefined> {
+    const brand = this.brands.get(id);
+    if (!brand) return undefined;
+
+    const updated: Brand = {
+      ...brand,
+      ...updates,
+    };
+
+    this.brands.set(id, updated);
+    return updated;
   }
 
   // Author methods

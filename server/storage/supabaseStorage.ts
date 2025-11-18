@@ -184,8 +184,25 @@ export class SupabaseStorage implements IStorage {
     return result;
   }
 
+  async getGuideById(id: string): Promise<Guide | undefined> {
+    const result = await db.select().from(guides).where(eq(guides.id, id)).limit(1);
+    return result[0];
+  }
+
   async createGuide(insertGuide: InsertGuide): Promise<Guide> {
     const result = await db.insert(guides).values(insertGuide).returning();
+    return result[0];
+  }
+
+  async updateGuide(id: string, updates: Partial<InsertGuide>): Promise<Guide | undefined> {
+    const result = await db
+      .update(guides)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(guides.id, id))
+      .returning();
     return result[0];
   }
 
@@ -200,8 +217,25 @@ export class SupabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getBlogPostById(id: string): Promise<BlogPost | undefined> {
+    const result = await db.select().from(blogPosts).where(eq(blogPosts.id, id)).limit(1);
+    return result[0];
+  }
+
   async createBlogPost(insertPost: InsertBlogPost): Promise<BlogPost> {
     const result = await db.insert(blogPosts).values(insertPost).returning();
+    return result[0];
+  }
+
+  async updateBlogPost(id: string, updates: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
+    const result = await db
+      .update(blogPosts)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(blogPosts.id, id))
+      .returning();
     return result[0];
   }
 
@@ -216,8 +250,22 @@ export class SupabaseStorage implements IStorage {
     return result[0];
   }
 
+  async getBrandById(id: string): Promise<Brand | undefined> {
+    const result = await db.select().from(brands).where(eq(brands.id, id)).limit(1);
+    return result[0];
+  }
+
   async createBrand(insertBrand: InsertBrand): Promise<Brand> {
     const result = await db.insert(brands).values(insertBrand).returning();
+    return result[0];
+  }
+
+  async updateBrand(id: string, updates: Partial<InsertBrand>): Promise<Brand | undefined> {
+    const result = await db
+      .update(brands)
+      .set(updates)
+      .where(eq(brands.id, id))
+      .returning();
     return result[0];
   }
 

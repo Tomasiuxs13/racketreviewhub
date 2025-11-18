@@ -91,7 +91,7 @@ export function RacketCard({ racket }: RacketCardProps) {
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm text-muted-foreground line-through">
-                      €{Number(racket.originalPrice).toFixed(0)}
+                      €{Number(racket.originalPrice).toFixed(2)}
                     </span>
                     <Badge variant="destructive" className="text-xs font-semibold">
                       -{discountPercentage}%
@@ -99,7 +99,7 @@ export function RacketCard({ racket }: RacketCardProps) {
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
-                      €{Number(racket.currentPrice).toFixed(0)}
+                      €{Number(racket.currentPrice).toFixed(2)}
                     </span>
                     {racket.affiliateLink || racket.titleUrl ? (
                       <Button
@@ -120,7 +120,7 @@ export function RacketCard({ racket }: RacketCardProps) {
               ) : (
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
-                    €{Number(racket.currentPrice).toFixed(0)}
+                    €{Number(racket.currentPrice).toFixed(2)}
                   </span>
                   {racket.affiliateLink || racket.titleUrl ? (
                     <Button

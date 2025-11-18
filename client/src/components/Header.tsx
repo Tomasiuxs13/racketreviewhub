@@ -149,7 +149,7 @@ export function Header() {
                                     {racket.brand} {racket.model}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
-                                    €{Number(racket.currentPrice).toFixed(0)}
+                                    €{Number(racket.currentPrice).toFixed(2)}
                                   </p>
                                 </div>
                               </div>
@@ -248,7 +248,7 @@ export function Header() {
                                 {racket.brand} {racket.model}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                €{Number(racket.currentPrice).toFixed(0)}
+                                €{Number(racket.currentPrice).toFixed(2)}
                               </p>
                             </div>
                           </div>
