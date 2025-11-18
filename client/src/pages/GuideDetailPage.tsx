@@ -260,7 +260,7 @@ export default function GuideDetailPage() {
               <CardContent className="p-8 md:p-12">
                 <article>
                   <div
-                    className="prose prose-lg max-w-none"
+                    className="prose prose-lg max-w-none prose-headings:font-heading prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-8"
                     dangerouslySetInnerHTML={{ __html: cleanedContent }}
                     data-testid="text-guide-content"
                   />
