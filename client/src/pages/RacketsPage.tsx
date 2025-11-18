@@ -68,7 +68,7 @@ export default function RacketsPage() {
   const filteredRackets = rackets
     ?.filter((racket) => {
       if (selectedBrands.length > 0 && !selectedBrands.includes(racket.brand)) return false;
-      if (selectedShapes.length > 0 && !selectedShapes.includes(racket.shape)) return false;
+      if (selectedShapes.length > 0 && !selectedShapes.includes(racket.shape?.toLowerCase())) return false;
       if (selectedGenders.length > 0) {
         const racketGender = racket.player?.toLowerCase();
         if (!racketGender || !selectedGenders.includes(racketGender)) {
