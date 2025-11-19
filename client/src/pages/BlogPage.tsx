@@ -21,6 +21,11 @@ export default function BlogPage() {
     queryKey: ["/api/authors"],
   });
 
+  const postsWithSlugs = useMemo(
+    () => (posts || []).filter((post) => Boolean(post.slug?.trim())),
+    [posts],
+  );
+
   // SEO data
   const seoData = {
     title: "Padel Blog - News, Tips & Insights",
@@ -45,11 +50,11 @@ export default function BlogPage() {
     });
 
     // ItemList schema for blog posts
-    if (posts && posts.length > 0) {
+    if (postsWithSlugs.length > 0) {
       schemas.push({
         "@context": "https://schema.org",
         "@type": "ItemList",
-        "itemListElement": posts.slice(0, 20).map((post, index) => ({
+        "itemListElement": postsWithSlugs.slice(0, 20).map((post, index) => ({
           "@type": "ListItem",
           "position": index + 1,
           "item": {
@@ -94,23 +99,23 @@ export default function BlogPage() {
     });
 
     return schemas;
-  }, [posts, seoData.canonical, seoData.description]);
+  }, [postsWithSlugs, seoData.canonical, seoData.description]);
 
   return (
     <>
       <SEO {...seoData} />
       <StructuredData data={structuredData} />
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
           {/* Breadcrumbs */}
           <Breadcrumbs items={[{ label: "Blog" }]} />
 
           {/* Header */}
           <div className="mb-8">
-          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3" data-testid="text-page-title">
+          <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
             Blog
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base sm:text-lg">
             Latest news, tips, and insights from the padel world
           </p>
         </div>
@@ -131,9 +136,9 @@ export default function BlogPage() {
               </Card>
             ))}
           </div>
-        ) : posts && posts.length > 0 ? (
+        ) : postsWithSlugs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post) => (
+            {postsWithSlugs.map((post) => (
               <Link key={post.id} href={`/blog/${post.slug}`} data-testid={`link-post-${post.id}`}>
                 <Card className="h-full hover-elevate active-elevate-2 transition-all cursor-pointer" data-testid={`card-post-${post.id}`}>
                   <CardContent className="p-0">

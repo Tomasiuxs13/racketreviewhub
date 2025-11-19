@@ -1,0 +1,108 @@
+{
+  "common": {
+    "brandName": "Padel Racket Reviews",
+    "actions": {
+      "viewAll": "View All",
+      "browseRackets": "Browse All Rackets",
+      "buyingGuides": "Buying Guides",
+      "beginnerGuide": "Best Rackets for Beginners"
+    },
+    "language": {
+      "label": "Language",
+      "en": "English",
+      "es": "Spanish",
+      "pt": "Portuguese",
+      "it": "Italian",
+      "fr": "French"
+    },
+    "statuses": {
+      "loading": "Loading...",
+      "empty": "No results available. Check back soon!"
+    }
+  },
+  "header": {
+    "menu": {
+      "rackets": "Padel Rackets",
+      "guides": "Guides",
+      "brands": "Brands",
+      "blog": "Blog"
+    },
+    "search": {
+      "placeholder": "Search rackets...",
+      "noResults": "No rackets found"
+    },
+    "trustBadge": "1,200+ Rackets Reviewed",
+    "auth": {
+      "logout": "Logout",
+      "userPlaceholder": "User"
+    }
+  },
+  "footer": {
+    "about": {
+      "title": "About Padel Racket Reviews",
+      "body": "Expert padel racket reviews with detailed ratings, honest comparisons, and the best prices. Helping players find their perfect racket since 2024."
+    },
+    "quickLinks": {
+      "title": "Quick Links",
+      "rackets": "All Rackets",
+      "guides": "Buying Guides",
+      "brands": "Brands",
+      "blog": "Blog"
+    },
+    "popularBrands": {
+      "title": "Popular Brands",
+      "items": ["Babolat", "Bullpadel", "Head", "Adidas", "Nox"]
+    },
+    "gettingStarted": {
+      "title": "Getting Started",
+      "body": "New to padel? Discover the best rackets for beginners with our comprehensive buying guide."
+    },
+    "legal": {
+      "rights": "© {{year}} Padel Racket Reviews. All rights reserved.",
+      "disclaimer": "As an Amazon Associate, we earn from qualifying purchases."
+    },
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "instagram": "Instagram",
+      "youtube": "YouTube"
+    }
+  },
+  "breadcrumbs": {
+    "home": "Home"
+  },
+  "home": {
+    "seo": {
+      "title": "Padel Racket Reviews - Expert Reviews & Best Price Comparisons",
+      "description": "Expert padel racket reviews with detailed ratings, performance analysis, and the best prices. Compare top rackets from leading brands and find your perfect match."
+    },
+    "hero": {
+      "title": "Find Your Perfect Padel Racket",
+      "subtitle": "Expert reviews, detailed ratings, and the best prices for players of all levels",
+      "primaryCta": "Browse All Rackets",
+      "secondaryCta": "Buying Guides",
+      "trust": {
+        "reviews": "1,200+ Reviews",
+        "updates": "Updated Daily",
+        "experts": "Expert Analysis"
+      }
+    },
+    "recentReviews": {
+      "title": "Latest Racket Reviews",
+      "subtitle": "Our newest expert reviews and ratings",
+      "empty": "No rackets available yet. Check back soon!"
+    },
+    "cta": {
+      "title": "Getting Started with Padel?",
+      "subtitle": "Discover the best rackets for beginners with our comprehensive buying guide. Learn what to look for and find the perfect racket for your skill level.",
+      "button": "Best Rackets for Beginners"
+    },
+    "recentGuides": {
+      "title": "Latest Buying Guides",
+      "subtitle": "Expert advice to help you choose the right racket",
+      "empty": "No guides available yet. Check back soon!"
+    }
+  }
+}
+
+

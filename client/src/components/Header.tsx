@@ -19,6 +19,15 @@ import type { Racket } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { getRacketSlug } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useI18n } from "@/i18n/useI18n";
+
+const NAV_LINKS = [
+  { id: "rackets", path: "/rackets", labelKey: "header.menu.rackets" },
+  { id: "guides", path: "/guides", labelKey: "header.menu.guides" },
+  { id: "brands", path: "/brands", labelKey: "header.menu.brands" },
+  { id: "blog", path: "/blog", labelKey: "header.menu.blog" },
+];
 
 export function Header() {
   const [location] = useLocation();
@@ -28,6 +37,7 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, signOut } = useAuth();
   const debouncedSearch = useDebounce(searchQuery, 300);
+  const { t } = useI18n();
 
   const handleSearchInputChange = (value: string) => {
     setSearchQuery(value);
@@ -78,13 +88,6 @@ export function Header() {
     setMobileMenuOpen(false);
   }, [location]);
 
-  const menuItems = [
-    { label: "Padel Rackets", path: "/rackets" },
-    { label: "Guides", path: "/guides" },
-    { label: "Brands", path: "/brands" },
-    { label: "Blog", path: "/blog" },
-  ];
-
   const isActive = (path: string) => location === path;
 
   return (
@@ -99,7 +102,7 @@ export function Header() {
                   <span className="text-primary-foreground font-bold text-lg">P</span>
                 </div>
                 <span className="font-heading font-bold text-xl hidden sm:inline">
-                  Padel Racket Reviews
+                  {t("common.brandName")}
                 </span>
               </div>
             </div>
@@ -107,7 +110,7 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
-            {menuItems.map((item) => (
+            {NAV_LINKS.map((item) => (
               <Link key={item.path} href={item.path}>
                 <div
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${
@@ -115,9 +118,9 @@ export function Header() {
                       ? "bg-accent text-accent-foreground"
                       : "text-foreground/80 hover:text-foreground"
                   }`}
-                  data-testid={`link-${item.label.toLowerCase().replace(" ", "-")}`}
+                  data-testid={`link-${item.id}`}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </div>
               </Link>
             ))}
@@ -130,7 +133,7 @@ export function Header() {
               <Search className="absolute left-3 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
-                placeholder="Search rackets..."
+                placeholder={t("header.search.placeholder")}
                 className="pl-9 w-64"
                 value={searchQuery}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
@@ -177,16 +180,18 @@ export function Header() {
                     </div>
                   ) : (
                     <div className="p-4 text-center text-muted-foreground">
-                      No rackets found
+                      {t("header.search.noResults")}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
+            <LanguageSwitcher className="hidden md:flex" />
+
             {/* Trust Badge */}
             <Badge variant="secondary" className="hidden xl:flex">
-              1,200+ Rackets Reviewed
+              {t("header.trustBadge")}
             </Badge>
 
             {/* Auth Section */}
@@ -195,7 +200,7 @@ export function Header() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="hidden md:flex">
                     <User className="h-4 w-4 mr-2" />
-                    {user?.email?.split("@")[0] || "User"}
+                    {user?.email?.split("@")[0] || t("header.auth.userPlaceholder")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -205,7 +210,7 @@ export function Header() {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={signOut}>
                     <LogOut className="h-4 w-4 mr-2" />
-                    Logout
+                    {t("header.auth.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -233,7 +238,7 @@ export function Header() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
               <Input
                 type="search"
-                placeholder="Search rackets..."
+                placeholder={t("header.search.placeholder")}
                 className="pl-9"
                 value={searchQuery}
                 onChange={(e) => handleSearchInputChange(e.target.value)}
@@ -280,7 +285,7 @@ export function Header() {
 
             {/* Mobile Navigation */}
             <nav className="flex flex-col gap-2">
-              {menuItems.map((item) => (
+              {NAV_LINKS.map((item) => (
                 <Link key={item.path} href={item.path}>
                   <div
                     className={`px-4 py-3 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${
@@ -289,9 +294,9 @@ export function Header() {
                         : "text-foreground/80 hover:text-foreground"
                     }`}
                     onClick={() => setMobileMenuOpen(false)}
-                    data-testid={`link-mobile-${item.label.toLowerCase().replace(" ", "-")}`}
+                    data-testid={`link-mobile-${item.id}`}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </div>
                 </Link>
               ))}
@@ -303,10 +308,12 @@ export function Header() {
                     setMobileMenuOpen(false);
                   }}
                 >
-                  Logout
+                  {t("header.auth.logout")}
                 </div>
               )}
             </nav>
+
+            <LanguageSwitcher variant="select" className="pt-2" />
           </div>
         )}
       </div>

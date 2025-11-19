@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ChevronRight, Home } from "lucide-react";
+import { useI18n } from "@/i18n/useI18n";
 
 export interface BreadcrumbItem {
   label: string;
@@ -11,10 +12,8 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
-  const allItems = [
-    { label: "Home", href: "/" },
-    ...items,
-  ];
+  const { t } = useI18n();
+  const allItems = [{ label: t("breadcrumbs.home"), href: "/" }, ...items];
 
   return (
     <nav aria-label="Breadcrumb" className="mb-6">

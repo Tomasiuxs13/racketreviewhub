@@ -1,8 +1,142 @@
 import OpenAI from "openai";
 import type { Racket } from "@shared/schema";
+import { upsertTranslation } from "./i18n.js";
 
 if (!process.env.OPENAI_API_KEY) {
   console.warn("Warning: OPENAI_API_KEY not set. Review generation will be disabled.");
+}
+
+const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 6;
+const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 1800;
+
+interface ReviewSection {
+  id: string;
+  text: string;
+}
+
+function resolveReviewLocales(options: ReviewGenerationOptions): string[] {
+  if (options.skipTranslations) {
+    return [];
+  }
+
+  if (options.targetLocales && options.targetLocales.length > 0) {
+    return options.targetLocales
+      .map((locale) => locale.trim().toLowerCase())
+      .filter((locale) => locale && locale !== "en");
+  }
+
+  return REVIEW_TRANSLATION_LOCALES;
+}
+
+export async function translateReviewLocales(
+  racket: Racket,
+  locales: string[],
+  reviewHtml?: string,
+): Promise<Record<string, string>> {
+  const baseContent = reviewHtml ?? racket.reviewContent ?? "";
+  if (!baseContent) {
+    return {};
+  }
+
+  const normalizedLocales = locales
+    .map((locale) => locale.trim().toLowerCase())
+    .filter((locale) => locale && locale !== "en");
+
+  if (!normalizedLocales.length) {
+    return {};
+  }
+
+  const results: Record<string, string> = {};
+
+  for (const locale of normalizedLocales) {
+    try {
+      const translated = await translateReviewHtml(baseContent, locale);
+      if (translated) {
+        await upsertTranslation("racket_review", racket.id, locale, {
+          reviewContent: translated,
+        });
+        results[locale] = translated;
+      }
+    } catch (error) {
+      console.error(`Failed to translate review ${racket.id} to ${locale}:`, error);
+    }
+  }
+
+  return results;
+}
+
+async function translateReviewHtml(content: string, locale: string): Promise<string> {
+  const sections = createReviewSections(content);
+  if (!sections.length) {
+    return content;
+  }
+
+  const translations: Record<string, string> = {};
+  const batches = chunkReviewSections(sections);
+
+  for (const batch of batches) {
+    const batchTranslations = await translateTextBatch(
+      batch.map((section) => ({
+        key: section.id,
+        text: section.text,
+        context: "Padel racket review HTML section. Translate text but preserve HTML tags and structure.",
+      })),
+      locale,
+    );
+
+    Object.entries(batchTranslations).forEach(([key, value]) => {
+      translations[key] = value;
+    });
+  }
+
+  return sections
+    .map((section) => translations[section.id]?.trim() || section.text)
+    .join("\n");
+}
+
+function createReviewSections(content: string): ReviewSection[] {
+  const normalized = content.replace(/\r\n/g, "\n").trim();
+  if (!normalized) {
+    return [];
+  }
+
+  const segments = normalized.split(/(?=<h2>)/i).map((segment) => segment.trim()).filter(Boolean);
+
+  if (!segments.length) {
+    return [{ id: "section_0", text: normalized }];
+  }
+
+  return segments.map((segment, index) => ({
+    id: `section_${index.toString().padStart(2, "0")}`,
+    text: segment,
+  }));
+}
+
+function chunkReviewSections(sections: ReviewSection[]): ReviewSection[][] {
+  const batches: ReviewSection[][] = [];
+  let current: ReviewSection[] = [];
+  let charCount = 0;
+
+  sections.forEach((section) => {
+    const length = section.text.length;
+    const exceedsCount = current.length >= REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH;
+    const exceedsChars = charCount + length > REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH;
+
+    if ((exceedsCount || exceedsChars) && current.length) {
+      batches.push(current);
+      current = [];
+      charCount = 0;
+    }
+
+    current.push(section);
+    charCount += length;
+  });
+
+  if (current.length) {
+    batches.push(current);
+  }
+
+  return batches;
 }
 
 const openai = process.env.OPENAI_API_KEY
@@ -10,6 +144,17 @@ const openai = process.env.OPENAI_API_KEY
       apiKey: process.env.OPENAI_API_KEY,
     })
   : null;
+
+export const isOpenAIConfigured = Boolean(openai);
+
+const DEFAULT_REVIEW_TRANSLATION_LOCALES = ["es", "pt", "it", "fr"];
+
+const configuredReviewLocales = (process.env.REVIEW_TRANSLATION_LOCALES ?? DEFAULT_REVIEW_TRANSLATION_LOCALES.join(","))
+  .split(",")
+  .map((locale) => locale.trim().toLowerCase())
+  .filter((locale) => locale && locale !== "en");
+
+export const REVIEW_TRANSLATION_LOCALES = configuredReviewLocales;
 
 const REVIEW_TEMPLATE = `You are a professional padel racket reviewer. Write a comprehensive review article for a padel racket following this EXACT HTML structure. You MUST use HTML tags and maintain this structure consistently:
 
@@ -166,8 +311,24 @@ export interface ReviewGenerationResult {
   };
 }
 
+export interface ReviewGenerationOptions {
+  targetLocales?: string[];
+  skipTranslations?: boolean;
+}
+
+export interface TranslationBatchItem {
+  key: string;
+  text: string;
+  context?: string;
+}
+
+export interface TranslationBatchOptions {
+  sourceLocale?: string;
+}
+
 export async function generateRacketReview(
-  racket: Racket
+  racket: Racket,
+  options: ReviewGenerationOptions = {},
 ): Promise<ReviewGenerationResult | null> {
   if (!openai) {
     console.warn("OpenAI client not initialized. Skipping review generation.");
@@ -413,6 +574,15 @@ Example of correct formatting:
       sweetSpotRating: racket.sweetSpotRating,
     };
 
+    const localesToTranslate = resolveReviewLocales(options);
+    if (reviewContent && localesToTranslate.length) {
+      try {
+        await translateReviewLocales(racket, localesToTranslate, reviewContent);
+      } catch (translationError) {
+        console.error("Error translating review content:", translationError);
+      }
+    }
+
     return {
       reviewContent,
       ratings,
@@ -420,6 +590,74 @@ Example of correct formatting:
   } catch (error) {
     console.error("Error generating review with OpenAI:", error);
     return null;
+  }
+}
+
+export async function translateTextBatch(
+  items: TranslationBatchItem[],
+  targetLocale: string,
+  options: TranslationBatchOptions = {},
+): Promise<Record<string, string>> {
+  if (!openai) {
+    throw new Error("OpenAI client not initialized. Set OPENAI_API_KEY to enable translations.");
+  }
+
+  if (!items.length) {
+    return {};
+  }
+
+  const sourceLocale = options.sourceLocale ?? "en";
+
+  const systemPrompt = `You are a professional localization specialist for marketing sites and product interfaces. Translate content from ${sourceLocale.toUpperCase()} to ${targetLocale.toUpperCase()} while preserving meaning, tone, HTML tags, and placeholders such as {{variable}} or {variable}. Respond ONLY with valid JSON.`;
+
+  const payload = {
+    instructions: [
+      "Return a JSON object where each key matches the provided id and each value is the translated string.",
+      "Do not include additional commentary or formatting.",
+      "Preserve placeholders exactly as they appear ({{variable}}).",
+      "If HTML tags are present, keep them unchanged and in the same order.",
+      "Use the provided context notes to keep nuance (e.g., headlines vs paragraphs).",
+      "Use sentence casing consistent with native speakers.",
+    ],
+    sourceLocale,
+    targetLocale,
+    entries: items.map((item) => ({
+      id: item.key,
+      text: item.text,
+      context: item.context ?? "",
+    })),
+  };
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.2,
+    messages: [
+      { role: "system", content: systemPrompt },
+      {
+        role: "user",
+        content: `Translate the following entries:\n${JSON.stringify(payload, null, 2)}\n\nReturn only JSON of the shape {"translations": {"key":"value"}}.`,
+      },
+    ],
+    max_tokens: 2000,
+  });
+
+  let content = completion.choices[0]?.message?.content?.trim();
+
+  if (!content) {
+    throw new Error("OpenAI returned an empty translation response.");
+  }
+
+  content = content.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+
+  try {
+    const parsed = JSON.parse(content);
+    if (!parsed || typeof parsed !== "object" || typeof parsed.translations !== "object") {
+      throw new Error("Unexpected translation payload shape.");
+    }
+    return parsed.translations as Record<string, string>;
+  } catch (error) {
+    console.error("Failed to parse translation response:", content);
+    throw error;
   }
 }
 

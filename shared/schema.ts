@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -166,3 +166,33 @@ export const excelRacketSchema = z.object({
 });
 
 export type ExcelRacket = z.infer<typeof excelRacketSchema>;
+
+// Content translations table
+export const contentTranslations = pgTable(
+  "content_translations",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    entityType: text("entity_type").notNull(),
+    entityId: varchar("entity_id").notNull(),
+    locale: varchar("locale", { length: 5 }).notNull(),
+    fields: jsonb("fields").$type<Record<string, string>>().notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    entityLocaleIdx: uniqueIndex("content_translations_entity_locale_idx").on(
+      table.entityType,
+      table.entityId,
+      table.locale,
+    ),
+  }),
+);
+
+export const insertContentTranslationSchema = createInsertSchema(contentTranslations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertContentTranslation = z.infer<typeof insertContentTranslationSchema>;
+export type ContentTranslation = typeof contentTranslations.$inferSelect;

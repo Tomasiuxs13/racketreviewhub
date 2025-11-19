@@ -8,6 +8,12 @@ import { excelRacketSchema, type ExcelRacket } from "@shared/schema";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/auth.js";
 import { createSupabaseClient } from "./lib/supabaseClient.js";
 import { generateRacketReview } from "./lib/openai.js";
+import {
+  fetchTranslation,
+  fetchTranslationsForEntity,
+  isValidEntityType,
+  upsertTranslation,
+} from "./lib/i18n.js";
 
 // Simple hash function to create deterministic pseudo-random values
 function hashString(str: string): number {
@@ -1231,6 +1237,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: error instanceof Error ? error.message : "Failed to process file" 
       });
+    }
+  });
+
+  app.get("/api/admin/translations/:entityType/:entityId", requireAdmin, async (req, res) => {
+    const { entityType, entityId } = req.params;
+    const localeParam = req.query.locale;
+
+    if (!isValidEntityType(entityType)) {
+      return res.status(400).json({ error: "Unsupported entity type" });
+    }
+
+    try {
+      if (typeof localeParam === "string" && localeParam.trim().length > 0) {
+        const fields = await fetchTranslation(entityType, entityId, localeParam);
+        return res.json({
+          entityType,
+          entityId,
+          locale: localeParam,
+          fields,
+        });
+      }
+
+      const translations = await fetchTranslationsForEntity(entityType, entityId);
+      return res.json({
+        entityType,
+        entityId,
+        translations,
+      });
+    } catch (error) {
+      console.error("Error fetching translations:", error);
+      return res.status(500).json({ error: "Failed to fetch translations" });
+    }
+  });
+
+  app.put("/api/admin/translations", requireAdmin, async (req, res) => {
+    const { entityType, entityId, locale, fields } = req.body ?? {};
+
+    if (!isValidEntityType(entityType)) {
+      return res.status(400).json({ error: "Unsupported entity type" });
+    }
+
+    if (typeof entityId !== "string" || !entityId.trim()) {
+      return res.status(400).json({ error: "entityId is required" });
+    }
+
+    if (typeof locale !== "string" || locale.trim().length === 0) {
+      return res.status(400).json({ error: "locale is required" });
+    }
+
+    if (!fields || typeof fields !== "object" || Array.isArray(fields)) {
+      return res.status(400).json({ error: "fields must be an object" });
+    }
+
+    const sanitized: Record<string, string> = {};
+    Object.entries(fields).forEach(([key, value]) => {
+      if (typeof value === "string") {
+        sanitized[key] = value;
+      } else if (value !== undefined && value !== null) {
+        sanitized[key] = String(value);
+      }
+    });
+
+    if (!Object.keys(sanitized).length) {
+      return res.status(400).json({ error: "fields cannot be empty" });
+    }
+
+    try {
+      await upsertTranslation(entityType, entityId, locale, sanitized);
+      const updated = await fetchTranslation(entityType, entityId, locale);
+      return res.json({
+        entityType,
+        entityId,
+        locale,
+        fields: updated,
+      });
+    } catch (error) {
+      console.error("Error saving translation:", error);
+      return res.status(500).json({ error: "Failed to save translation" });
     }
   });
 

@@ -11,6 +11,7 @@ import SEO from "@/components/SEO";
 import { StructuredData } from "@/components/StructuredData";
 import { useMemo } from "react";
 import { SITE_URL } from "@/lib/seo";
+import { useI18n } from "@/i18n/useI18n";
 
 export default function HomePage() {
   const { data: recentRackets, isLoading: racketsLoading } = useQuery<Racket[]>({
@@ -21,10 +22,12 @@ export default function HomePage() {
     queryKey: ["/api/guides/recent"],
   });
 
+  const { t } = useI18n();
+  const brandName = t("common.brandName");
+
   const seoData = {
-    title: "Padel Racket Reviews - Expert Reviews & Best Price Comparisons",
-    description:
-      "Expert padel racket reviews with detailed ratings, performance analysis, and affiliate links to the best prices. Compare top rackets from leading brands and find your perfect match.",
+    title: t("home.seo.title"),
+    description: t("home.seo.description"),
     url: "/",
     canonical: "/",
   };
@@ -38,7 +41,7 @@ export default function HomePage() {
     schemas.push({
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "Padel Racket Reviews",
+      "name": brandName,
       "description": seoData.description,
       "url": siteUrl,
       "potentialAction": {
@@ -55,8 +58,8 @@ export default function HomePage() {
     schemas.push({
       "@context": "https://schema.org",
       "@type": "Organization",
-      "name": "Padel Racket Reviews",
-      "description": "Expert padel racket reviews and buying guides",
+      "name": brandName,
+      "description": seoData.description,
       "url": siteUrl,
       "logo": `${siteUrl}/favicon.png`,
       "sameAs": [],
@@ -66,13 +69,13 @@ export default function HomePage() {
     schemas.push({
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      "name": "Padel Racket Reviews - Home",
+      "name": seoData.title,
       "description": seoData.description,
       "url": siteUrl,
     });
 
     return schemas;
-  }, [seoData.description]);
+  }, [brandName, seoData.description, seoData.title]);
 
   return (
     <>
@@ -96,10 +99,10 @@ export default function HomePage() {
         {/* Hero Content */}
         <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="font-heading font-bold text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white mb-6" data-testid="text-hero-title">
-            Find Your Perfect Padel Racket
+            {t("home.hero.title")}
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
-            Expert reviews, detailed ratings, and the best prices for players of all levels
+            {t("home.hero.subtitle")}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/rackets" data-testid="link-browse-rackets">
@@ -108,7 +111,7 @@ export default function HomePage() {
                 className="bg-primary text-primary-foreground hover:bg-primary/90 backdrop-blur-sm text-lg px-8"
                 data-testid="button-browse-rackets"
               >
-                Browse All Rackets
+                {t("common.actions.browseRackets")}
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
@@ -119,7 +122,7 @@ export default function HomePage() {
                 className="bg-white/10 text-white border-white/30 hover:bg-white/20 backdrop-blur-sm text-lg px-8"
                 data-testid="button-buying-guides"
               >
-                Buying Guides
+                {t("common.actions.buyingGuides")}
               </Button>
             </Link>
           </div>
@@ -128,15 +131,15 @@ export default function HomePage() {
           <div className="mt-10 sm:mt-12 flex flex-wrap items-center justify-center gap-5 sm:gap-8 text-white/80 text-sm sm:text-base">
             <div className="flex items-center gap-2">
               <Star className="h-5 w-5 text-yellow-400" />
-              <span className="text-sm font-medium">1,200+ Reviews</span>
+              <span className="text-sm font-medium">{t("home.hero.trust.reviews")}</span>
             </div>
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-400" />
-              <span className="text-sm font-medium">Updated Daily</span>
+              <span className="text-sm font-medium">{t("home.hero.trust.updates")}</span>
             </div>
             <div className="flex items-center gap-2">
               <Shield className="h-5 w-5 text-blue-400" />
-              <span className="text-sm font-medium">Expert Analysis</span>
+              <span className="text-sm font-medium">{t("home.hero.trust.experts")}</span>
             </div>
           </div>
         </div>
@@ -148,15 +151,15 @@ export default function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 text-center md:text-left">
             <div className="space-y-2">
               <h2 className="font-heading font-semibold text-3xl md:text-4xl" data-testid="text-recent-reviews-title">
-                Latest Racket Reviews
+                {t("home.recentReviews.title")}
               </h2>
               <p className="text-muted-foreground">
-                Our newest expert reviews and ratings
+                {t("home.recentReviews.subtitle")}
               </p>
             </div>
             <Link href="/rackets" data-testid="link-view-all-reviews" className="md:ml-auto">
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-view-all-reviews">
-                View All
+                {t("common.actions.viewAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -187,7 +190,7 @@ export default function HomePage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <p className="text-muted-foreground text-center">
-                  No rackets available yet. Check back soon!
+                  {t("home.recentReviews.empty")}
                 </p>
               </CardContent>
             </Card>
@@ -199,10 +202,10 @@ export default function HomePage() {
       <section className="py-16 bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <h2 className="font-heading font-bold text-3xl md:text-4xl mb-4" data-testid="text-cta-title">
-            Getting Started with Padel?
+            {t("home.cta.title")}
           </h2>
           <p className="text-lg sm:text-xl text-primary-foreground/90 mb-8">
-            Discover the best rackets for beginners with our comprehensive buying guide. Learn what to look for and find the perfect racket for your skill level.
+            {t("home.cta.subtitle")}
           </p>
           <Link href="/guides/best-padel-rackets-for-beginners-2025">
             <Button
@@ -211,7 +214,7 @@ export default function HomePage() {
               className="bg-white text-primary hover:bg-white/90"
               data-testid="button-cta-beginner-guide"
             >
-              Best Rackets for Beginners
+              {t("home.cta.button")}
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
@@ -224,15 +227,15 @@ export default function HomePage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8 text-center md:text-left">
             <div className="space-y-2">
               <h2 className="font-heading font-semibold text-3xl md:text-4xl" data-testid="text-recent-guides-title">
-                Latest Buying Guides
+                {t("home.recentGuides.title")}
               </h2>
               <p className="text-muted-foreground">
-                Expert advice to help you choose the right racket
+                {t("home.recentGuides.subtitle")}
               </p>
             </div>
             <Link href="/guides" data-testid="link-view-all-guides" className="md:ml-auto">
               <Button variant="outline" className="w-full sm:w-auto" data-testid="button-view-all-guides">
-                View All
+                {t("common.actions.viewAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
@@ -292,7 +295,7 @@ export default function HomePage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <p className="text-muted-foreground text-center">
-                  No guides available yet. Check back soon!
+                  {t("home.recentGuides.empty")}
                 </p>
               </CardContent>
             </Card>

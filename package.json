@@ -14,7 +14,9 @@
     "load-blog-posts": "tsx server/scripts/loadBlogPosts.ts",
     "generate-reviews": "tsx server/scripts/generateAllReviews.ts",
     "generate-brands": "tsx server/scripts/generateBrandsFromRackets.ts",
-    "assign-author": "tsx server/scripts/assignAuthorToAllContent.ts"
+    "assign-author": "tsx server/scripts/assignAuthorToAllContent.ts",
+    "i18n:translate": "tsx scripts/translate-locales.ts",
+    "reviews:translate": "tsx server/scripts/translateReviews.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

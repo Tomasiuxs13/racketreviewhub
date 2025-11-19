@@ -351,6 +351,22 @@ npm run db:push
 - `PORT` - Server port (default: 5000)
 - `NODE_ENV` - Environment (development/production)
 - `DATABASE_URL` - PostgreSQL connection string (for future database migration)
+- `OPENAI_API_KEY` - Required for AI-generated reviews and translation scripts
+
+## Localization Workflow
+
+- Base copy lives in `client/src/locales/en.json`. Keys mirror UI sections (header, footer, hero, etc.).
+- The React app loads translations through `client/src/i18n/I18nProvider.tsx`, which persists the selected language in `localStorage` and falls back to English when a key is missing.
+- To generate or refresh Spanish, Portuguese, Italian, and French files, run:
+
+```bash
+npm run i18n:translate               # writes translations
+npm run i18n:translate -- --dry-run  # shows batches without hitting the API
+npm run i18n:translate -- --locales es,it
+```
+
+- The script chunks work into ≤25 keys or ≤1k characters per OpenAI request to avoid exhausting credits. Missing translations remain in English so the UI never renders blank strings.
+- AI-generated racket reviews can be localized automatically. Configure `REVIEW_TRANSLATION_LOCALES` (defaults to `es,pt,it,fr`) and backfill existing reviews via `npm run reviews:translate [-- --locales es,it --start-after <id>]`.
 
 ## File Upload Format
 

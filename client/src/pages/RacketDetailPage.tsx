@@ -225,16 +225,24 @@ export default function RacketDetailPage() {
     );
   }
 
-  const discountPercentage = racket.originalPrice
-    ? Math.round(((Number(racket.originalPrice) - Number(racket.currentPrice)) / Number(racket.originalPrice)) * 100)
-    : 0;
+  const currentPriceValue = Number(racket.currentPrice);
+  const hasCurrentPrice = Number.isFinite(currentPriceValue);
+  const formattedCurrentPrice = hasCurrentPrice ? `€${currentPriceValue.toFixed(2)}` : null;
+  const originalPriceValue = Number(racket.originalPrice);
+  const hasOriginalPrice = Number.isFinite(originalPriceValue);
+  const discountPercentage =
+    hasOriginalPrice && hasCurrentPrice && originalPriceValue > currentPriceValue
+      ? Math.round(((originalPriceValue - currentPriceValue) / originalPriceValue) * 100)
+      : 0;
+  const hasAffiliateLink = Boolean(racket.affiliateLink || racket.titleUrl);
+  const showStickyCta = Boolean(formattedCurrentPrice);
 
   return (
     <>
       {seoElement}
       <StructuredData data={structuredData} />
       <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-28 lg:pb-12">
           {/* Breadcrumbs */}
           <Breadcrumbs
             items={[
@@ -313,18 +321,20 @@ export default function RacketDetailPage() {
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
               <CardContent className="p-4 space-y-3">
                 <div className="space-y-2">
-                  {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? (
+                  {hasOriginalPrice && originalPriceValue > currentPriceValue ? (
                     <>
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-muted-foreground">Previous price:</p>
-                        <span className="text-lg text-muted-foreground line-through">
-                          €{Number(racket.originalPrice).toFixed(2)}
-                        </span>
+                        {hasOriginalPrice && (
+                          <span className="text-lg text-muted-foreground line-through">
+                            €{originalPriceValue.toFixed(2)}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap items-baseline gap-2">
                         <p className="text-xs text-muted-foreground whitespace-nowrap">Current price:</p>
                         <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price">
-                          €{Number(racket.currentPrice).toFixed(2)}
+                          {formattedCurrentPrice}
                         </span>
                         <Badge variant="destructive" className="font-semibold whitespace-nowrap text-xs">
                           Save {discountPercentage}%
@@ -333,11 +343,13 @@ export default function RacketDetailPage() {
                     </>
                   ) : (
                     <>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price">
-                          €{Number(racket.currentPrice).toFixed(2)}
-                        </span>
-                      </div>
+                      {formattedCurrentPrice && (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price">
+                            {formattedCurrentPrice}
+                          </span>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">Current price</p>
                     </>
                   )}
@@ -425,18 +437,20 @@ export default function RacketDetailPage() {
             <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-primary/10">
               <CardContent className="p-4 space-y-3">
                 <div className="space-y-2">
-                  {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? (
+                  {hasOriginalPrice && originalPriceValue > currentPriceValue ? (
                     <>
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-xs text-muted-foreground">Previous price:</p>
-                        <span className="text-lg text-muted-foreground line-through">
-                          €{Number(racket.originalPrice).toFixed(2)}
-                        </span>
+                        {hasOriginalPrice && (
+                          <span className="text-lg text-muted-foreground line-through">
+                            €{originalPriceValue.toFixed(2)}
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap items-baseline gap-2">
                         <p className="text-xs text-muted-foreground whitespace-nowrap">Current price:</p>
                         <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price-sidebar">
-                          €{Number(racket.currentPrice).toFixed(2)}
+                          {formattedCurrentPrice}
                         </span>
                         <Badge variant="destructive" className="font-semibold whitespace-nowrap text-xs">
                           Save {discountPercentage}%
@@ -445,11 +459,13 @@ export default function RacketDetailPage() {
                     </>
                   ) : (
                     <>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price-sidebar">
-                          €{Number(racket.currentPrice).toFixed(2)}
-                        </span>
-                      </div>
+                      {formattedCurrentPrice && (
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-3xl sm:text-4xl font-bold text-primary" data-testid="text-price-sidebar">
+                            {formattedCurrentPrice}
+                          </span>
+                        </div>
+                      )}
                       <p className="text-xs text-muted-foreground">Current price</p>
                     </>
                   )}
@@ -602,6 +618,36 @@ export default function RacketDetailPage() {
           </div>
         )}
         </div>
+        {showStickyCta && (
+          <div
+            className="lg:hidden fixed bottom-0 left-0 right-0 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 shadow-lg z-40 px-4"
+            style={{ paddingTop: "0.75rem", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 0.75rem)" }}
+          >
+            <div className="max-w-7xl mx-auto flex items-center gap-4">
+              <div className="flex flex-col">
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">Current price</span>
+                <span className="text-2xl font-bold leading-tight text-primary">
+                  {formattedCurrentPrice}
+                </span>
+                {discountPercentage > 0 && (
+                  <span className="text-xs font-semibold text-destructive">Save {discountPercentage}%</span>
+                )}
+              </div>
+              {hasAffiliateLink ? (
+                <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy">
+                  <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
+                    Buy Now
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </a>
+                </Button>
+              ) : (
+                <Button size="lg" className="flex-1 min-h-[48px]" disabled>
+                  Not Available
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

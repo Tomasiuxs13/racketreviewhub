@@ -17,9 +17,14 @@ export default function GuidesPage() {
     queryKey: ["/api/guides"],
   });
 
+  const guidesWithSlugs = useMemo(
+    () => (guides || []).filter((guide) => Boolean(guide.slug?.trim())),
+    [guides],
+  );
+
   const categories = ["All", "Beginners", "Intermediate", "Advanced", "General"];
 
-  const filteredGuides = guides?.filter(
+  const filteredGuides = guidesWithSlugs.filter(
     (guide) => selectedCategory === "All" || guide.category.toLowerCase() === selectedCategory.toLowerCase()
   );
 

@@ -15,7 +15,13 @@ export default function BrandsPage() {
     queryKey: ["/api/brands"],
   });
 
-  const filteredBrands = (brands || []).filter((brand) => isValidBrandName(brand.name));
+  const filteredBrands = useMemo(
+    () =>
+      (brands || []).filter(
+        (brand) => isValidBrandName(brand.name) && Boolean(brand.slug?.trim()),
+      ),
+    [brands],
+  );
 
   // Extract description to avoid recreating seoData object on every render
   const seoDescription =
@@ -87,7 +93,7 @@ export default function BrandsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
         <SEO {...seoData} />
         <StructuredData data={structuredData} />
 
@@ -96,10 +102,10 @@ export default function BrandsPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3" data-testid="text-page-title">
+          <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
             Padel Racket Brands
           </h1>
-          <p className="text-muted-foreground text-lg">
+          <p className="text-muted-foreground text-base sm:text-lg">
             Explore in-depth articles and top racket recommendations from leading padel brands
           </p>
         </div>
