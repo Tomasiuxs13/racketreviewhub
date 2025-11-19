@@ -11,6 +11,7 @@ import { StructuredData } from "@/components/StructuredData";
 import { PromotionalBanner } from "@/components/PromotionalBanner";
 import { MentionedRackets } from "@/components/MentionedRackets";
 import { SITE_URL } from "@/lib/seo";
+import { useI18n } from "@/i18n/useI18n";
 
 export default function BlogPostPage() {
   const [, params] = useRoute("/blog/:slug");
@@ -30,6 +31,8 @@ export default function BlogPostPage() {
   const author = post?.authorId
     ? authors?.find((a) => a.id === post.authorId)
     : null;
+
+  const { locale } = useI18n();
 
   const canonicalPath = post ? `/blog/${post.slug}` : "/blog";
   const seoData = {
@@ -52,6 +55,7 @@ export default function BlogPostPage() {
         headline: post.title,
         description: post.excerpt,
         image: post.featuredImage ? [post.featuredImage] : [],
+        inLanguage: locale,
         datePublished: new Date(post.publishedAt).toISOString(),
         dateModified: new Date(post.updatedAt).toISOString(),
         author: {

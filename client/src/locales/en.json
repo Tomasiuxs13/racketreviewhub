@@ -102,6 +102,14 @@
       "subtitle": "Expert advice to help you choose the right racket",
       "empty": "No guides available yet. Check back soon!"
     }
+  },
+  "racket": {
+    "seo": {
+      "title": "{{brand}} {{model}} {{year}} Review - Expert Analysis & Best Price",
+      "description": "Expert review of the {{brand}} {{model}} {{year}} padel racket. Detailed ratings for power, control, and performance. Overall rating: {{rating}}/100. Find the best price with our affiliate links.",
+      "defaultTitle": "Padel Racket Review",
+      "defaultDescription": "Expert padel racket review with detailed ratings and best price comparison"
+    }
   }
 }
 

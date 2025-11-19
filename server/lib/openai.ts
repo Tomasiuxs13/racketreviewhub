@@ -34,7 +34,40 @@ export async function translateReviewLocales(
   reviewHtml?: string,
 ): Promise<Record<string, string>> {
   const baseContent = reviewHtml ?? racket.reviewContent ?? "";
-  if (!baseContent) {
+  
+  // Collect all fields that need translation
+  const fieldsToTranslate: Record<string, string> = {};
+  
+  // Add review content if available
+  if (baseContent) {
+    fieldsToTranslate.reviewContent = baseContent;
+  }
+  
+  // Add specification fields that have values
+  const specFields = [
+    "color",
+    "balance",
+    "surface",
+    "hardness",
+    "finish",
+    "playersCollection",
+    "product",
+    "core",
+    "format",
+    "gameLevel",
+    "gameType",
+    "player",
+    "shape",
+  ] as const;
+  
+  for (const field of specFields) {
+    const value = racket[field];
+    if (value && typeof value === "string" && value.trim()) {
+      fieldsToTranslate[field] = value.trim();
+    }
+  }
+  
+  if (Object.keys(fieldsToTranslate).length === 0) {
     return {};
   }
 
@@ -50,12 +83,34 @@ export async function translateReviewLocales(
 
   for (const locale of normalizedLocales) {
     try {
-      const translated = await translateReviewHtml(baseContent, locale);
-      if (translated) {
-        await upsertTranslation("racket_review", racket.id, locale, {
-          reviewContent: translated,
-        });
-        results[locale] = translated;
+      const translatedFields: Record<string, string> = {};
+      
+      // Translate review content separately (it's HTML and needs special handling)
+      if (fieldsToTranslate.reviewContent) {
+        const translatedReview = await translateReviewHtml(fieldsToTranslate.reviewContent, locale);
+        if (translatedReview) {
+          translatedFields.reviewContent = translatedReview;
+        }
+      }
+      
+      // Translate specification fields in a batch
+      const specFieldsToTranslate = Object.entries(fieldsToTranslate)
+        .filter(([key]) => key !== "reviewContent")
+        .map(([key, text]) => ({
+          key,
+          text,
+          context: `Padel racket specification field: ${key}. Translate the value while keeping technical terms accurate.`,
+        }));
+      
+      if (specFieldsToTranslate.length > 0) {
+        const specTranslations = await translateTextBatch(specFieldsToTranslate, locale);
+        Object.assign(translatedFields, specTranslations);
+      }
+      
+      // Store all translated fields
+      if (Object.keys(translatedFields).length > 0) {
+        await upsertTranslation("racket_review", racket.id, locale, translatedFields);
+        results[locale] = translatedFields.reviewContent || "";
       }
     } catch (error) {
       console.error(`Failed to translate review ${racket.id} to ${locale}:`, error);

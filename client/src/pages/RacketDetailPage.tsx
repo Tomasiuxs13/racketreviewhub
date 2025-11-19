@@ -15,6 +15,7 @@ import { StructuredData } from "@/components/StructuredData";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useMemo } from "react";
 import { SITE_URL } from "@/lib/seo";
+import { useI18n } from "@/i18n/useI18n";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -60,13 +61,24 @@ export default function RacketDetailPage() {
     ? authors?.find((a) => a.id === racket.authorId)
     : null;
 
+  const { locale, t } = useI18n();
+
   // SEO data - calculate even when racket is loading/undefined to keep hooks consistent
   const seoTitle = racket
-    ? `${racket.brand} ${racket.model} ${racket.year || ""} Review - Expert Analysis & Best Price`
-    : "Padel Racket Review";
+    ? t("racket.seo.title", {
+        brand: racket.brand,
+        model: racket.model,
+        year: racket.year || "",
+      }) || `${racket.brand} ${racket.model} ${racket.year || ""} Review - Expert Analysis & Best Price`
+    : t("racket.seo.defaultTitle") || "Padel Racket Review";
   const seoDescription = racket
-    ? `Expert review of the ${racket.brand} ${racket.model} ${racket.year || ""} padel racket. Detailed ratings for power, control, and performance. Overall rating: ${racket.overallRating}/100. Find the best price with our affiliate links.`
-    : "Expert padel racket review with detailed ratings and best price comparison";
+    ? t("racket.seo.description", {
+        brand: racket.brand,
+        model: racket.model,
+        year: racket.year || "",
+        rating: racket.overallRating,
+      }) || `Expert review of the ${racket.brand} ${racket.model} ${racket.year || ""} padel racket. Detailed ratings for power, control, and performance. Overall rating: ${racket.overallRating}/100. Find the best price with our affiliate links.`
+    : t("racket.seo.defaultDescription") || "Expert padel racket review with detailed ratings and best price comparison";
   const canonicalPath = racket ? `/rackets/${getRacketSlug(racket)}` : "/rackets";
   const seoData = {
     title: seoTitle,
@@ -92,6 +104,7 @@ export default function RacketDetailPage() {
       "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
       "description": seoDescription,
       "image": racket.imageUrl ? [racket.imageUrl] : undefined,
+      "inLanguage": locale,
       "brand": {
         "@type": "Brand",
         "name": racket.brand,
@@ -127,6 +140,7 @@ export default function RacketDetailPage() {
       schemas.push({
         "@context": "https://schema.org",
         "@type": "Review",
+        "inLanguage": locale,
         "itemReviewed": {
           "@type": "Product",
           "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
@@ -183,7 +197,7 @@ export default function RacketDetailPage() {
     });
 
     return schemas;
-  }, [racket, seoDescription, author]);
+  }, [racket, seoDescription, author, locale]);
 
   const seoElement = <SEO {...seoData} />;
 

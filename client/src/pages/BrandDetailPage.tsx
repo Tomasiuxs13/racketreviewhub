@@ -14,6 +14,7 @@ import { useMemo } from "react";
 import SEO from "@/components/SEO";
 import { SITE_URL } from "@/lib/seo";
 import DOMPurify from "isomorphic-dompurify";
+import { useI18n } from "@/i18n/useI18n";
 
 function buildBrandArticleTitle(brand: Brand, racketCount: number, year: number): string {
   return `Best ${brand.name} Padel Rackets ${year} - Top ${racketCount || 10} Reviews & Buying Guide`;
@@ -102,6 +103,8 @@ export default function BrandDetailPage() {
   // Get top 10 rackets for the article section
   const top10Rackets = useMemo(() => allRackets?.slice(0, 10) || [], [allRackets]);
 
+  const { locale } = useI18n();
+
   // SEO data - calculate even when brand is loading/undefined to keep hooks consistent
   const year = new Date().getFullYear();
   const racketCount = top10Rackets.length;
@@ -152,6 +155,7 @@ export default function BrandDetailPage() {
       "headline": articleHeadline,
       "description": seoDescription,
       "image": brand.logoUrl ? [brand.logoUrl] : undefined,
+      "inLanguage": locale,
       "datePublished": publishedDate,
       "dateModified": publishedDate,
       "author": {
@@ -226,7 +230,7 @@ export default function BrandDetailPage() {
     });
 
     return schemas;
-  }, [brand, top10Rackets, seoDescription, year]);
+  }, [brand, top10Rackets, seoDescription, year, locale]);
 
   const seoElement = <SEO {...seoData} />;
 

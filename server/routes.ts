@@ -103,6 +103,24 @@ const upload = multer({
   },
 });
 
+// Fields that should be translated for racket reviews
+const RACKET_REVIEW_TRANSLATABLE_FIELDS = [
+  "reviewContent",
+  "color",
+  "balance",
+  "surface",
+  "hardness",
+  "finish",
+  "playersCollection",
+  "product",
+  "core",
+  "format",
+  "gameLevel",
+  "gameType",
+  "player",
+  "shape",
+] as const;
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication endpoints
   app.post("/api/auth/login", async (req, res) => {
@@ -198,7 +216,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rackets,
           "racket_review",
           locale,
-          ["reviewContent"],
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
         res.json(translated);
       } else {
@@ -220,13 +238,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allRackets = await storage.getAllRackets();
       const searchTerm = query.toLowerCase().trim();
       
-      const results = allRackets
-        .filter((racket) => {
-          const brandMatch = racket.brand.toLowerCase().includes(searchTerm);
-          const modelMatch = racket.model.toLowerCase().includes(searchTerm);
-          return brandMatch || modelMatch;
-        })
-        .slice(0, 8); // Limit to 8 results for preview
+      // Filter and deduplicate by brand+model (case-insensitive)
+      const seen = new Map<string, Racket>();
+      const filtered = allRackets.filter((racket) => {
+        const brandMatch = racket.brand.toLowerCase().includes(searchTerm);
+        const modelMatch = racket.model.toLowerCase().includes(searchTerm);
+        if (!brandMatch && !modelMatch) {
+          return false;
+        }
+
+        // Create a unique key for brand+model combination (case-insensitive)
+        const key = `${racket.brand.toLowerCase()}:${racket.model.toLowerCase()}`;
+        
+        // If we've seen this brand+model combination before, skip it
+        if (seen.has(key)) {
+          return false;
+        }
+        
+        // Keep the first occurrence (or you could keep the one with the highest rating)
+        seen.set(key, racket);
+        return true;
+      });
+
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      let results = filtered.slice(0, 8); // Limit to 8 results for preview
+      
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        results = await applyTranslationsToEntities(
+          results,
+          "racket_review",
+          locale,
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
+        );
+      }
 
       res.json(results);
     } catch (error) {
@@ -245,7 +290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rackets,
           "racket_review",
           locale,
-          ["reviewContent"],
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
         res.json(translated);
       } else {
@@ -271,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           racket,
           "racket_review",
           locale,
-          ["reviewContent"],
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
         res.json(translated);
       } else {
@@ -293,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           related,
           "racket_review",
           locale,
-          ["reviewContent"],
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
         res.json(translated);
       } else {
@@ -486,7 +531,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rackets,
           "racket_review",
           locale,
-          ["reviewContent"],
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
         res.json(translated);
       } else {

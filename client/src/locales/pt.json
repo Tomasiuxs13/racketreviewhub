@@ -108,5 +108,13 @@
       "subtitle": "Conselhos de especialistas para ajudá-lo a escolher a raquete certa",
       "empty": "Nenhum guia disponível ainda. Volte em breve!"
     }
+  },
+  "racket": {
+    "seo": {
+      "title": "Avaliação {{brand}} {{model}} {{year}} - Análise de Especialistas e Melhor Preço",
+      "description": "Avaliação de especialista da raquete de padel {{brand}} {{model}} {{year}}. Classificações detalhadas de potência, controle e desempenho. Classificação geral: {{rating}}/100. Encontre o melhor preço com nossos links de afiliados.",
+      "defaultTitle": "Avaliação de Raquete de Padel",
+      "defaultDescription": "Avaliação de especialista de raquete de padel com classificações detalhadas e comparação de melhores preços"
+    }
   }
 }

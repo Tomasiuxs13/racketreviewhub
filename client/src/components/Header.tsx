@@ -37,7 +37,7 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null);
   const { user, isAuthenticated, signOut } = useAuth();
   const debouncedSearch = useDebounce(searchQuery, 300);
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const handleSearchInputChange = (value: string) => {
     setSearchQuery(value);
@@ -46,12 +46,12 @@ export function Header() {
 
   // Search query
   const { data: searchResults = [] } = useQuery<Racket[]>({
-    queryKey: ["/api/rackets/search", debouncedSearch],
+    queryKey: ["/api/rackets/search", debouncedSearch, locale],
     enabled: debouncedSearch.trim().length > 0,
     queryFn: async () => {
       const response = await apiRequest(
         "GET",
-        `/api/rackets/search?q=${encodeURIComponent(debouncedSearch)}`,
+        `/api/rackets/search?q=${encodeURIComponent(debouncedSearch)}&lang=${locale}`,
       );
       return await response.json();
     },

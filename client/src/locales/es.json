@@ -108,5 +108,13 @@
       "subtitle": "Consejos de expertos para ayudarte a elegir la pala adecuada",
       "empty": "No hay guías disponibles aún. ¡Vuelve pronto!"
     }
+  },
+  "racket": {
+    "seo": {
+      "title": "Reseña {{brand}} {{model}} {{year}} - Análisis Experto y Mejor Precio",
+      "description": "Reseña experta de la pala de padel {{brand}} {{model}} {{year}}. Calificaciones detalladas de potencia, control y rendimiento. Calificación general: {{rating}}/100. Encuentra el mejor precio con nuestros enlaces de afiliados.",
+      "defaultTitle": "Reseña de Pala de Padel",
+      "defaultDescription": "Reseña experta de pala de padel con calificaciones detalladas y comparación de mejores precios"
+    }
   }
 }

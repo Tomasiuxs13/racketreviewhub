@@ -13,6 +13,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { MentionedRackets } from "@/components/MentionedRackets";
 import { useMemo } from "react";
 import { SITE_URL } from "@/lib/seo";
+import { useI18n } from "@/i18n/useI18n";
 
 export default function GuideDetailPage() {
   const [, params] = useRoute("/guides/:slug");
@@ -27,6 +28,8 @@ export default function GuideDetailPage() {
     queryKey: [`/api/guides/${slug}/related`],
     enabled: !!slug && !!guide,
   });
+
+  const { locale } = useI18n();
 
   const publishedDate = guide?.publishedAt ? new Date(guide.publishedAt).toISOString() : undefined;
   const modifiedDate = guide?.updatedAt ? new Date(guide.updatedAt).toISOString() : publishedDate;
@@ -61,6 +64,7 @@ export default function GuideDetailPage() {
       "headline": guide.title,
       "description": guide.excerpt,
       "image": guide.featuredImage ? [guide.featuredImage] : undefined,
+      "inLanguage": locale,
       "datePublished": publishedDate,
       "dateModified": modifiedDate,
       "author": {
@@ -112,7 +116,7 @@ export default function GuideDetailPage() {
     });
 
     return schemas;
-  }, [guide]);
+  }, [guide, locale]);
 
   // Remove duplicate H1 title from content if it exists - must be called before conditional returns
   const cleanedContent = useMemo(() => {

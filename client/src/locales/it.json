@@ -108,5 +108,13 @@
       "subtitle": "Consigli esperti per aiutarti a scegliere la racchetta giusta",
       "empty": "Nessuna guida disponibile al momento. Torna presto!"
     }
+  },
+  "racket": {
+    "seo": {
+      "title": "Recensione {{brand}} {{model}} {{year}} - Analisi Esperta e Miglior Prezzo",
+      "description": "Recensione esperta della racchetta da padel {{brand}} {{model}} {{year}}. Valutazioni dettagliate di potenza, controllo e prestazioni. Valutazione complessiva: {{rating}}/100. Trova il miglior prezzo con i nostri link di affiliazione.",
+      "defaultTitle": "Recensione Racchetta da Padel",
+      "defaultDescription": "Recensione esperta di racchetta da padel con valutazioni dettagliate e confronto dei migliori prezzi"
+    }
   }
 }
