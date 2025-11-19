@@ -1,5 +1,6 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -86,12 +87,12 @@ export default function BrandDetailPage() {
   const [, params] = useRoute("/brands/:slug");
   const slug = params?.slug;
 
-  const { data: brand, isLoading: brandLoading } = useQuery<Brand>({
+  const { data: brand, isLoading: brandLoading } = useLocalizedQuery<Brand>({
     queryKey: [`/api/brands/${slug}`],
     enabled: !!slug,
   });
 
-  const { data: allRackets, isLoading: racketsLoading } = useQuery<Racket[]>({
+  const { data: allRackets, isLoading: racketsLoading } = useLocalizedQuery<Racket[]>({
     queryKey: [`/api/brands/${slug}/rackets`],
     enabled: !!slug,
   });

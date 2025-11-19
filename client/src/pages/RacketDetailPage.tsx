@@ -1,5 +1,6 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,13 +27,13 @@ export default function RacketDetailPage() {
   const treatAsId = isUuid(routeParam);
 
   // Legacy path: detail URLs that still use the raw ID
-  const { data: racketById, isLoading: isLoadingById } = useQuery<Racket>({
+  const { data: racketById, isLoading: isLoadingById } = useLocalizedQuery<Racket>({
     queryKey: [`/api/rackets/${routeParam}`],
     enabled: !!routeParam && treatAsId,
   });
 
   // New path: name-based URLs (slug derived from brand + model)
-  const { data: allRackets, isLoading: isLoadingAll } = useQuery<Racket[]>({
+  const { data: allRackets, isLoading: isLoadingAll } = useLocalizedQuery<Racket[]>({
     queryKey: ["/api/rackets"],
     enabled: !!routeParam && !treatAsId,
   });
@@ -44,7 +45,7 @@ export default function RacketDetailPage() {
   const racket = treatAsId ? racketById : racketFromSlug;
   const isLoading = treatAsId ? isLoadingById : isLoadingAll;
 
-  const { data: relatedRackets } = useQuery<Racket[]>({
+  const { data: relatedRackets } = useLocalizedQuery<Racket[]>({
     queryKey: [`/api/rackets/related/${racket?.id ?? "unknown"}`],
     enabled: !!racket?.id,
   });

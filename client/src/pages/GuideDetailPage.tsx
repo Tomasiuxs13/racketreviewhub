@@ -1,5 +1,6 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,12 +18,12 @@ export default function GuideDetailPage() {
   const [, params] = useRoute("/guides/:slug");
   const slug = params?.slug;
 
-  const { data: guide, isLoading } = useQuery<Guide>({
+  const { data: guide, isLoading } = useLocalizedQuery<Guide>({
     queryKey: [`/api/guides/${slug}`],
     enabled: !!slug,
   });
 
-  const { data: relatedGuides } = useQuery<Guide[]>({
+  const { data: relatedGuides } = useLocalizedQuery<Guide[]>({
     queryKey: [`/api/guides/${slug}/related`],
     enabled: !!slug && !!guide,
   });

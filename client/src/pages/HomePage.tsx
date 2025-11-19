@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Star, TrendingUp, Shield } from "lucide-react";
@@ -14,11 +15,11 @@ import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 
 export default function HomePage() {
-  const { data: recentRackets, isLoading: racketsLoading } = useQuery<Racket[]>({
+  const { data: recentRackets, isLoading: racketsLoading } = useLocalizedQuery<Racket[]>({
     queryKey: ["/api/rackets/recent"],
   });
 
-  const { data: recentGuides, isLoading: guidesLoading } = useQuery<Guide[]>({
+  const { data: recentGuides, isLoading: guidesLoading } = useLocalizedQuery<Guide[]>({
     queryKey: ["/api/guides/recent"],
   });
 

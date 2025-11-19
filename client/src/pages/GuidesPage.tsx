@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,19 +14,28 @@ import { SITE_URL } from "@/lib/seo";
 export default function GuidesPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   
-  const { data: guides, isLoading } = useQuery<Guide[]>({
+  const { data: guides, isLoading, error } = useLocalizedQuery<Guide[]>({
     queryKey: ["/api/guides"],
   });
 
   const guidesWithSlugs = useMemo(
-    () => (guides || []).filter((guide) => Boolean(guide.slug?.trim())),
+    () => {
+      if (!guides) return [];
+      return guides.filter((guide) => Boolean(guide?.slug?.trim()));
+    },
     [guides],
   );
 
   const categories = ["All", "Beginners", "Intermediate", "Advanced", "General"];
 
-  const filteredGuides = guidesWithSlugs.filter(
-    (guide) => selectedCategory === "All" || guide.category.toLowerCase() === selectedCategory.toLowerCase()
+  const filteredGuides = useMemo(
+    () => guidesWithSlugs.filter(
+      (guide) => {
+        if (!guide?.category) return false;
+        return selectedCategory === "All" || guide.category.toLowerCase() === selectedCategory.toLowerCase();
+      }
+    ),
+    [guidesWithSlugs, selectedCategory]
   );
 
   const seoData = {
@@ -185,11 +195,21 @@ export default function GuidesPage() {
               </Link>
             ))}
           </div>
+        ) : error ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <p className="text-muted-foreground text-center">
+                Error loading guides. Please try again later.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <p className="text-muted-foreground text-center">
-                No guides found in this category
+                {guidesWithSlugs.length === 0 
+                  ? "No guides available yet. Check back soon!"
+                  : `No guides found in this category. ${guidesWithSlugs.length} guide(s) available in other categories.`}
               </p>
             </CardContent>
           </Card>

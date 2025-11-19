@@ -9,6 +9,8 @@ import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middlewa
 import { createSupabaseClient } from "./lib/supabaseClient.js";
 import { generateRacketReview } from "./lib/openai.js";
 import {
+  applyTranslationsToEntity,
+  applyTranslationsToEntities,
   fetchTranslation,
   fetchTranslationsForEntity,
   isValidEntityType,
@@ -188,7 +190,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rackets", async (req, res) => {
     try {
       const rackets = await storage.getAllRackets();
-      res.json(rackets);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        const translated = await applyTranslationsToEntities(
+          rackets,
+          "racket_review",
+          locale,
+          ["reviewContent"],
+        );
+        res.json(translated);
+      } else {
+        res.json(rackets);
+      }
     } catch (error) {
       console.error("Error in GET /api/rackets:", error);
       res.status(500).json({ error: "Failed to fetch rackets" });
@@ -222,7 +237,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rackets/recent", async (req, res) => {
     try {
       const rackets = await storage.getRecentRackets(10);
-      res.json(rackets);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        const translated = await applyTranslationsToEntities(
+          rackets,
+          "racket_review",
+          locale,
+          ["reviewContent"],
+        );
+        res.json(translated);
+      } else {
+        res.json(rackets);
+      }
     } catch (error) {
       console.error("Error in GET /api/rackets/recent:", error);
       res.status(500).json({ error: "Failed to fetch recent rackets" });
@@ -235,7 +263,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!racket) {
         return res.status(404).json({ error: "Racket not found" });
       }
-      res.json(racket);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        const translated = await applyTranslationsToEntity(
+          racket,
+          "racket_review",
+          locale,
+          ["reviewContent"],
+        );
+        res.json(translated);
+      } else {
+        res.json(racket);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch racket" });
     }
@@ -244,7 +285,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rackets/related/:id", async (req, res) => {
     try {
       const related = await storage.getRelatedRackets(req.params.id, 4);
-      res.json(related);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        const translated = await applyTranslationsToEntities(
+          related,
+          "racket_review",
+          locale,
+          ["reviewContent"],
+        );
+        res.json(translated);
+      } else {
+        res.json(related);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch related rackets" });
     }
@@ -254,7 +308,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/guides", async (req, res) => {
     try {
       const guides = await storage.getAllGuides();
-      res.json(guides);
+      
+      if (!guides || !Array.isArray(guides)) {
+        console.error("[guides] Invalid guides data:", guides);
+        return res.json([]);
+      }
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("guide")) {
+        try {
+          const translated = await applyTranslationsToEntities(
+            guides,
+            "guide",
+            locale,
+            ["title", "excerpt", "content"],
+          );
+          if (!translated || !Array.isArray(translated)) {
+            console.error("[guides] Translation returned invalid data, using original");
+            return res.json(guides);
+          }
+          res.json(translated);
+        } catch (translationError) {
+          console.error(`[guides] Translation error for list (${locale}):`, translationError);
+          // Fallback to original if translation fails
+          res.json(guides);
+        }
+      } else {
+        res.json(guides);
+      }
     } catch (error) {
       console.error("Error in GET /api/guides:", error);
       res.status(500).json({ error: "Failed to fetch guides" });
@@ -264,7 +346,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/guides/recent", async (req, res) => {
     try {
       const guides = await storage.getRecentGuides(8);
-      res.json(guides);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("guide")) {
+        try {
+          const translated = await applyTranslationsToEntities(
+            guides,
+            "guide",
+            locale,
+            ["title", "excerpt", "content"],
+          );
+          res.json(translated);
+        } catch (translationError) {
+          console.error(`[guides] Translation error for recent (${locale}):`, translationError);
+          // Fallback to original if translation fails
+          res.json(guides);
+        }
+      } else {
+        res.json(guides);
+      }
     } catch (error) {
       console.error("Error in GET /api/guides/recent:", error);
       res.status(500).json({ error: "Failed to fetch recent guides" });
@@ -277,7 +378,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!guide) {
         return res.status(404).json({ error: "Guide not found" });
       }
-      res.json(guide);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("guide")) {
+        try {
+          const translated = await applyTranslationsToEntity(
+            guide,
+            "guide",
+            locale,
+            ["title", "excerpt", "content"],
+          );
+          res.json(translated);
+        } catch (translationError) {
+          console.error(`[guides] Translation error for ${guide.slug} (${locale}):`, translationError);
+          // Fallback to original if translation fails
+          res.json(guide);
+        }
+      } else {
+        res.json(guide);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch guide" });
     }
@@ -290,7 +410,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Guide not found" });
       }
       const related = await storage.getRelatedGuides(guide.id, guide.category, 3);
-      res.json(related);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("guide")) {
+        const translated = await applyTranslationsToEntities(
+          related,
+          "guide",
+          locale,
+          ["title", "excerpt", "content"],
+        );
+        res.json(translated);
+      } else {
+        res.json(related);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch related guides" });
     }
@@ -313,7 +446,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!brand) {
         return res.status(404).json({ error: "Brand not found" });
       }
-      res.json(brand);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("brand")) {
+        try {
+          const translated = await applyTranslationsToEntity(
+            brand,
+            "brand",
+            locale,
+            ["description", "articleContent"],
+          );
+          res.json(translated);
+        } catch (translationError) {
+          console.error(`[brands] Translation error for ${brand.slug} (${locale}):`, translationError);
+          // Fallback to original if translation fails
+          res.json(brand);
+        }
+      } else {
+        res.json(brand);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch brand" });
     }
@@ -326,7 +478,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Brand not found" });
       }
       const rackets = await storage.getRacketsByBrand(brand.name);
-      res.json(rackets);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        const translated = await applyTranslationsToEntities(
+          rackets,
+          "racket_review",
+          locale,
+          ["reviewContent"],
+        );
+        res.json(translated);
+      } else {
+        res.json(rackets);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch brand rackets" });
     }
@@ -336,8 +501,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/blog", async (req, res) => {
     try {
       const posts = await storage.getAllBlogPosts();
-      res.json(posts);
+      
+      if (!posts || !Array.isArray(posts)) {
+        console.error("[blog] Invalid posts data:", posts);
+        return res.json([]);
+      }
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("blog_post")) {
+        try {
+          const translated = await applyTranslationsToEntities(
+            posts,
+            "blog_post",
+            locale,
+            ["title", "excerpt", "content"],
+          );
+          if (!translated || !Array.isArray(translated)) {
+            console.error("[blog] Translation returned invalid data, using original");
+            return res.json(posts);
+          }
+          res.json(translated);
+        } catch (translationError) {
+          console.error(`[blog] Translation error for list (${locale}):`, translationError);
+          // Fallback to original if translation fails
+          res.json(posts);
+        }
+      } else {
+        res.json(posts);
+      }
     } catch (error) {
+      console.error("Error in GET /api/blog:", error);
       res.status(500).json({ error: "Failed to fetch blog posts" });
     }
   });
@@ -348,7 +542,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!post) {
         return res.status(404).json({ error: "Blog post not found" });
       }
-      res.json(post);
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      if (locale !== "en" && isValidEntityType("blog_post")) {
+        try {
+          const translated = await applyTranslationsToEntity(
+            post,
+            "blog_post",
+            locale,
+            ["title", "excerpt", "content"],
+          );
+          res.json(translated);
+        } catch (translationError) {
+          console.error(`[blog] Translation error for ${post.slug} (${locale}):`, translationError);
+          // Fallback to original if translation fails
+          res.json(post);
+        }
+      } else {
+        res.json(post);
+      }
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch blog post" });
     }

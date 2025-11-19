@@ -1,26 +1,10 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { supabase } from "./supabase";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
-    if (res.status === 401) {
-      // Redirect to login on 401
-      window.location.href = "/login";
-    }
     throw new Error(`${res.status}: ${text}`);
   }
-}
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const headers: Record<string, string> = {};
-  
-  if (session?.access_token) {
-    headers["Authorization"] = `Bearer ${session.access_token}`;
-  }
-  
-  return headers;
 }
 
 export async function apiRequest(
@@ -30,15 +14,11 @@ export async function apiRequest(
 ): Promise<Response> {
   // Check if data is FormData (for file uploads)
   const isFormData = data instanceof FormData;
-  const authHeaders = await getAuthHeaders();
   
   const res = await fetch(url, {
     method,
     // Don't set Content-Type for FormData - browser will set it with boundary
-    headers: {
-      ...authHeaders,
-      ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
-    },
+    headers: data && !isFormData ? { "Content-Type": "application/json" } : {},
     // Don't stringify FormData - send it as-is
     body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
     credentials: "include",
@@ -49,14 +29,30 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+const SUPPORTED_LOCALES = ["en", "es", "pt", "it", "fr"];
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const authHeaders = await getAuthHeaders();
-    const res = await fetch(queryKey.join("/") as string, {
-      headers: authHeaders,
+    // Extract locale from queryKey if it's the last element and is a valid locale
+    const keyArray = [...queryKey];
+    const lastElement = keyArray[keyArray.length - 1];
+    const extractedLocale = typeof lastElement === "string" && SUPPORTED_LOCALES.includes(lastElement)
+      ? keyArray.pop() as string
+      : undefined;
+    
+    // Build URL from remaining queryKey elements
+    let url = keyArray.join("/") as string;
+    
+    // Append locale query parameter if provided and not English
+    if (extractedLocale && extractedLocale !== "en") {
+      const separator = url.includes("?") ? "&" : "?";
+      url = `${url}${separator}lang=${extractedLocale}`;
+    }
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 
@@ -73,10 +69,9 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: true,
-      refetchOnReconnect: true,
-      staleTime: 1000 * 60 * 5,
-      retry: 2,
+      refetchOnWindowFocus: false,
+      staleTime: Infinity,
+      retry: false,
     },
     mutations: {
       retry: false,

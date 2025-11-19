@@ -1,5 +1,6 @@
 import { useRoute, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +16,7 @@ export default function BlogPostPage() {
   const [, params] = useRoute("/blog/:slug");
   const slug = params?.slug;
 
-  const { data: post, isLoading } = useQuery<BlogPost>({
+  const { data: post, isLoading } = useLocalizedQuery<BlogPost>({
     queryKey: [`/api/blog/${slug}`],
     enabled: !!slug,
   });

@@ -638,7 +638,7 @@ export async function translateTextBatch(
         content: `Translate the following entries:\n${JSON.stringify(payload, null, 2)}\n\nReturn only JSON of the shape {"translations": {"key":"value"}}.`,
       },
     ],
-    max_tokens: 2000,
+    max_tokens: 8000, // Increased to handle larger content chunks
   });
 
   let content = completion.choices[0]?.message?.content?.trim();

@@ -199,19 +199,31 @@ export async function applyTranslationsToEntities<T extends { id: string }>(
     return entities;
   }
 
-  const translations = await bulkFetchTranslations(
-    entityType,
-    locale,
-    entities.map((item) => item.id),
-  );
+  try {
+    const translations = await bulkFetchTranslations(
+      entityType,
+      locale,
+      entities.map((item) => item.id),
+    );
 
-  return entities.map((entity) => {
-    const translation = translations.get(entity.id);
-    if (!translation) {
-      return entity;
-    }
-    return mergeFields(entity, translation, translatableFields);
-  });
+    return entities.map((entity) => {
+      try {
+        const translation = translations.get(entity.id);
+        if (!translation) {
+          return entity;
+        }
+        return mergeFields(entity, translation, translatableFields);
+      } catch (error) {
+        console.error(`[i18n] Error applying translation to entity ${entity.id}:`, error);
+        // Return original entity if translation merge fails
+        return entity;
+      }
+    });
+  } catch (error) {
+    console.error(`[i18n] Error fetching translations for ${entityType} (${locale}):`, error);
+    // Return original entities if translation fetch fails
+    return entities;
+  }
 }
 
 function mergeFields<T extends { id: string }>(
@@ -222,7 +234,8 @@ function mergeFields<T extends { id: string }>(
   const clone = { ...entity };
   fields.forEach((field) => {
     const key = String(field);
-    if (translation[key] !== undefined) {
+    // Only replace if translation has a non-empty value
+    if (translation[key] !== undefined && translation[key] !== null && translation[key] !== "") {
       (clone as Record<string, unknown>)[key] = translation[key];
     }
   });

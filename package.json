@@ -16,7 +16,10 @@
     "generate-brands": "tsx server/scripts/generateBrandsFromRackets.ts",
     "assign-author": "tsx server/scripts/assignAuthorToAllContent.ts",
     "i18n:translate": "tsx scripts/translate-locales.ts",
-    "reviews:translate": "tsx server/scripts/translateReviews.ts"
+    "reviews:translate": "tsx server/scripts/translateReviews.ts",
+    "guides:translate": "tsx server/scripts/translateGuides.ts",
+    "blog:translate": "tsx server/scripts/translateBlogPosts.ts",
+    "brands:translate": "tsx server/scripts/translateBrands.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

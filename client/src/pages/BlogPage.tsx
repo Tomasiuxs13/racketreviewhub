@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
+import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,7 +13,7 @@ import { useMemo } from "react";
 import { SITE_URL } from "@/lib/seo";
 
 export default function BlogPage() {
-  const { data: posts, isLoading } = useQuery<BlogPost[]>({
+  const { data: posts, isLoading, error } = useLocalizedQuery<BlogPost[]>({
     queryKey: ["/api/blog"],
   });
 
@@ -22,7 +23,10 @@ export default function BlogPage() {
   });
 
   const postsWithSlugs = useMemo(
-    () => (posts || []).filter((post) => Boolean(post.slug?.trim())),
+    () => {
+      if (!posts) return [];
+      return posts.filter((post) => Boolean(post?.slug?.trim()));
+    },
     [posts],
   );
 
@@ -201,11 +205,21 @@ export default function BlogPage() {
               </Link>
             ))}
           </div>
+        ) : error ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16">
+              <p className="text-muted-foreground text-center">
+                Error loading blog posts. Please try again later.
+              </p>
+            </CardContent>
+          </Card>
         ) : (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-16">
               <p className="text-muted-foreground text-center">
-                No blog posts available yet. Check back soon!
+                {postsWithSlugs.length === 0 
+                  ? "No blog posts available yet. Check back soon!"
+                  : `No blog posts found. ${postsWithSlugs.length} post(s) available.`}
               </p>
             </CardContent>
           </Card>
