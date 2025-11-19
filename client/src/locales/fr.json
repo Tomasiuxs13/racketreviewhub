@@ -1,0 +1,112 @@
+{
+  "common": {
+    "brandName": "Avis sur les raquettes de padel",
+    "actions": {
+      "viewAll": "Voir tout",
+      "browseRackets": "Parcourir toutes les raquettes",
+      "buyingGuides": "Guides d'achat",
+      "beginnerGuide": "Meilleures raquettes pour débutants"
+    },
+    "language": {
+      "label": "Langue",
+      "en": "Anglais",
+      "es": "Espagnol",
+      "pt": "Portugais",
+      "it": "Italien",
+      "fr": "Français"
+    },
+    "statuses": {
+      "loading": "Chargement...",
+      "empty": "Aucun résultat disponible. Revenez bientôt !"
+    }
+  },
+  "header": {
+    "menu": {
+      "rackets": "Raquettes de padel",
+      "guides": "Guides",
+      "brands": "Marques",
+      "blog": "Blog"
+    },
+    "search": {
+      "placeholder": "Rechercher des raquettes...",
+      "noResults": "Aucune raquette trouvée"
+    },
+    "trustBadge": "1 200+ raquettes évaluées",
+    "auth": {
+      "logout": "Déconnexion",
+      "userPlaceholder": "Utilisateur"
+    }
+  },
+  "footer": {
+    "about": {
+      "title": "À propos des avis sur les raquettes de padel",
+      "body": "Avis d'experts sur les raquettes de padel avec des évaluations détaillées, des comparaisons honnêtes et les meilleurs prix. Aide les joueurs à trouver leur raquette parfaite depuis 2024."
+    },
+    "quickLinks": {
+      "title": "Liens rapides",
+      "rackets": "Tous les Rackets",
+      "guides": "Guides d'Achat",
+      "brands": "Marques",
+      "blog": "Blog"
+    },
+    "popularBrands": {
+      "title": "Marques Populaires",
+      "items": [
+        "Babolat",
+        "Bullpadel",
+        "Head",
+        "Adidas",
+        "Nox"
+      ]
+    },
+    "gettingStarted": {
+      "title": "Commencer",
+      "body": "Nouveau dans le padel ? Découvrez les meilleurs rackets pour débutants avec notre guide d'achat complet."
+    },
+    "legal": {
+      "rights": "© {{year}} Padel Racket Reviews. Tous droits réservés.",
+      "disclaimer": "En tant qu'Associé Amazon, nous gagnons sur les achats éligibles."
+    },
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "instagram": "Instagram",
+      "youtube": "YouTube"
+    }
+  },
+  "breadcrumbs": {
+    "home": "Accueil"
+  },
+  "home": {
+    "seo": {
+      "title": "Critiques de Rackets de Padel - Critiques d'Experts & Comparaisons des Meilleurs Prix",
+      "description": "Critiques d'experts sur les rackets de padel avec des évaluations détaillées, des analyses de performance et les meilleurs prix. Comparez les meilleurs rackets des marques leaders et trouvez votre match parfait."
+    },
+    "hero": {
+      "title": "Trouvez Votre Racket de Padel Parfait",
+      "subtitle": "Critiques d'experts, évaluations détaillées et les meilleurs prix pour les joueurs de tous niveaux",
+      "primaryCta": "Parcourir Tous les Rackets",
+      "secondaryCta": "Guides d'Achat",
+      "trust": {
+        "reviews": "Plus de 1 200 avis",
+        "updates": "Mis à jour quotidiennement",
+        "experts": "Analyse d'experts"
+      }
+    },
+    "recentReviews": {
+      "title": "Derniers avis sur les raquettes",
+      "subtitle": "Nos derniers avis et évaluations d'experts",
+      "empty": "Aucune raquette disponible pour le moment. Revenez bientôt !"
+    },
+    "cta": {
+      "title": "Vous débutez avec le padel ?",
+      "subtitle": "Découvrez les meilleures raquettes pour débutants avec notre guide d'achat complet. Apprenez quoi rechercher et trouvez la raquette parfaite pour votre niveau de compétence.",
+      "button": "Meilleures raquettes pour débutants"
+    },
+    "recentGuides": {
+      "title": "Derniers guides d'achat",
+      "subtitle": "Conseils d'experts pour vous aider à choisir la bonne raquette",
+      "empty": "Aucun guide disponible pour le moment. Revenez bientôt !"
+    }
+  }
+}

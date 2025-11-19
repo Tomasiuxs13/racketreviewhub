@@ -1,0 +1,112 @@
+{
+  "common": {
+    "brandName": "Reseñas de Palas de Padel",
+    "actions": {
+      "viewAll": "Ver Todo",
+      "browseRackets": "Explorar Todas las Palas",
+      "buyingGuides": "Guías de Compra",
+      "beginnerGuide": "Mejores Palas para Principiantes"
+    },
+    "language": {
+      "label": "Idioma",
+      "en": "Inglés",
+      "es": "Español",
+      "pt": "Portugués",
+      "it": "Italiano",
+      "fr": "Francés"
+    },
+    "statuses": {
+      "loading": "Cargando...",
+      "empty": "No hay resultados disponibles. ¡Vuelve pronto!"
+    }
+  },
+  "header": {
+    "menu": {
+      "rackets": "Palas de Padel",
+      "guides": "Guías",
+      "brands": "Marcas",
+      "blog": "Blog"
+    },
+    "search": {
+      "placeholder": "Buscar palas...",
+      "noResults": "No se encontraron palas"
+    },
+    "trustBadge": "1,200+ Palas Revisadas",
+    "auth": {
+      "logout": "Cerrar sesión",
+      "userPlaceholder": "Usuario"
+    }
+  },
+  "footer": {
+    "about": {
+      "title": "Acerca de Reseñas de Palas de Padel",
+      "body": "Reseñas expertas de palas de padel con calificaciones detalladas, comparaciones honestas y los mejores precios. Ayudando a los jugadores a encontrar su pala perfecta desde 2024."
+    },
+    "quickLinks": {
+      "title": "Enlaces Rápidos",
+      "rackets": "Todas las Raquetas",
+      "guides": "Guías de Compra",
+      "brands": "Marcas",
+      "blog": "Blog"
+    },
+    "popularBrands": {
+      "title": "Marcas Populares",
+      "items": [
+        "Babolat",
+        "Bullpadel",
+        "Head",
+        "Adidas",
+        "Nox"
+      ]
+    },
+    "gettingStarted": {
+      "title": "Introducción",
+      "body": "¿Nuevo en el pádel? Descubre las mejores raquetas para principiantes con nuestra completa guía de compra."
+    },
+    "legal": {
+      "rights": "© {{year}} Reseñas de Raquetas de Padel. Todos los derechos reservados.",
+      "disclaimer": "Como Asociado de Amazon, ganamos con las compras que califican."
+    },
+    "social": {
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "instagram": "Instagram",
+      "youtube": "YouTube"
+    }
+  },
+  "breadcrumbs": {
+    "home": "Inicio"
+  },
+  "home": {
+    "seo": {
+      "title": "Reseñas de Raquetas de Padel - Reseñas de Expertos y Comparaciones de Mejores Precios",
+      "description": "Reseñas de raquetas de pádel de expertos con calificaciones detalladas, análisis de rendimiento y los mejores precios. Compara las mejores raquetas de marcas líderes y encuentra tu pareja perfecta."
+    },
+    "hero": {
+      "title": "Encuentra Tu Raqueta de Padel Perfecta",
+      "subtitle": "Reseñas de expertos, calificaciones detalladas y los mejores precios para jugadores de todos los niveles",
+      "primaryCta": "Explora Todas las Raquetas",
+      "secondaryCta": "Guías de Compra",
+      "trust": {
+        "reviews": "1,200+ Reseñas",
+        "updates": "Actualizado Diariamente",
+        "experts": "Análisis de Expertos"
+      }
+    },
+    "recentReviews": {
+      "title": "Últimas Reseñas de Palas",
+      "subtitle": "Nuestras más recientes reseñas y calificaciones de expertos",
+      "empty": "No hay palas disponibles aún. ¡Vuelve pronto!"
+    },
+    "cta": {
+      "title": "¿Empezando con el Padel?",
+      "subtitle": "Descubre las mejores palas para principiantes con nuestra completa guía de compra. Aprende qué buscar y encuentra la pala perfecta para tu nivel de habilidad.",
+      "button": "Mejores Palas para Principiantes"
+    },
+    "recentGuides": {
+      "title": "Últimas Guías de Compra",
+      "subtitle": "Consejos de expertos para ayudarte a elegir la pala adecuada",
+      "empty": "No hay guías disponibles aún. ¡Vuelve pronto!"
+    }
+  }
+}

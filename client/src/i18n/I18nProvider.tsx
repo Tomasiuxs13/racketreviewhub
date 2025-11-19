@@ -33,9 +33,14 @@ interface I18nProviderProps {
 const DEFAULT_LOCALE: Locale = "en";
 const LOCALE_STORAGE_KEY = "rrh_locale";
 
-const localeModules = import.meta.glob<{ default: MessageDictionary }>(
-  "../locales/*.json",
-);
+// Pre-import all locale files for Vite compatibility
+const localeModules = {
+  en: () => import("../locales/en.json"),
+  es: () => import("../locales/es.json"),
+  pt: () => import("../locales/pt.json"),
+  it: () => import("../locales/it.json"),
+  fr: () => import("../locales/fr.json"),
+} as const;
 
 const dictionaryCache: Partial<Record<Locale, MessageDictionary>> = {};
 
@@ -48,21 +53,23 @@ async function loadDictionary(locale: Locale): Promise<MessageDictionary> {
     return dictionaryCache[locale]!;
   }
 
-  const importPath = `../locales/${locale}.json`;
-  const loader = localeModules[importPath];
-
-  if (!loader) {
-    console.warn(`[i18n] Missing locale file for "${locale}", falling back to ${DEFAULT_LOCALE}`);
+  try {
+    const loader = localeModules[locale];
+    if (!loader) {
+      throw new Error(`No loader for locale "${locale}"`);
+    }
+    const module = await loader();
+    const messages = module.default || module;
+    dictionaryCache[locale] = messages;
+    return messages;
+  } catch (error) {
+    console.warn(`[i18n] Failed to load locale "${locale}", falling back to ${DEFAULT_LOCALE}:`, error);
     if (locale === DEFAULT_LOCALE) {
       dictionaryCache[locale] = {};
       return {};
     }
     return loadDictionary(DEFAULT_LOCALE);
   }
-
-  const module = await loader();
-  dictionaryCache[locale] = module.default;
-  return module.default;
 }
 
 function resolveKey(dictionary: MessageDictionary, key: string): string | undefined {

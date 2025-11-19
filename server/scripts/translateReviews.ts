@@ -56,11 +56,16 @@ async function main() {
     `[reviews] Processing ${queue.length} racket(s) for locales: ${locales.join(", ")}`,
   );
 
+  const startTime = Date.now();
   let processed = 0;
+  let successCount = 0;
+  let errorCount = 0;
+
   for (const racket of queue) {
     processed++;
+    const progress = ((processed / queue.length) * 100).toFixed(1);
     console.log(
-      `[reviews] (${processed}/${queue.length}) ${racket.brand} ${racket.model} - ${racket.id}`,
+      `[reviews] [${progress}%] (${processed}/${queue.length}) ${racket.brand} ${racket.model} - ${racket.id}`,
     );
 
     if (isDryRun) {
@@ -70,15 +75,39 @@ async function main() {
     try {
       const translations = await translateReviewLocales(racket, locales);
       const translatedLocales = Object.keys(translations);
-      console.log(
-        translatedLocales.length
-          ? `[reviews] ✓ Stored locales: ${translatedLocales.join(", ")}`
-          : "[reviews] ⚠ No translations stored",
-      );
+      if (translatedLocales.length > 0) {
+        successCount++;
+        console.log(
+          `[reviews] ✓ Stored ${translatedLocales.length} locale(s): ${translatedLocales.join(", ")}`,
+        );
+      } else {
+        console.log("[reviews] ⚠ No translations stored (may already exist)");
+      }
     } catch (error) {
-      console.error("[reviews] Failed to translate review:", error);
+      errorCount++;
+      console.error(`[reviews] ✗ Failed to translate review for ${racket.brand} ${racket.model}:`, error instanceof Error ? error.message : error);
+      // Continue processing other rackets
+    }
+
+    // Log progress every 10 items
+    if (processed % 10 === 0) {
+      const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+      const avgTime = (Date.now() - startTime) / processed;
+      const remaining = ((queue.length - processed) * avgTime / 1000).toFixed(0);
+      console.log(
+        `[reviews] Progress: ${processed}/${queue.length} | Success: ${successCount} | Errors: ${errorCount} | Elapsed: ${elapsed}s | Est. remaining: ${remaining}s`,
+      );
     }
   }
+
+  const totalTime = ((Date.now() - startTime) / 1000).toFixed(0);
+  console.log("\n[reviews] ========================================");
+  console.log(`[reviews] Translation complete!`);
+  console.log(`[reviews] Total processed: ${processed}`);
+  console.log(`[reviews] Successful: ${successCount}`);
+  console.log(`[reviews] Errors: ${errorCount}`);
+  console.log(`[reviews] Total time: ${totalTime}s`);
+  console.log(`[reviews] ========================================\n`);
 }
 
 main().catch((error) => {
