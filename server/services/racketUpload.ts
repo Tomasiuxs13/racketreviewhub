@@ -450,15 +450,7 @@ export async function processRacketUpload(
             currentPrice: validated.currentPrice.toString(),
           };
 
-          if (validated.affiliateLink) {
-            updateData.affiliateLink = validated.affiliateLink;
-          }
-
-          console.log(
-            `Row ${i + 2}: Updating existing racket - only updating: ${Object.keys(updateData).join(
-              ", ",
-            )}`,
-          );
+          console.log(`Row ${i + 2}: Updating existing racket - currentPrice only`);
 
           await storage.updateRacket(existing.id, updateData);
           results.updated++;
