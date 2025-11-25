@@ -1,0 +1,12 @@
+{
+  "_comment": "Product Year Mapping File",
+  "_instructions": "Add product IDs and their correct release years here. The format is:",
+  "_format": "\"product-id\": \"YYYY\"",
+  "_example": "\"adidas-metalbone-09-2025\": \"2025\"",
+  "_note": "Product IDs are generated from brand + model name. Check merged-products.json for exact IDs.",
+  "_note2": "After updating this file, run 'npm run sync:padel' to apply the changes."
+}
+
+
+
+

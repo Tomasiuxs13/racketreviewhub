@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Browse comprehensive padel racket reviews from top brands. Compare power, control, rebound, maneuverability, and sweet spot ratings to find your perfect racket.">
+  <meta name="keywords" content="padel racket reviews, best padel rackets, padel racket comparison, racket ratings">
+  <meta property="og:title" content="Padel Racket Reviews - Expert Analysis & Ratings">
+  <meta property="og:description" content="Browse comprehensive padel racket reviews from top brands. Compare power, control, rebound, maneuverability, and sweet spot ratings to find your perfect racket.">
+  <meta property="og:type" content="website">
+  <title>Padel Racket Reviews - Expert Analysis & Ratings | Padel Racket Review Hub</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": "Padel Racket Reviews",
+    "description": "Comprehensive collection of expert padel racket reviews with detailed ratings and analysis"
+  }
+  </script>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main>
+    <!-- Page Header -->
+    <section class="reviews-page-header">
+      <div class="container">
+        <h1 class="reviews-page-title">Padel Racket Reviews</h1>
+        <p class="reviews-page-description">Discover padel rackets from renowned brands like Bullpadel, Head, Adidas, Nox, and more. Explore key features such as superior ball control, exceptional power, versatile playstyles, and ergonomic design compatibility.</p>
+        
+        <!-- Buyer's Guides Quick Links -->
+        <div class="buyers-guides-links">
+          <h3 class="buyers-guides-title">Buyer's guides</h3>
+          <div class="buyers-guides-list">
+            <a href="/articles/best-lists/best-for-intermediates.html" class="buyers-guide-card">
+              <span class="buyers-guide-icon">→</span>
+              <span class="buyers-guide-text">Best for intermediates</span>
+            </a>
+            <a href="/articles/guides/buying-guide-beginners.html" class="buyers-guide-card">
+              <span class="buyers-guide-icon">→</span>
+              <span class="buyers-guide-text">Best for beginners</span>
+            </a>
+            <a href="/articles/best-lists/best-padel-rackets-2025.html" class="buyers-guide-card">
+              <span class="buyers-guide-icon">→</span>
+              <span class="buyers-guide-text">Best rackets</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filters and Sort Section -->
+    <section class="reviews-filters-section">
+      <div class="container">
+        <div class="filters-container">
+          <div class="filters-left">
+            <button class="filter-toggle" id="filter-toggle" aria-label="Toggle filters">
+              <span>Filters</span>
+              <span class="filter-toggle-icon">▼</span>
+            </button>
+            <div class="filters-panel" id="filters-panel">
+              <div class="filter-group">
+                <h4 class="filter-group-title">Shape</h4>
+                <div class="filter-options">
+                  <label class="filter-option">
+                    <input type="checkbox" name="shape" value="diamond" class="filter-checkbox">
+                    <span>Diamond</span>
+                  </label>
+                  <label class="filter-option">
+                    <input type="checkbox" name="shape" value="teardrop" class="filter-checkbox">
+                    <span>Teardrop</span>
+                  </label>
+                  <label class="filter-option">
+                    <input type="checkbox" name="shape" value="round" class="filter-checkbox">
+                    <span>Round</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <h4 class="filter-group-title">Rating</h4>
+                <div class="filter-options">
+                  <label class="filter-option">
+                    <input type="checkbox" name="rating" value="9" class="filter-checkbox">
+                    <span>9+</span>
+                  </label>
+                  <label class="filter-option">
+                    <input type="checkbox" name="rating" value="8.5" class="filter-checkbox">
+                    <span>8.5+</span>
+                  </label>
+                  <label class="filter-option">
+                    <input type="checkbox" name="rating" value="8" class="filter-checkbox">
+                    <span>8+</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <h4 class="filter-group-title">Brand</h4>
+                <div class="filter-options" id="brand-filters">
+                  <!-- Brand filters will be populated by JavaScript -->
+                </div>
+              </div>
+
+              <div class="filter-group">
+                <h4 class="filter-group-title">Level</h4>
+                <div class="filter-options">
+                  <label class="filter-option">
+                    <input type="checkbox" name="level" value="beginner" class="filter-checkbox">
+                    <span>Beginner</span>
+                  </label>
+                  <label class="filter-option">
+                    <input type="checkbox" name="level" value="intermediate" class="filter-checkbox">
+                    <span>Intermediate</span>
+                  </label>
+                  <label class="filter-option">
+                    <input type="checkbox" name="level" value="advanced" class="filter-checkbox">
+                    <span>Advanced</span>
+                  </label>
+                </div>
+              </div>
+
+              <button class="btn-filter-clear" id="clear-filters">Clear all filters</button>
+            </div>
+          </div>
+
+          <div class="filters-right">
+            <div class="results-count">
+              <span id="results-count">0</span> rackets
+            </div>
+            <div class="sort-container">
+              <label for="sort-select" class="sort-label">Sort</label>
+              <select id="sort-select" class="sort-select">
+                <option value="rating-desc">Rating: High to Low</option>
+                <option value="rating-asc">Rating: Low to High</option>
+                <option value="name-asc">Name: A to Z</option>
+                <option value="name-desc">Name: Z to A</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="power-desc">Power: High to Low</option>
+                <option value="control-desc">Control: High to Low</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reviews Grid -->
+    <section class="reviews-listing-section">
+      <div class="container">
+        <div class="reviews-listing-grid" id="reviews-grid">
+          <!-- Racket cards will be populated by JavaScript -->
+        </div>
+        <div class="reviews-no-results" id="no-results" style="display: none;">
+          <p>No rackets found matching your filters. Try adjusting your search criteria.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/templates.js"></script>
+  <script src="/js/main.js"></script>
+  <script src="/js/reviews-listing.js"></script>
+</body>
+</html>
+

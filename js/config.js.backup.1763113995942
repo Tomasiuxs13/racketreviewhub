@@ -1,0 +1,2368 @@
+// Site Configuration
+const SITE_CONFIG = {
+  name: "Padel Racket Review Hub",
+  description: "Expert reviews, comparisons, and buying guides for padel rackets",
+  url: "https://yourdomain.com",
+  author: "Padel Racket Review Hub"
+};
+
+// Navigation Structure
+const NAVIGATION = {
+  main: [
+    {
+      label: "Best Rackets",
+      url: "/articles/reviews/",
+      hasDropdown: true,
+      items: [
+        { label: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+        { label: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" },
+        { label: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" },
+        { label: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" },
+        { label: "Siux Diablo Revolution", url: "/articles/reviews/siux-diablo-revolution-review.html" }
+      ]
+    },
+    {
+      label: "Brands",
+      url: "/articles/brands/",
+      hasDropdown: true,
+      items: [
+        { label: "Bullpadel", url: "/articles/best-lists/best-padel-rackets-bullpadel.html" },
+        { label: "Head", url: "/articles/best-lists/best-padel-rackets-head.html" },
+        { label: "Adidas", url: "/articles/best-lists/best-padel-rackets-adidas.html" },
+        { label: "Nox", url: "/articles/best-lists/best-padel-rackets-nox.html" },
+        { label: "Siux", url: "/articles/best-lists/best-padel-rackets-siux.html" },
+        { label: "Wilson", url: "/articles/best-lists/best-padel-rackets-wilson.html" }
+      ]
+    },
+    {
+      label: "Guides",
+      url: "/articles/guides/",
+      hasDropdown: true,
+      items: [
+        { label: "Buying Guide", url: "/articles/guides/buying-guide-beginners.html" },
+        { label: "Shapes Explained", url: "/articles/guides/shapes-explained.html" },
+        { label: "Materials & Technology", url: "/articles/guides/materials-technology.html" },
+        { label: "Padel Techniques", url: "/articles/guides/padel-techniques.html" }
+      ]
+    },
+    {
+      label: "Blog",
+      url: "/blog/",
+      hasDropdown: false
+    }
+  ],
+  footer: [
+    { label: "About", url: "/about.html" },
+    { label: "Contact", url: "/contact.html" },
+    { label: "Privacy Policy", url: "/privacy.html" },
+    { label: "Terms of Use", url: "/terms.html" },
+    { label: "Affiliate Disclosure", url: "/affiliate-disclosure.html" }
+  ]
+};
+
+// Affiliate Link Configuration
+const AFFILIATE_LINKS = {
+  amazon: {
+    baseUrl: "https://www.amazon.com/s?k=",
+    buttonClass: "btn-amazon",
+    buttonText: "View on Amazon",
+    color: "#FF9900"
+  },
+  padelNuestro: {
+    baseUrl: "https://padelnuestro.com/search?q=",
+    buttonClass: "btn-padel-nuestro",
+    buttonText: "View on Padel Nuestro",
+    color: "#0066CC"
+  },
+  compare: {
+    baseUrl: "#",
+    buttonClass: "btn-compare",
+    buttonText: "Compare Prices",
+    color: "#333333"
+  }
+};
+
+// Product Data Structure
+const PRODUCTS = {
+  "bullpadel-hack-03": {
+    id: "bullpadel-hack-03",
+    name: "Bullpadel Hack 03",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Miguel Lamperti",
+    price: "€279",
+    image: "/images/products/bullpadel-hack-03.jpg",
+    ratings: {
+      power: 9.5,
+      control: 8.0,
+      rebound: 8.5,
+      maneuverability: 7.8,
+      sweetSpot: 7.5,
+      overall: 8.8
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "365-375g",
+      balance: "High",
+      touch: "Hard",
+      frame: "100% Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "MultiEVA",
+      level: "Advanced"
+    },
+    verdict: "Ideal for advanced players who want maximum power and precision. Slightly demanding for beginners, but unbeatable for strong attackers.",
+    alternatives: [
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" },
+      { name: "Nox AT10 Genius", url: "/articles/reviews/nox-at10-genius-review.html" },
+      { name: "Adidas Metalbone 3.3", url: "/articles/reviews/adidas-metalbone-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+hack+03+padel+racket",
+      padelNuestro: "bullpadel-hack-03"
+    }
+  },
+  "head-delta-pro": {
+    id: "head-delta-pro",
+    name: "Head Delta Pro",
+    year: "2025",
+    brand: "Head",
+    playerName: "Edu Alonso",
+    price: "€299",
+    image: "/images/products/head-delta-pro.jpg",
+    ratings: {
+      power: 9.0,
+      control: 9.5,
+      rebound: 8.8,
+      maneuverability: 8.5,
+      sweetSpot: 9.0,
+      overall: 9.0
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360-370g",
+      balance: "Medium-High",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Perfect balance of power and control. Excellent for intermediate to advanced players seeking versatility.",
+    alternatives: [
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" },
+      { name: "Nox AT10 Genius", url: "/articles/reviews/nox-at10-genius-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+delta+pro+padel+racket",
+      padelNuestro: "head-delta-pro"
+    }
+  },
+  "adidas-metalbone-ctrl-3.3": {
+    id: "adidas-metalbone-ctrl-3.3",
+    name: "Adidas Metalbone CTRL 3.3",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Pablo Cardona",
+    price: "€289",
+    image: "/images/products/adidas-metalbone-ctrl-3.3.jpg",
+    ratings: {
+      power: 8.5,
+      control: 9.5,
+      rebound: 8.0,
+      maneuverability: 8.8,
+      sweetSpot: 9.2,
+      overall: 9.0
+    },
+    specs: {
+      shape: "Round",
+      weight: "365-375g",
+      balance: "Low",
+      touch: "Medium-Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Outstanding control racket with excellent comfort. Great for players who prioritize precision over raw power.",
+    alternatives: [
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+      { name: "Nox AT10 Genius", url: "/articles/reviews/nox-at10-genius-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+metalbone+ctrl+3.3+padel+racket",
+      padelNuestro: "adidas-metalbone-ctrl-3.3"
+    }
+  },
+  "siux-diablo-revolution": {
+    id: "siux-diablo-revolution",
+    name: "Siux Diablo Revolution",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Agustin Tapia",
+    price: "€269",
+    image: "/images/products/siux-diablo-revolution.jpg",
+    ratings: {
+      power: 9.0,
+      control: 8.5,
+      rebound: 8.2,
+      maneuverability: 7.5,
+      sweetSpot: 7.8,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370-380g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "MultiEVA",
+      level: "Advanced"
+    },
+    verdict: "Powerful racket designed for aggressive players. Excellent for advanced players who dominate at the net.",
+    alternatives: [
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" },
+      { name: "Adidas Metalbone 3.3", url: "/articles/reviews/adidas-metalbone-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+diablo+revolution+padel+racket",
+      padelNuestro: "siux-diablo-revolution"
+    }
+  },
+  "nox-at10-genius-arena": {
+    id: "nox-at10-genius-arena",
+    name: "Nox AT10 Genius Arena",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Alejandro Galán",
+    price: "€275",
+    image: "/images/products/nox-at10-genius-arena.jpg",
+    ratings: {
+      power: 8.5,
+      control: 9.0,
+      rebound: 8.7,
+      maneuverability: 8.8,
+      sweetSpot: 9.0,
+      overall: 9.0
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360-370g",
+      balance: "Medium",
+      touch: "Medium-Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Versatile racket with excellent balance. Perfect for players transitioning from intermediate to advanced level.",
+    alternatives: [
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+at10+genius+arena+padel+racket",
+      padelNuestro: "nox-at10-genius-arena"
+    }
+  },
+  "royal-padel-m27-light": {
+    id: "royal-padel-m27-light",
+    name: "Royal Padel M27 Light",
+    year: "2025",
+    brand: "Royal Padel",
+    playerName: "Professional Player",
+    price: "€199",
+    image: "/images/products/royal-padel-m27-light.jpg",
+    ratings: {
+      power: 7.5,
+      control: 8.5,
+      rebound: 7.8,
+      maneuverability: 9.0,
+      sweetSpot: 9.0,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Round",
+      weight: "350-360g",
+      balance: "Low",
+      touch: "Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Beginner-Intermediate"
+    },
+    verdict: "Excellent entry-level racket with great comfort and control. Perfect for beginners starting their padel journey.",
+    alternatives: [
+      { name: "Head Delta Elite", url: "/articles/reviews/head-delta-elite-review.html" },
+      { name: "Bullpadel Flow", url: "/articles/reviews/bullpadel-flow-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "royal+padel+m27+light+padel+racket",
+      padelNuestro: "royal-padel-m27-light"
+    }
+  },
+  // Bullpadel additional products
+  "bullpadel-vertex-03": {
+    id: "bullpadel-vertex-03",
+    name: "Bullpadel Vertex 03",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Juan Tello",
+    price: "€350",
+    image: "/images/products/bullpadel-vertex-03.jpg",
+    ratings: {
+      power: 9.0,
+      control: 8.0,
+      rebound: 8.5,
+      maneuverability: 8.3,
+      sweetSpot: 7.0,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "CarbonTube",
+      faces: "Xtend Carbon 12K",
+      core: "MultiEVA",
+      level: "Advanced"
+    },
+    verdict: "Maximum power racket with excellent build quality. Ideal for aggressive players seeking explosive shots.",
+    alternatives: [
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" },
+      { name: "Bullpadel Vertex 04", url: "/articles/reviews/bullpadel-vertex-04-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+vertex+03+padel+racket",
+      padelNuestro: "bullpadel-vertex-03"
+    }
+  },
+  "bullpadel-vertex-03-comfort": {
+    id: "bullpadel-vertex-03-comfort",
+    name: "Bullpadel Vertex 03 Comfort",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Martín Di Nenno",
+    price: "€245",
+    image: "/images/products/bullpadel-vertex-03-comfort.jpg",
+    ratings: {
+      power: 7.7,
+      control: 8.0,
+      rebound: 8.0,
+      maneuverability: 8.2,
+      sweetSpot: 8.0,
+      overall: 8.0
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "365g",
+      balance: "High",
+      touch: "Medium",
+      frame: "CarbonTube",
+      faces: "Fibrix",
+      core: "MultiEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Comfortable diamond-shaped racket with softer feel. Perfect for players with elbow concerns who still want power.",
+    alternatives: [
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" },
+      { name: "Bullpadel Hack 03 Comfort", url: "/articles/reviews/bullpadel-hack-03-comfort-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+vertex+03+comfort+padel+racket",
+      padelNuestro: "bullpadel-vertex-03-comfort"
+    }
+  },
+  "bullpadel-vertex-03-control": {
+    id: "bullpadel-vertex-03-control",
+    name: "Bullpadel Vertex 03 Control",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Professional Player",
+    price: "€325",
+    image: "/images/products/bullpadel-vertex-03-control.jpg",
+    ratings: {
+      power: 7.7,
+      control: 9.0,
+      rebound: 8.0,
+      maneuverability: 9.0,
+      sweetSpot: 8.0,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "370g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "CarbonTube",
+      faces: "Xtend Carbon 12K",
+      core: "MultiEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Maximum control racket with excellent maneuverability. Ideal for players prioritizing precision and placement.",
+    alternatives: [
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" },
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+vertex+03+control+padel+racket",
+      padelNuestro: "bullpadel-vertex-03-control"
+    }
+  },
+  "bullpadel-vertex-03-woman": {
+    id: "bullpadel-vertex-03-woman",
+    name: "Bullpadel Vertex 03 Woman",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Delfi Brea",
+    price: "€300",
+    image: "/images/products/bullpadel-vertex-03-woman.jpg",
+    ratings: {
+      power: 7.5,
+      control: 8.0,
+      rebound: 7.8,
+      maneuverability: 8.5,
+      sweetSpot: 8.0,
+      overall: 8.0
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "345-360g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "CarbonTube",
+      faces: "Fibrix",
+      core: "MultiEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Lightweight racket designed for female players. Offers excellent balance between power and control with enhanced maneuverability.",
+    alternatives: [
+      { name: "Bullpadel Flow Woman", url: "/articles/reviews/bullpadel-flow-woman-review.html" },
+      { name: "Bullpadel Vertex 03 Comfort", url: "/articles/reviews/bullpadel-vertex-03-comfort-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+vertex+03+woman+padel+racket",
+      padelNuestro: "bullpadel-vertex-03-woman"
+    }
+  },
+  "bullpadel-vertex-04": {
+    id: "bullpadel-vertex-04",
+    name: "Bullpadel Vertex 04",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Maxi Sánchez",
+    price: "€360",
+    image: "/images/products/bullpadel-vertex-04.jpg",
+    ratings: {
+      power: 9.2,
+      control: 8.2,
+      rebound: 8.5,
+      maneuverability: 8.0,
+      sweetSpot: 7.5,
+      overall: 8.7
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "CarbonTube",
+      faces: "Xtend Carbon 12K",
+      core: "MultiEVA",
+      level: "Advanced"
+    },
+    verdict: "Latest iteration with enhanced aerodynamics and improved power. Designed for high-speed, high-impact play.",
+    alternatives: [
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" },
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+vertex+04+padel+racket",
+      padelNuestro: "bullpadel-vertex-04"
+    }
+  },
+  "bullpadel-hack-03-comfort": {
+    id: "bullpadel-hack-03-comfort",
+    name: "Bullpadel Hack 03 Comfort",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Professional Player",
+    price: "€290",
+    image: "/images/products/bullpadel-hack-03-comfort.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.2,
+      rebound: 8.3,
+      maneuverability: 8.0,
+      sweetSpot: 8.0,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "365g",
+      balance: "Medium-High",
+      touch: "Medium",
+      frame: "CarbonTube",
+      faces: "Fibrix",
+      core: "MultiEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Softer version of the Hack 03 providing comfort without sacrificing power. Ideal for players with arm concerns.",
+    alternatives: [
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" },
+      { name: "Bullpadel Vertex 03 Comfort", url: "/articles/reviews/bullpadel-vertex-03-comfort-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+hack+03+comfort+padel+racket",
+      padelNuestro: "bullpadel-hack-03-comfort"
+    }
+  },
+  "bullpadel-hack-03-control": {
+    id: "bullpadel-hack-03-control",
+    name: "Bullpadel Hack 03 Control",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Professional Player",
+    price: "€295",
+    image: "/images/products/bullpadel-hack-03-control.jpg",
+    ratings: {
+      power: 7.8,
+      control: 9.0,
+      rebound: 8.0,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "CarbonTube",
+      faces: "Carbon Fiber",
+      core: "MultiEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Control-focused version of the Hack 03. Excellent for defensive players who prioritize precision over power.",
+    alternatives: [
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" },
+      { name: "Bullpadel Vertex 03 Control", url: "/articles/reviews/bullpadel-vertex-03-control-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+hack+03+control+padel+racket",
+      padelNuestro: "bullpadel-hack-03-control"
+    }
+  },
+  "bullpadel-flow-woman": {
+    id: "bullpadel-flow-woman",
+    name: "Bullpadel Flow Woman",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Alejandra Salazar",
+    price: "€280",
+    image: "/images/products/bullpadel-flow-woman.jpg",
+    ratings: {
+      power: 8.0,
+      control: 8.5,
+      rebound: 8.2,
+      maneuverability: 9.0,
+      sweetSpot: 8.2,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Hybrid",
+      weight: "355g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "CarbonTube",
+      faces: "Fibrix",
+      core: "MultiEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Versatile racket designed for female players. Lightweight and maneuverable with excellent balance of power and control.",
+    alternatives: [
+      { name: "Bullpadel Vertex 03 Woman", url: "/articles/reviews/bullpadel-vertex-03-woman-review.html" },
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+flow+woman+padel+racket",
+      padelNuestro: "bullpadel-flow-woman"
+    }
+  },
+  "bullpadel-neuron": {
+    id: "bullpadel-neuron",
+    name: "Bullpadel Neuron",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Federico Chingotto",
+    price: "€280",
+    image: "/images/products/bullpadel-neuron.jpg",
+    ratings: {
+      power: 7.0,
+      control: 9.5,
+      rebound: 7.8,
+      maneuverability: 9.0,
+      sweetSpot: 8.5,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Soft",
+      frame: "CarbonTube",
+      faces: "Carbon Fiber",
+      core: "SoftEVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Control-focused racket with innovative bridge structure. Excellent for players seeking precision and comfort.",
+    alternatives: [
+      { name: "Bullpadel Vertex 03 Control", url: "/articles/reviews/bullpadel-vertex-03-control-review.html" },
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+neuron+padel+racket",
+      padelNuestro: "bullpadel-neuron"
+    }
+  },
+  "bullpadel-indiga-pwr": {
+    id: "bullpadel-indiga-pwr",
+    name: "Bullpadel Indiga PWR",
+    year: "2025",
+    brand: "Bullpadel",
+    playerName: "Professional Player",
+    price: "€120",
+    image: "/images/products/bullpadel-indiga-pwr.jpg",
+    ratings: {
+      power: 7.5,
+      control: 7.0,
+      rebound: 7.5,
+      maneuverability: 8.0,
+      sweetSpot: 7.5,
+      overall: 7.5
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "360g",
+      balance: "High",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Polyglass",
+      core: "SoftEVA",
+      level: "Beginner-Intermediate"
+    },
+    verdict: "Entry-level power racket offering good value. Ideal for beginners seeking power without breaking the bank.",
+    alternatives: [
+      { name: "Head Flash Pro", url: "/articles/reviews/head-flash-pro-review.html" },
+      { name: "Adidas Adipower Junior", url: "/articles/reviews/adidas-adipower-junior-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "bullpadel+indiga+pwr+padel+racket",
+      padelNuestro: "bullpadel-indiga-pwr"
+    }
+  },
+  // Head additional products
+  "head-delta-elite": {
+    id: "head-delta-elite",
+    name: "Head Delta Elite",
+    year: "2025",
+    brand: "Head",
+    playerName: "Sanyo Gutiérrez",
+    price: "€280",
+    image: "/images/products/head-delta-elite.jpg",
+    ratings: {
+      power: 8.5,
+      control: 9.0,
+      rebound: 8.5,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.7
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360-370g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Power Foam",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Excellent blend of power and comfort. Perfect for players seeking versatility with enhanced feel.",
+    alternatives: [
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+      { name: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+delta+elite+padel+racket",
+      padelNuestro: "head-delta-elite"
+    }
+  },
+  "head-extreme-elite": {
+    id: "head-extreme-elite",
+    name: "Head Extreme Elite",
+    year: "2025",
+    brand: "Head",
+    playerName: "Arturo Coello",
+    price: "€250",
+    image: "/images/products/head-extreme-elite.jpg",
+    ratings: {
+      power: 8.8,
+      control: 8.0,
+      rebound: 8.3,
+      maneuverability: 8.5,
+      sweetSpot: 7.8,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "365g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Power Foam",
+      level: "Advanced"
+    },
+    verdict: "Powerful racket with exceptional energy transfer. Ideal for aggressive players seeking explosive shots.",
+    alternatives: [
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+extreme+elite+padel+racket",
+      padelNuestro: "head-extreme-elite"
+    }
+  },
+  "head-speed-elite": {
+    id: "head-speed-elite",
+    name: "Head Speed Elite",
+    year: "2025",
+    brand: "Head",
+    playerName: "Professional Player",
+    price: "€230",
+    image: "/images/products/head-speed-elite.jpg",
+    ratings: {
+      power: 8.0,
+      control: 8.5,
+      rebound: 8.0,
+      maneuverability: 9.0,
+      sweetSpot: 8.5,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Fiberglass",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "Speed-focused racket with excellent maneuverability. Perfect for players who value quick reactions and control.",
+    alternatives: [
+      { name: "Head Delta Elite", url: "/articles/reviews/head-delta-elite-review.html" },
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+speed+elite+padel+racket",
+      padelNuestro: "head-speed-elite"
+    }
+  },
+  "head-gravity-pro": {
+    id: "head-gravity-pro",
+    name: "Head Gravity Pro",
+    year: "2025",
+    brand: "Head",
+    playerName: "Professional Player",
+    price: "€290",
+    image: "/images/products/head-gravity-pro.jpg",
+    ratings: {
+      power: 7.5,
+      control: 9.2,
+      rebound: 8.0,
+      maneuverability: 8.8,
+      sweetSpot: 9.0,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium-Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Maximum control racket with unique flip design. Excellent for players prioritizing precision and placement.",
+    alternatives: [
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+gravity+pro+padel+racket",
+      padelNuestro: "head-gravity-pro"
+    }
+  },
+  "head-zephyr-pro": {
+    id: "head-zephyr-pro",
+    name: "Head Zephyr Pro",
+    year: "2025",
+    brand: "Head",
+    playerName: "Professional Player",
+    price: "€180",
+    image: "/images/products/head-zephyr-pro.jpg",
+    ratings: {
+      power: 7.0,
+      control: 8.5,
+      rebound: 7.5,
+      maneuverability: 9.0,
+      sweetSpot: 8.8,
+      overall: 8.0
+    },
+    specs: {
+      shape: "Round",
+      weight: "355g",
+      balance: "Low",
+      touch: "Soft",
+      frame: "Carbon Fiber",
+      faces: "Fiberglass",
+      core: "Comfort Foam",
+      level: "Beginner-Intermediate"
+    },
+    verdict: "Lightweight racket with soft feel. Perfect for intermediate players seeking comfort and control.",
+    alternatives: [
+      { name: "Head Speed Elite", url: "/articles/reviews/head-speed-elite-review.html" },
+      { name: "Bullpadel Indiga PWR", url: "/articles/reviews/bullpadel-indiga-pwr-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+zephyr+pro+padel+racket",
+      padelNuestro: "head-zephyr-pro"
+    }
+  },
+  "head-flash-pro": {
+    id: "head-flash-pro",
+    name: "Head Flash Pro",
+    year: "2025",
+    brand: "Head",
+    playerName: "Professional Player",
+    price: "€130",
+    image: "/images/products/head-flash-pro.jpg",
+    ratings: {
+      power: 7.2,
+      control: 8.0,
+      rebound: 7.5,
+      maneuverability: 8.5,
+      sweetSpot: 8.5,
+      overall: 7.7
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Fiberglass",
+      core: "EVA Soft",
+      level: "Beginner-Intermediate"
+    },
+    verdict: "Entry-level racket offering good balance. Ideal for beginners developing their game.",
+    alternatives: [
+      { name: "Head Zephyr Pro", url: "/articles/reviews/head-zephyr-pro-review.html" },
+      { name: "Bullpadel Indiga PWR", url: "/articles/reviews/bullpadel-indiga-pwr-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+flash+pro+padel+racket",
+      padelNuestro: "head-flash-pro"
+    }
+  },
+  "head-alpha-pro": {
+    id: "head-alpha-pro",
+    name: "Head Alpha Pro",
+    year: "2025",
+    brand: "Head",
+    playerName: "Daniel Sanyo Gutiérrez",
+    price: "€340",
+    image: "/images/products/head-alpha-pro.jpg",
+    ratings: {
+      power: 9.2,
+      control: 8.5,
+      rebound: 8.8,
+      maneuverability: 8.0,
+      sweetSpot: 8.0,
+      overall: 8.7
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "370g",
+      balance: "Medium-High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Power Foam",
+      level: "Advanced"
+    },
+    verdict: "Professional-grade racket with exceptional power and precision. Designed for competitive players.",
+    alternatives: [
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" },
+      { name: "Bullpadel Vertex 04", url: "/articles/reviews/bullpadel-vertex-04-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+alpha+pro+padel+racket",
+      padelNuestro: "head-alpha-pro"
+    }
+  },
+  "head-delta-motion": {
+    id: "head-delta-motion",
+    name: "Head Delta Motion",
+    year: "2025",
+    brand: "Head",
+    playerName: "Professional Player",
+    price: "€270",
+    image: "/images/products/head-delta-motion.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.5,
+      rebound: 8.3,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Power Foam",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Lightweight power racket with excellent maneuverability. Perfect for players seeking speed and power.",
+    alternatives: [
+      { name: "Head Delta Elite", url: "/articles/reviews/head-delta-elite-review.html" },
+      { name: "Head Speed Elite", url: "/articles/reviews/head-speed-elite-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+delta+motion+padel+racket",
+      padelNuestro: "head-delta-motion"
+    }
+  },
+  "head-evo-sanyo": {
+    id: "head-evo-sanyo",
+    name: "Head Evo Sanyo",
+    year: "2025",
+    brand: "Head",
+    playerName: "Sanyo Gutiérrez",
+    price: "€120",
+    image: "/images/products/head-evo-sanyo.jpg",
+    ratings: {
+      power: 7.0,
+      control: 8.0,
+      rebound: 7.5,
+      maneuverability: 8.5,
+      sweetSpot: 8.5,
+      overall: 7.7
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Fiberglass",
+      core: "EVA Soft",
+      level: "Beginner-Intermediate"
+    },
+    verdict: "Beginner-friendly racket with good balance. Great for players starting their padel journey.",
+    alternatives: [
+      { name: "Head Flash Pro", url: "/articles/reviews/head-flash-pro-review.html" },
+      { name: "Bullpadel Indiga PWR", url: "/articles/reviews/bullpadel-indiga-pwr-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+evo+sanyo+padel+racket",
+      padelNuestro: "head-evo-sanyo"
+    }
+  },
+  "head-radical-pro": {
+    id: "head-radical-pro",
+    name: "Head Radical Pro",
+    year: "2025",
+    brand: "Head",
+    playerName: "Professional Player",
+    price: "€280",
+    image: "/images/products/head-radical-pro.jpg",
+    ratings: {
+      power: 8.0,
+      control: 9.0,
+      rebound: 8.2,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Control-focused racket with unique design. Excellent for advanced players seeking precision.",
+    alternatives: [
+      { name: "Head Gravity Pro", url: "/articles/reviews/head-gravity-pro-review.html" },
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "head+radical+pro+padel+racket",
+      padelNuestro: "head-radical-pro"
+    }
+  },
+  // Adidas additional products
+  "adidas-metalbone-3.4": {
+    id: "adidas-metalbone-3.4",
+    name: "Adidas Metalbone 3.4",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Alejandro Galán",
+    price: "€340",
+    image: "/images/products/adidas-metalbone-3.4.jpg",
+    ratings: {
+      power: 9.0,
+      control: 8.5,
+      rebound: 8.5,
+      maneuverability: 8.0,
+      sweetSpot: 8.0,
+      overall: 8.6
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Aluminized 2-to-1",
+      faces: "Carbon Fiber",
+      core: "EVA Soft Performance",
+      level: "Advanced"
+    },
+    verdict: "Advanced power racket with exceptional performance. Ideal for aggressive players seeking maximum power.",
+    alternatives: [
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" },
+      { name: "Bullpadel Vertex 04", url: "/articles/reviews/bullpadel-vertex-04-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+metalbone+3.4+padel+racket",
+      padelNuestro: "adidas-metalbone-3.4"
+    }
+  },
+  "adidas-adipower-ctrl-3.2": {
+    id: "adidas-adipower-ctrl-3.2",
+    name: "Adidas Adipower CTRL 3.2",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Alejandro Galán",
+    price: "€280",
+    image: "/images/products/adidas-adipower-ctrl-3.2.jpg",
+    ratings: {
+      power: 7.5,
+      control: 9.2,
+      rebound: 8.0,
+      maneuverability: 8.8,
+      sweetSpot: 9.0,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium-Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft Performance",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Control-oriented racket with Smart Holes Curve technology. Perfect for tactical players prioritizing precision.",
+    alternatives: [
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" },
+      { name: "Head Gravity Pro", url: "/articles/reviews/head-gravity-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+adipower+ctrl+3.2+padel+racket",
+      padelNuestro: "adidas-adipower-ctrl-3.2"
+    }
+  },
+  "adidas-cross-it-2024": {
+    id: "adidas-cross-it-2024",
+    name: "Adidas Cross It 2024",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Alejandro Galán",
+    price: "€300",
+    image: "/images/products/adidas-cross-it-2024.jpg",
+    ratings: {
+      power: 9.2,
+      control: 8.0,
+      rebound: 8.5,
+      maneuverability: 7.8,
+      sweetSpot: 7.5,
+      overall: 8.6
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "375g",
+      balance: "High",
+      touch: "Hard",
+      frame: "15K Carbon Fiber",
+      faces: "15K Carbon Fiber",
+      core: "Hard Adidas Rubber",
+      level: "Advanced"
+    },
+    verdict: "Uncompromising power racket for physically strong players. Delivers raw power and aggressive performance.",
+    alternatives: [
+      { name: "Adidas Metalbone 3.4", url: "/articles/reviews/adidas-metalbone-3.4-review.html" },
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+cross+it+2024+padel+racket",
+      padelNuestro: "adidas-cross-it-2024"
+    }
+  },
+  "adidas-adipower-lite": {
+    id: "adidas-adipower-lite",
+    name: "Adidas Adipower Lite",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Professional Player",
+    price: "€220",
+    image: "/images/products/adidas-adipower-lite.jpg",
+    ratings: {
+      power: 7.8,
+      control: 8.5,
+      rebound: 7.8,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.2
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "360g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Flexible Carbon",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "High responsiveness with flexible face. Balances power and control, aiding technical progress.",
+    alternatives: [
+      { name: "Adidas Adipower CTRL 3.2", url: "/articles/reviews/adidas-adipower-ctrl-3.2-review.html" },
+      { name: "Head Speed Elite", url: "/articles/reviews/head-speed-elite-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+adipower+lite+padel+racket",
+      padelNuestro: "adidas-adipower-lite"
+    }
+  },
+  "adidas-rx-series": {
+    id: "adidas-rx-series",
+    name: "Adidas RX Series",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Professional Player",
+    price: "€170",
+    image: "/images/products/adidas-rx-series.jpg",
+    ratings: {
+      power: 7.0,
+      control: 8.0,
+      rebound: 7.5,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 7.8
+    },
+    specs: {
+      shape: "Round",
+      weight: "355g",
+      balance: "Low",
+      touch: "Soft",
+      frame: "Carbon Fiber",
+      faces: "Fiberglass",
+      core: "Soft EVA",
+      level: "Beginner-Intermediate"
+    },
+    verdict: "Beginner-friendly racket with soft core and oversized face. Provides comfort and durability for learning.",
+    alternatives: [
+      { name: "Adidas Adipower Junior", url: "/articles/reviews/adidas-adipower-junior-review.html" },
+      { name: "Head Flash Pro", url: "/articles/reviews/head-flash-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+rx+series+padel+racket",
+      padelNuestro: "adidas-rx-series"
+    }
+  },
+  "adidas-adipower-attack-3.0": {
+    id: "adidas-adipower-attack-3.0",
+    name: "Adidas Adipower Attack 3.0",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Professional Player",
+    price: "€295",
+    image: "/images/products/adidas-adipower-attack-3.0.jpg",
+    ratings: {
+      power: 8.8,
+      control: 8.2,
+      rebound: 8.3,
+      maneuverability: 8.5,
+      sweetSpot: 8.0,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft Performance",
+      level: "Advanced"
+    },
+    verdict: "Designed for aggressive players with enhanced power and spin. Provides excellent ball control and acceleration.",
+    alternatives: [
+      { name: "Adidas Metalbone 3.4", url: "/articles/reviews/adidas-metalbone-3.4-review.html" },
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+adipower+attack+3.0+padel+racket",
+      padelNuestro: "adidas-adipower-attack-3.0"
+    }
+  },
+  "adidas-adipower-woman-lite": {
+    id: "adidas-adipower-woman-lite",
+    name: "Adidas Adipower Woman Lite",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Marta Ortega",
+    price: "€230",
+    image: "/images/products/adidas-adipower-woman-lite.jpg",
+    ratings: {
+      power: 7.5,
+      control: 8.5,
+      rebound: 7.8,
+      maneuverability: 9.0,
+      sweetSpot: 8.5,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "350g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "Tailored for female players, combining lightness with power. Offers comfortable grip and excellent maneuverability.",
+    alternatives: [
+      { name: "Bullpadel Flow Woman", url: "/articles/reviews/bullpadel-flow-woman-review.html" },
+      { name: "Adidas Adipower Lite", url: "/articles/reviews/adidas-adipower-lite-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+adipower+woman+lite+padel+racket",
+      padelNuestro: "adidas-adipower-woman-lite"
+    }
+  },
+  "adidas-adipower-junior": {
+    id: "adidas-adipower-junior",
+    name: "Adidas Adipower Junior",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Professional Player",
+    price: "€120",
+    image: "/images/products/adidas-adipower-junior.jpg",
+    ratings: {
+      power: 6.5,
+      control: 7.5,
+      rebound: 7.0,
+      maneuverability: 8.5,
+      sweetSpot: 8.5,
+      overall: 7.4
+    },
+    specs: {
+      shape: "Round",
+      weight: "340g",
+      balance: "Low",
+      touch: "Soft",
+      frame: "Carbon Fiber",
+      faces: "Fiberglass",
+      core: "Soft EVA",
+      level: "Beginner"
+    },
+    verdict: "Designed for young players focusing on control and ease of use. Lightweight and forgiving for developing skills.",
+    alternatives: [
+      { name: "Adidas RX Series", url: "/articles/reviews/adidas-rx-series-review.html" },
+      { name: "Head Evo Sanyo", url: "/articles/reviews/head-evo-sanyo-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+adipower+junior+padel+racket",
+      padelNuestro: "adidas-adipower-junior"
+    }
+  },
+  "adidas-adipower-carbon-ctrl": {
+    id: "adidas-adipower-carbon-ctrl",
+    name: "Adidas Adipower Carbon CTRL",
+    year: "2025",
+    brand: "Adidas",
+    playerName: "Professional Player",
+    price: "€270",
+    image: "/images/products/adidas-adipower-carbon-ctrl.jpg",
+    ratings: {
+      power: 7.8,
+      control: 9.0,
+      rebound: 8.0,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft Performance",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Carbon frame for enhanced durability and control. Suitable for players seeking precision and stability.",
+    alternatives: [
+      { name: "Adidas Adipower CTRL 3.2", url: "/articles/reviews/adidas-adipower-ctrl-3.2-review.html" },
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "adidas+adipower+carbon+ctrl+padel+racket",
+      padelNuestro: "adidas-adipower-carbon-ctrl"
+    }
+  },
+  // Nox additional products
+  "nox-ml10-pro-cup": {
+    id: "nox-ml10-pro-cup",
+    name: "Nox ML10 Pro Cup",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Miguel Lamperti",
+    price: "€260",
+    image: "/images/products/nox-ml10-pro-cup.jpg",
+    ratings: {
+      power: 8.0,
+      control: 8.8,
+      rebound: 8.2,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Renowned for balance and control. Cherished by intermediate and advanced players for its versatility.",
+    alternatives: [
+      { name: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" },
+      { name: "Head Delta Elite", url: "/articles/reviews/head-delta-elite-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+ml10+pro+cup+padel+racket",
+      padelNuestro: "nox-ml10-pro-cup"
+    }
+  },
+  "nox-at10-genius-12k": {
+    id: "nox-at10-genius-12k",
+    name: "Nox AT10 Genius 12K",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Agustin Tapia",
+    price: "€320",
+    image: "/images/products/nox-at10-genius-12k.jpg",
+    ratings: {
+      power: 8.8,
+      control: 9.0,
+      rebound: 8.7,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.8
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "12K Carbon Fiber",
+      faces: "12K Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Premium-level racket with advanced materials. Praised for powerful response and refined control.",
+    alternatives: [
+      { name: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" },
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+at10+genius+12k+padel+racket",
+      padelNuestro: "nox-at10-genius-12k"
+    }
+  },
+  "nox-ml10-luxury-bahia": {
+    id: "nox-ml10-luxury-bahia",
+    name: "Nox ML10 Luxury Bahia",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Miguel Lamperti",
+    price: "€275",
+    image: "/images/products/nox-ml10-luxury-bahia.jpg",
+    ratings: {
+      power: 8.2,
+      control: 8.5,
+      rebound: 8.3,
+      maneuverability: 8.5,
+      sweetSpot: 8.5,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Combines teardrop shape with medium balance. Offers blend of power and control for versatile play.",
+    alternatives: [
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" },
+      { name: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+ml10+luxury+bahia+padel+racket",
+      padelNuestro: "nox-ml10-luxury-bahia"
+    }
+  },
+  "nox-at10-genius-attack-18k": {
+    id: "nox-at10-genius-attack-18k",
+    name: "Nox AT10 Genius Attack 18K",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Agustin Tapia",
+    price: "€310",
+    image: "/images/products/nox-at10-genius-attack-18k.jpg",
+    ratings: {
+      power: 9.0,
+      control: 8.5,
+      rebound: 8.5,
+      maneuverability: 8.0,
+      sweetSpot: 7.8,
+      overall: 8.6
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "18K Carbon Fiber",
+      faces: "18K Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Designed for aggressive players with diamond shape and high balance. Delivers exceptional power for offensive playstyles.",
+    alternatives: [
+      { name: "Nox AT10 Genius 12K", url: "/articles/reviews/nox-at10-genius-12k-review.html" },
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+at10+genius+attack+18k+padel+racket",
+      padelNuestro: "nox-at10-genius-attack-18k"
+    }
+  },
+  "nox-ml10-pro-cup-black-edition": {
+    id: "nox-ml10-pro-cup-black-edition",
+    name: "Nox ML10 Pro Cup Black Edition",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Miguel Lamperti",
+    price: "€260",
+    image: "/images/products/nox-ml10-pro-cup-black-edition.jpg",
+    ratings: {
+      power: 8.0,
+      control: 8.8,
+      rebound: 8.2,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Stylish variant of the classic ML10 Pro Cup. Ideal for players who appreciate aesthetics without compromising performance.",
+    alternatives: [
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" },
+      { name: "Nox ML10 Luxury Bahia", url: "/articles/reviews/nox-ml10-luxury-bahia-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+ml10+pro+cup+black+edition+padel+racket",
+      padelNuestro: "nox-ml10-pro-cup-black-edition"
+    }
+  },
+  "nox-at10-luxury-genius-arena": {
+    id: "nox-at10-luxury-genius-arena",
+    name: "Nox AT10 Luxury Genius Arena",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Agustin Tapia",
+    price: "€330",
+    image: "/images/products/nox-at10-luxury-genius-arena.jpg",
+    ratings: {
+      power: 8.5,
+      control: 9.0,
+      rebound: 8.7,
+      maneuverability: 8.8,
+      sweetSpot: 9.0,
+      overall: 8.8
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium-Soft",
+      frame: "Carbon Fiber",
+      faces: "Rough Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Features rough surface for enhanced spin. Offers combination of power, control, and spin for advanced players.",
+    alternatives: [
+      { name: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" },
+      { name: "Nox AT10 Genius 12K", url: "/articles/reviews/nox-at10-genius-12k-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+at10+luxury+genius+arena+padel+racket",
+      padelNuestro: "nox-at10-luxury-genius-arena"
+    }
+  },
+  "nox-ml10-shotgun": {
+    id: "nox-ml10-shotgun",
+    name: "Nox ML10 Shotgun",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Miguel Lamperti",
+    price: "€290",
+    image: "/images/products/nox-ml10-shotgun.jpg",
+    ratings: {
+      power: 8.8,
+      control: 8.2,
+      rebound: 8.3,
+      maneuverability: 8.0,
+      sweetSpot: 7.8,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Designed for power hitters with diamond shape and high balance. Provides explosive power for aggressive play.",
+    alternatives: [
+      { name: "Nox AT10 Genius Attack 18K", url: "/articles/reviews/nox-at10-genius-attack-18k-review.html" },
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+ml10+shotgun+padel+racket",
+      padelNuestro: "nox-ml10-shotgun"
+    }
+  },
+  "nox-at10-genius-18k": {
+    id: "nox-at10-genius-18k",
+    name: "Nox AT10 Genius 18K",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Agustin Tapia",
+    price: "€335",
+    image: "/images/products/nox-at10-genius-18k.jpg",
+    ratings: {
+      power: 8.8,
+      control: 9.0,
+      rebound: 8.7,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.8
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "18K Carbon Fiber",
+      faces: "18K Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Evolution of the AT10 series with enhanced materials. Balances power and control for competitive players.",
+    alternatives: [
+      { name: "Nox AT10 Genius 12K", url: "/articles/reviews/nox-at10-genius-12k-review.html" },
+      { name: "Nox AT10 Luxury Genius Arena", url: "/articles/reviews/nox-at10-luxury-genius-arena-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+at10+genius+18k+padel+racket",
+      padelNuestro: "nox-at10-genius-18k"
+    }
+  },
+  "nox-ml10-luxury-l5": {
+    id: "nox-ml10-luxury-l5",
+    name: "Nox ML10 Luxury L5",
+    year: "2025",
+    brand: "Nox",
+    playerName: "Miguel Lamperti",
+    price: "€265",
+    image: "/images/products/nox-ml10-luxury-l5.jpg",
+    ratings: {
+      power: 8.0,
+      control: 8.5,
+      rebound: 8.2,
+      maneuverability: 8.5,
+      sweetSpot: 8.5,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Features longer handle for players who use both hands on the backhand. Offers comfort and control for two-handed backhand players.",
+    alternatives: [
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" },
+      { name: "Nox ML10 Luxury Bahia", url: "/articles/reviews/nox-ml10-luxury-bahia-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "nox+ml10+luxury+l5+padel+racket",
+      padelNuestro: "nox-ml10-luxury-l5"
+    }
+  },
+  // Siux additional products
+  "siux-diablo-revolution-ctrl": {
+    id: "siux-diablo-revolution-ctrl",
+    name: "Siux Diablo Revolution CTRL",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€275",
+    image: "/images/products/siux-diablo-revolution-ctrl.jpg",
+    ratings: {
+      power: 7.8,
+      control: 9.0,
+      rebound: 8.0,
+      maneuverability: 8.8,
+      sweetSpot: 8.8,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Control version of the Diablo Revolution. Excellent for players prioritizing precision and placement.",
+    alternatives: [
+      { name: "Siux Diablo Revolution", url: "/articles/reviews/siux-diablo-revolution-review.html" },
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+diablo+revolution+ctrl+padel+racket",
+      padelNuestro: "siux-diablo-revolution-ctrl"
+    }
+  },
+  "siux-diablo-revolution-hard": {
+    id: "siux-diablo-revolution-hard",
+    name: "Siux Diablo Revolution Hard",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€280",
+    image: "/images/products/siux-diablo-revolution-hard.jpg",
+    ratings: {
+      power: 9.2,
+      control: 8.0,
+      rebound: 8.5,
+      maneuverability: 7.5,
+      sweetSpot: 7.5,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "375g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Hard EVA",
+      level: "Advanced"
+    },
+    verdict: "Hard core version for maximum power. Designed for aggressive players seeking uncompromising power.",
+    alternatives: [
+      { name: "Siux Diablo Revolution", url: "/articles/reviews/siux-diablo-revolution-review.html" },
+      { name: "Bullpadel Vertex 04", url: "/articles/reviews/bullpadel-vertex-04-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+diablo+revolution+hard+padel+racket",
+      padelNuestro: "siux-diablo-revolution-hard"
+    }
+  },
+  "siux-electra-st2": {
+    id: "siux-electra-st2",
+    name: "Siux Electra ST2",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€250",
+    image: "/images/products/siux-electra-st2.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.5,
+      rebound: 8.2,
+      maneuverability: 8.5,
+      sweetSpot: 8.2,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Versatile racket with excellent balance. Perfect for players seeking all-around performance.",
+    alternatives: [
+      { name: "Siux Diablo Revolution", url: "/articles/reviews/siux-diablo-revolution-review.html" },
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+electra+st2+padel+racket",
+      padelNuestro: "siux-electra-st2"
+    }
+  },
+  "siux-electra-st2-ctrl": {
+    id: "siux-electra-st2-ctrl",
+    name: "Siux Electra ST2 CTRL",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€255",
+    image: "/images/products/siux-electra-st2-ctrl.jpg",
+    ratings: {
+      power: 7.8,
+      control: 9.0,
+      rebound: 8.0,
+      maneuverability: 8.8,
+      sweetSpot: 8.8,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Control version of the Electra ST2. Excellent for players prioritizing precision and placement.",
+    alternatives: [
+      { name: "Siux Electra ST2", url: "/articles/reviews/siux-electra-st2-review.html" },
+      { name: "Siux Diablo Revolution CTRL", url: "/articles/reviews/siux-diablo-revolution-ctrl-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+electra+st2+ctrl+padel+racket",
+      padelNuestro: "siux-electra-st2-ctrl"
+    }
+  },
+  "siux-electra-st2-hard": {
+    id: "siux-electra-st2-hard",
+    name: "Siux Electra ST2 Hard",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€260",
+    image: "/images/products/siux-electra-st2-hard.jpg",
+    ratings: {
+      power: 8.8,
+      control: 8.0,
+      rebound: 8.5,
+      maneuverability: 8.0,
+      sweetSpot: 7.8,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Hard EVA",
+      level: "Advanced"
+    },
+    verdict: "Hard core version for maximum power. Ideal for aggressive players seeking explosive shots.",
+    alternatives: [
+      { name: "Siux Electra ST2", url: "/articles/reviews/siux-electra-st2-review.html" },
+      { name: "Siux Diablo Revolution Hard", url: "/articles/reviews/siux-diablo-revolution-hard-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+electra+st2+hard+padel+racket",
+      padelNuestro: "siux-electra-st2-hard"
+    }
+  },
+  "siux-fenix-st2": {
+    id: "siux-fenix-st2",
+    name: "Siux Fenix ST2",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€240",
+    image: "/images/products/siux-fenix-st2.jpg",
+    ratings: {
+      power: 8.2,
+      control: 8.3,
+      rebound: 8.0,
+      maneuverability: 8.5,
+      sweetSpot: 8.3,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "Balanced racket with good versatility. Perfect for intermediate players developing their game.",
+    alternatives: [
+      { name: "Siux Electra ST2", url: "/articles/reviews/siux-electra-st2-review.html" },
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+fenix+st2+padel+racket",
+      padelNuestro: "siux-fenix-st2"
+    }
+  },
+  "siux-fenix-st2-ctrl": {
+    id: "siux-fenix-st2-ctrl",
+    name: "Siux Fenix ST2 CTRL",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€245",
+    image: "/images/products/siux-fenix-st2-ctrl.jpg",
+    ratings: {
+      power: 7.5,
+      control: 8.8,
+      rebound: 7.8,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "Control version with excellent precision. Great for players focusing on placement and accuracy.",
+    alternatives: [
+      { name: "Siux Fenix ST2", url: "/articles/reviews/siux-fenix-st2-review.html" },
+      { name: "Siux Electra ST2 CTRL", url: "/articles/reviews/siux-electra-st2-ctrl-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+fenix+st2+ctrl+padel+racket",
+      padelNuestro: "siux-fenix-st2-ctrl"
+    }
+  },
+  "siux-fenix-st2-hard": {
+    id: "siux-fenix-st2-hard",
+    name: "Siux Fenix ST2 Hard",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€250",
+    image: "/images/products/siux-fenix-st2-hard.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.0,
+      rebound: 8.3,
+      maneuverability: 8.2,
+      sweetSpot: 7.8,
+      overall: 8.2
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Hard EVA",
+      level: "Advanced"
+    },
+    verdict: "Hard core version for aggressive play. Delivers powerful shots for advanced players.",
+    alternatives: [
+      { name: "Siux Fenix ST2", url: "/articles/reviews/siux-fenix-st2-review.html" },
+      { name: "Siux Electra ST2 Hard", url: "/articles/reviews/siux-electra-st2-hard-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+fenix+st2+hard+padel+racket",
+      padelNuestro: "siux-fenix-st2-hard"
+    }
+  },
+  "siux-atomik-st2": {
+    id: "siux-atomik-st2",
+    name: "Siux Atomik ST2",
+    year: "2025",
+    brand: "Siux",
+    playerName: "Professional Player",
+    price: "€230",
+    image: "/images/products/siux-atomik-st2.jpg",
+    ratings: {
+      power: 8.0,
+      control: 8.2,
+      rebound: 8.0,
+      maneuverability: 8.5,
+      sweetSpot: 8.2,
+      overall: 8.2
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "Versatile racket with good balance. Perfect for intermediate players seeking all-around performance.",
+    alternatives: [
+      { name: "Siux Fenix ST2", url: "/articles/reviews/siux-fenix-st2-review.html" },
+      { name: "Siux Electra ST2", url: "/articles/reviews/siux-electra-st2-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "siux+atomik+st2+padel+racket",
+      padelNuestro: "siux-atomik-st2"
+    }
+  },
+  // Wilson products
+  "wilson-blade-force": {
+    id: "wilson-blade-force",
+    name: "Wilson Blade Force",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€280",
+    image: "/images/products/wilson-blade-force.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.5,
+      rebound: 8.3,
+      maneuverability: 8.5,
+      sweetSpot: 8.3,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Versatile racket with excellent balance. Perfect for players seeking all-around performance.",
+    alternatives: [
+      { name: "Wilson Blade Pro", url: "/articles/reviews/wilson-blade-pro-review.html" },
+      { name: "Head Delta Elite", url: "/articles/reviews/head-delta-elite-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+blade+force+padel+racket",
+      padelNuestro: "wilson-blade-force"
+    }
+  },
+  "wilson-blade-pro": {
+    id: "wilson-blade-pro",
+    name: "Wilson Blade Pro",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€320",
+    image: "/images/products/wilson-blade-pro.jpg",
+    ratings: {
+      power: 8.8,
+      control: 9.0,
+      rebound: 8.7,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.8
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Professional-grade racket with exceptional control. Ideal for advanced players seeking precision.",
+    alternatives: [
+      { name: "Wilson Blade Force", url: "/articles/reviews/wilson-blade-force-review.html" },
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+blade+pro+padel+racket",
+      padelNuestro: "wilson-blade-pro"
+    }
+  },
+  "wilson-blade-elite": {
+    id: "wilson-blade-elite",
+    name: "Wilson Blade Elite",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€300",
+    image: "/images/products/wilson-blade-elite.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.8,
+      rebound: 8.5,
+      maneuverability: 8.5,
+      sweetSpot: 8.5,
+      overall: 8.6
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Elite version with enhanced materials. Excellent blend of power and control for competitive play.",
+    alternatives: [
+      { name: "Wilson Blade Pro", url: "/articles/reviews/wilson-blade-pro-review.html" },
+      { name: "Nox AT10 Genius Arena", url: "/articles/reviews/nox-at10-genius-arena-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+blade+elite+padel+racket",
+      padelNuestro: "wilson-blade-elite"
+    }
+  },
+  "wilson-force-pro": {
+    id: "wilson-force-pro",
+    name: "Wilson Force Pro",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€310",
+    image: "/images/products/wilson-force-pro.jpg",
+    ratings: {
+      power: 9.0,
+      control: 8.5,
+      rebound: 8.5,
+      maneuverability: 8.0,
+      sweetSpot: 8.0,
+      overall: 8.6
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Power-focused racket for aggressive players. Delivers explosive shots with excellent energy transfer.",
+    alternatives: [
+      { name: "Wilson Force Elite", url: "/articles/reviews/wilson-force-elite-review.html" },
+      { name: "Bullpadel Vertex 03", url: "/articles/reviews/bullpadel-vertex-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+force+pro+padel+racket",
+      padelNuestro: "wilson-force-pro"
+    }
+  },
+  "wilson-force-elite": {
+    id: "wilson-force-elite",
+    name: "Wilson Force Elite",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€290",
+    image: "/images/products/wilson-force-elite.jpg",
+    ratings: {
+      power: 8.8,
+      control: 8.3,
+      rebound: 8.3,
+      maneuverability: 8.2,
+      sweetSpot: 7.8,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Diamond",
+      weight: "370g",
+      balance: "High",
+      touch: "Hard",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Elite power racket with enhanced materials. Ideal for aggressive players seeking maximum power.",
+    alternatives: [
+      { name: "Wilson Force Pro", url: "/articles/reviews/wilson-force-pro-review.html" },
+      { name: "Bullpadel Hack 03", url: "/articles/reviews/bullpadel-hack-03-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+force+elite+padel+racket",
+      padelNuestro: "wilson-force-elite"
+    }
+  },
+  "wilson-ultra-pro": {
+    id: "wilson-ultra-pro",
+    name: "Wilson Ultra Pro",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€295",
+    image: "/images/products/wilson-ultra-pro.jpg",
+    ratings: {
+      power: 8.5,
+      control: 8.8,
+      rebound: 8.5,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.6
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Ultra-responsive racket with excellent maneuverability. Perfect for players seeking speed and control.",
+    alternatives: [
+      { name: "Wilson Ultra Elite", url: "/articles/reviews/wilson-ultra-elite-review.html" },
+      { name: "Head Speed Elite", url: "/articles/reviews/head-speed-elite-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+ultra+pro+padel+racket",
+      padelNuestro: "wilson-ultra-pro"
+    }
+  },
+  "wilson-ultra-elite": {
+    id: "wilson-ultra-elite",
+    name: "Wilson Ultra Elite",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€275",
+    image: "/images/products/wilson-ultra-elite.jpg",
+    ratings: {
+      power: 8.2,
+      control: 8.5,
+      rebound: 8.2,
+      maneuverability: 8.8,
+      sweetSpot: 8.3,
+      overall: 8.4
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Intermediate"
+    },
+    verdict: "Elite version with enhanced responsiveness. Great for intermediate players developing their game.",
+    alternatives: [
+      { name: "Wilson Ultra Pro", url: "/articles/reviews/wilson-ultra-pro-review.html" },
+      { name: "Nox ML10 Pro Cup", url: "/articles/reviews/nox-ml10-pro-cup-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+ultra+elite+padel+racket",
+      padelNuestro: "wilson-ultra-elite"
+    }
+  },
+  "wilson-clash-pro": {
+    id: "wilson-clash-pro",
+    name: "Wilson Clash Pro",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€285",
+    image: "/images/products/wilson-clash-pro.jpg",
+    ratings: {
+      power: 7.8,
+      control: 9.0,
+      rebound: 8.0,
+      maneuverability: 9.0,
+      sweetSpot: 8.8,
+      overall: 8.5
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Soft EVA",
+      level: "Intermediate-Advanced"
+    },
+    verdict: "Maximum comfort racket with excellent control. Perfect for players seeking comfort and precision.",
+    alternatives: [
+      { name: "Wilson Clash Elite", url: "/articles/reviews/wilson-clash-elite-review.html" },
+      { name: "Adidas Metalbone CTRL 3.3", url: "/articles/reviews/adidas-metalbone-ctrl-3.3-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+clash+pro+padel+racket",
+      padelNuestro: "wilson-clash-pro"
+    }
+  },
+  "wilson-clash-elite": {
+    id: "wilson-clash-elite",
+    name: "Wilson Clash Elite",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€265",
+    image: "/images/products/wilson-clash-elite.jpg",
+    ratings: {
+      power: 7.5,
+      control: 8.8,
+      rebound: 7.8,
+      maneuverability: 8.8,
+      sweetSpot: 8.5,
+      overall: 8.3
+    },
+    specs: {
+      shape: "Round",
+      weight: "365g",
+      balance: "Low",
+      touch: "Soft",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "Soft EVA",
+      level: "Intermediate"
+    },
+    verdict: "Elite comfort racket with excellent control. Great for intermediate players seeking comfort.",
+    alternatives: [
+      { name: "Wilson Clash Pro", url: "/articles/reviews/wilson-clash-pro-review.html" },
+      { name: "Head Zephyr Pro", url: "/articles/reviews/head-zephyr-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+clash+elite+padel+racket",
+      padelNuestro: "wilson-clash-elite"
+    }
+  },
+  "wilson-pro-staff": {
+    id: "wilson-pro-staff",
+    name: "Wilson Pro Staff",
+    year: "2025",
+    brand: "Wilson",
+    playerName: "Professional Player",
+    price: "€340",
+    image: "/images/products/wilson-pro-staff.jpg",
+    ratings: {
+      power: 8.8,
+      control: 9.2,
+      rebound: 8.7,
+      maneuverability: 8.5,
+      sweetSpot: 8.8,
+      overall: 8.8
+    },
+    specs: {
+      shape: "Teardrop",
+      weight: "365g",
+      balance: "Medium",
+      touch: "Medium",
+      frame: "Carbon Fiber",
+      faces: "Carbon Fiber",
+      core: "EVA Soft",
+      level: "Advanced"
+    },
+    verdict: "Professional-grade racket with exceptional control and precision. Designed for competitive players.",
+    alternatives: [
+      { name: "Wilson Blade Pro", url: "/articles/reviews/wilson-blade-pro-review.html" },
+      { name: "Head Delta Pro", url: "/articles/reviews/head-delta-pro-review.html" }
+    ],
+    affiliateLinks: {
+      amazon: "wilson+pro+staff+padel+racket",
+      padelNuestro: "wilson-pro-staff"
+    }
+  }
+};
+
+// Export for use in other files
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { SITE_CONFIG, NAVIGATION, AFFILIATE_LINKS, PRODUCTS };
+}
+

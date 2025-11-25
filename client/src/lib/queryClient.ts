@@ -1,4 +1,11 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { supabase } from "./supabase";
+
+async function getAuthHeaders() {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -14,11 +21,15 @@ export async function apiRequest(
 ): Promise<Response> {
   // Check if data is FormData (for file uploads)
   const isFormData = data instanceof FormData;
+  const authHeaders = await getAuthHeaders();
   
   const res = await fetch(url, {
     method,
     // Don't set Content-Type for FormData - browser will set it with boundary
-    headers: data && !isFormData ? { "Content-Type": "application/json" } : {},
+    headers: {
+      ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
+      ...authHeaders,
+    },
     // Don't stringify FormData - send it as-is
     body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
     credentials: "include",
@@ -52,8 +63,10 @@ export const getQueryFn: <T>(options: {
       url = `${url}${separator}lang=${extractedLocale}`;
     }
     
+    const authHeaders = await getAuthHeaders();
     const res = await fetch(url, {
       credentials: "include",
+      headers: authHeaders,
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
