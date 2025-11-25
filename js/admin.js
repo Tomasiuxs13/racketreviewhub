@@ -32,18 +32,45 @@ function initSupabase() {
 
 // Check if user is admin
 function isAdminUser(user) {
-  if (!user || !user.email) return false;
-  
-  // Check against admin config
-  if (typeof ADMIN_CONFIG !== 'undefined' && ADMIN_CONFIG.isAdmin) {
-    return ADMIN_CONFIG.isAdmin(user.email);
+  if (!user) {
+    console.log('[Admin Check] No user object provided');
+    return false;
   }
   
-  // Fallback: check if email matches admin list
+  // Get email from user object (could be user.email or user.user_metadata.email)
+  const userEmail = user.email || user.user_metadata?.email || user.user_metadata?.full_name || '';
+  
+  if (!userEmail) {
+    console.log('[Admin Check] No email found in user object:', user);
+    return false;
+  }
+  
+  console.log('[Admin Check] Checking email:', userEmail);
+  
+  // Check against admin config (try both window.ADMIN_CONFIG and ADMIN_CONFIG)
+  const adminConfig = window.ADMIN_CONFIG || (typeof ADMIN_CONFIG !== 'undefined' ? ADMIN_CONFIG : null);
+  
+  if (adminConfig && adminConfig.isAdmin) {
+    const isAdmin = adminConfig.isAdmin(userEmail);
+    console.log('[Admin Check] ADMIN_CONFIG check result:', isAdmin, 'for email:', userEmail);
+    if (isAdmin) return true;
+  } else {
+    console.log('[Admin Check] ADMIN_CONFIG not available, using fallback');
+  }
+  
+  // Fallback: check if email matches admin list (always check this as backup)
   const adminEmails = ['tomasnorkuss@gmail.com'];
-  return adminEmails.some(email => 
-    email.toLowerCase() === user.email.toLowerCase()
+  const normalizedUserEmail = userEmail.toLowerCase().trim();
+  const isAdminFallback = adminEmails.some(email => 
+    email.toLowerCase().trim() === normalizedUserEmail
   );
+  console.log('[Admin Check] Fallback check:', {
+    userEmail: userEmail,
+    normalizedUserEmail: normalizedUserEmail,
+    adminEmails: adminEmails,
+    isAdmin: isAdminFallback
+  });
+  return isAdminFallback;
 }
 
 // Check authentication status
@@ -65,12 +92,17 @@ async function checkAuth() {
 
     if (session && session.user) {
       // User is authenticated, check if admin
+      console.log('[Auth Check] User authenticated:', session.user.email || session.user.user_metadata?.email);
+      console.log('[Auth Check] Full user object:', session.user);
       if (isAdminUser(session.user)) {
+        console.log('[Auth Check] User is admin, showing admin panel');
         showAdminPanel(session.user);
       } else {
+        console.log('[Auth Check] User is not admin, showing access restricted');
         showAccessRestricted();
       }
     } else {
+      console.log('[Auth Check] No session, showing login');
       showLogin();
     }
   } catch (error) {
@@ -128,9 +160,13 @@ async function handleLogin(email, password) {
 
     if (data.user) {
       // Check if user is admin
+      console.log('[Login] User logged in:', data.user.email || data.user.user_metadata?.email);
+      console.log('[Login] Full user object:', data.user);
       if (isAdminUser(data.user)) {
+        console.log('[Login] User is admin, showing admin panel');
         showAdminPanel(data.user);
       } else {
+        console.log('[Login] User is not admin, showing access restricted');
         showAccessRestricted();
       }
     }
@@ -192,13 +228,24 @@ async function loadAdminStats() {
 
 // Initialize admin panel when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize templates
-  if (typeof initTemplates === 'function') {
-    initTemplates();
-  }
+  // Wait a bit to ensure config.js is loaded
+  setTimeout(() => {
+    // Verify ADMIN_CONFIG is available
+    const adminConfig = window.ADMIN_CONFIG || (typeof ADMIN_CONFIG !== 'undefined' ? ADMIN_CONFIG : null);
+    if (!adminConfig) {
+      console.warn('[Admin] ADMIN_CONFIG not found, using fallback admin list');
+    } else {
+      console.log('[Admin] ADMIN_CONFIG loaded:', adminConfig.adminEmails);
+    }
+    
+    // Initialize templates
+    if (typeof initTemplates === 'function') {
+      initTemplates();
+    }
 
-  // Check authentication status
-  checkAuth();
+    // Check authentication status
+    checkAuth();
+  }, 100);
 
   // Listen for auth state changes
   const client = initSupabase();
