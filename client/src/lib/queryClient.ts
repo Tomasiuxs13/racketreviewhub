@@ -2,9 +2,19 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
 async function getAuthHeaders() {
-  const { data: { session } } = await supabase.auth.getSession();
-  const token = session?.access_token;
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    
+    if (!token) {
+      console.warn("[QueryClient] No active session found when getting auth headers");
+    }
+    
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch (error) {
+    console.error("[QueryClient] Error getting auth headers:", error);
+    return {};
+  }
 }
 
 async function throwIfResNotOk(res: Response) {
