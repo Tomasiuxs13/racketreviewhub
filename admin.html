@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Racket Review Hub</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/components.css">
+  <link rel="stylesheet" href="/css/responsive.css">
+  <style>
+    .admin-container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 2rem;
+    }
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px solid var(--color-primary, #0066CC);
+    }
+    .admin-content {
+      display: none;
+    }
+    .admin-content.active {
+      display: block;
+    }
+    .access-restricted {
+      text-align: center;
+      padding: 3rem;
+      background: #f8f9fa;
+      border-radius: 8px;
+      margin: 2rem 0;
+    }
+    .access-restricted h2 {
+      color: #dc3545;
+      margin-bottom: 1rem;
+    }
+    .access-restricted p {
+      color: #6c757d;
+      margin-bottom: 2rem;
+    }
+    .login-form {
+      max-width: 400px;
+      margin: 2rem auto;
+      padding: 2rem;
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+    .btn-logout {
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .btn-logout:hover {
+      background: #c82333;
+    }
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .stat-card {
+      background: #f8f9fa;
+      padding: 1.5rem;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .stat-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2rem;
+      color: var(--color-primary, #0066CC);
+    }
+    .stat-card p {
+      margin: 0;
+      color: #6c757d;
+    }
+  </style>
+</head>
+<body>
+  <div id="header-placeholder"></div>
+
+  <main>
+    <div class="admin-container">
+      <!-- Login Form (shown when not authenticated) -->
+      <div id="login-section" class="login-form">
+        <h2>Admin Login</h2>
+        <form id="login-form">
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" required>
+          </div>
+          <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+        <div id="login-error" style="color: #dc3545; margin-top: 1rem; display: none;"></div>
+      </div>
+
+      <!-- Access Restricted Message (shown when authenticated but not admin) -->
+      <div id="access-restricted" class="access-restricted" style="display: none;">
+        <h2>Access restricted</h2>
+        <p>You need an administrator account to open this section.</p>
+        <a href="/" class="btn btn-primary">Go to homepage</a>
+      </div>
+
+      <!-- Admin Content (shown when authenticated and is admin) -->
+      <div id="admin-content" class="admin-content">
+        <div class="admin-header">
+          <h1>Admin Panel</h1>
+          <button id="logout-btn" class="btn-logout">Logout</button>
+        </div>
+
+        <div class="admin-stats" id="admin-stats">
+          <!-- Stats will be loaded here -->
+        </div>
+
+        <div class="admin-section">
+          <h2>Admin Functions</h2>
+          <p>Welcome to the admin panel. Admin functions will be available here.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer-placeholder"></div>
+
+  <!-- Site Config (load first) -->
+  <script src="/js/config.js"></script>
+  <!-- Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Templates -->
+  <script src="/js/templates.js"></script>
+  <!-- Admin Script (loads after Supabase) -->
+  <script src="/js/admin.js"></script>
+</body>
+</html>
+
