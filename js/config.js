@@ -22,6 +22,20 @@ const ADMIN_CONFIG = {
   }
 };
 
+// Supabase Configuration
+// Set these values via environment variables or window variables
+// For Render: Add SUPABASE_URL and SUPABASE_ANON_KEY as environment variables
+const SUPABASE_CONFIG = {
+  url: window.SUPABASE_URL || process?.env?.SUPABASE_URL || '',
+  anonKey: window.SUPABASE_ANON_KEY || process?.env?.SUPABASE_ANON_KEY || ''
+};
+
+// Make Supabase config available globally
+if (isBrowser) {
+  window.SUPABASE_URL = SUPABASE_CONFIG.url;
+  window.SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey;
+}
+
 // Navigation Structure
 const NAVIGATION = {
   main: [
