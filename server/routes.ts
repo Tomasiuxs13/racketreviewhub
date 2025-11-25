@@ -7,7 +7,7 @@ import { storage } from "./storage";
 import { excelRacketSchema, type ExcelRacket } from "@shared/schema";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/auth.js";
 import { createSupabaseClient } from "./lib/supabaseClient.js";
-import { generateRacketReview } from "./lib/openai.js";
+import { generateRacketReview, estimateRacketRatings } from "./lib/openai.js";
 import {
   applyTranslationsToEntity,
   applyTranslationsToEntities,
@@ -1317,94 +1317,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Row ${i + 2}: ${existing ? 'Found existing racket' : 'Creating new racket'}`);
 
           if (existing) {
-            // Helper function to check if a field is missing (null, undefined, or empty string)
-            const isFieldMissing = (value: any): boolean => {
-              return value === null || value === undefined || value === '';
-            };
-            
-            // Update existing racket - only update prices and missing fields
-            // Always update prices (they change frequently)
+            // Update existing racket - ONLY update currentPrice and affiliateLink
+            // All other fields are preserved to allow manual editing
             const updateData: any = {
               currentPrice: validated.currentPrice.toString(),
             };
             
-            // Update originalPrice if provided OR if it's missing in existing racket
-            if (validated.originalPrice !== undefined) {
-              updateData.originalPrice = validated.originalPrice.toString();
-              console.log(`Row ${i + 2}: Updating originalPrice to ${validated.originalPrice}`);
-            } else {
-              // Log if we're not updating originalPrice
-              console.log(`Row ${i + 2}: originalPrice not found in file (validated.originalPrice=${validated.originalPrice}), existing value: ${existing.originalPrice || 'null'}`);
+            // Update affiliateLink if provided in Excel
+            if (validated.affiliateLink) {
+              updateData.affiliateLink = validated.affiliateLink;
             }
             
-            // Only update other fields if they are missing in the existing racket
-            // This preserves manually edited fields
-            if (isFieldMissing(existing.year)) updateData.year = validated.year;
-            if (isFieldMissing(existing.powerRating)) updateData.powerRating = validated.powerRating;
-            if (isFieldMissing(existing.controlRating)) updateData.controlRating = validated.controlRating;
-            if (isFieldMissing(existing.reboundRating)) updateData.reboundRating = validated.reboundRating;
-            if (isFieldMissing(existing.maneuverabilityRating)) updateData.maneuverabilityRating = validated.maneuverabilityRating;
-            if (isFieldMissing(existing.sweetSpotRating)) updateData.sweetSpotRating = validated.sweetSpotRating;
-            if (isFieldMissing(existing.imageUrl) && validated.imageUrl) updateData.imageUrl = validated.imageUrl;
-            if (isFieldMissing(existing.affiliateLink) && validated.affiliateLink) updateData.affiliateLink = validated.affiliateLink;
-            if (isFieldMissing(existing.titleUrl) && validated.titleUrl) updateData.titleUrl = validated.titleUrl;
-            if (isFieldMissing(existing.reviewContent) && validated.reviewContent) updateData.reviewContent = validated.reviewContent;
-            
-            // Specification fields - only update if missing
-            if (isFieldMissing(existing.color) && validated.color !== undefined) updateData.color = validated.color;
-            if (isFieldMissing(existing.balance) && validated.balance !== undefined) updateData.balance = validated.balance;
-            if (isFieldMissing(existing.surface) && validated.surface !== undefined) updateData.surface = validated.surface;
-            if (isFieldMissing(existing.hardness) && validated.hardness !== undefined) updateData.hardness = validated.hardness;
-            if (isFieldMissing(existing.finish) && validated.finish !== undefined) updateData.finish = validated.finish;
-            if (isFieldMissing(existing.playersCollection) && validated.playersCollection !== undefined) updateData.playersCollection = validated.playersCollection;
-            if (isFieldMissing(existing.product) && validated.product !== undefined) updateData.product = validated.product;
-            if (isFieldMissing(existing.core) && validated.core !== undefined) updateData.core = validated.core;
-            if (isFieldMissing(existing.format) && validated.format !== undefined) updateData.format = validated.format;
-            if (isFieldMissing(existing.gameLevel) && validated.gameLevel !== undefined) updateData.gameLevel = validated.gameLevel;
-            if (isFieldMissing(existing.gameType) && validated.gameType !== undefined) updateData.gameType = validated.gameType;
-            if (isFieldMissing(existing.player) && validated.player !== undefined) updateData.player = validated.player;
-            
-            console.log(`Row ${i + 2}: Updating existing racket - updating fields:`, Object.keys(updateData));
+            console.log(`Row ${i + 2}: Updating existing racket - only updating: ${Object.keys(updateData).join(', ')}`);
             
             await storage.updateRacket(existing.id, updateData);
-            
-            // Generate review if not present
-            const updatedRacket = await storage.getRacket(existing.id);
-            if (updatedRacket && !updatedRacket.reviewContent) {
-              console.log(`Row ${i + 2}: Generating review for updated racket ${updatedRacket.id}`);
-              try {
-                const reviewResult = await generateRacketReview(updatedRacket);
-                if (reviewResult?.reviewContent) {
-                  console.log(`Row ${i + 2}: Review generated successfully (${reviewResult.reviewContent.length} chars)`);
-                  await storage.updateRacket(existing.id, {
-                    reviewContent: reviewResult.reviewContent,
-                  });
-                } else {
-                  console.warn(`Row ${i + 2}: Review generation returned no content`);
-                }
-              } catch (reviewError) {
-                console.error(`Row ${i + 2}: Failed to generate review for updated racket:`, reviewError);
-                if (reviewError instanceof Error) {
-                  console.error(`Row ${i + 2}: Review error details:`, reviewError.message, reviewError.stack);
-                }
-              }
-            } else {
-              console.log(`Row ${i + 2}: Skipping review generation - ${updatedRacket ? 'review already exists' : 'racket not found'}`);
-            }
             
             results.updated++;
           } else {
             // Create new racket
-            const newRacket = await storage.createRacket({
-              brand: validated.brand,
-              model: validated.model,
-              year: validated.year,
-              shape: validated.shape,
+            // First, use ChatGPT to estimate ratings if not provided in Excel
+            let ratings = {
               powerRating: validated.powerRating,
               controlRating: validated.controlRating,
               reboundRating: validated.reboundRating,
               maneuverabilityRating: validated.maneuverabilityRating,
               sweetSpotRating: validated.sweetSpotRating,
+            };
+            
+            // Check if ratings need to be estimated (all undefined or using fallback estimates)
+            const hasRatingsFromExcel = validated.powerRating !== undefined && 
+                                        validated.controlRating !== undefined;
+            
+            if (!hasRatingsFromExcel) {
+              console.log(`Row ${i + 2}: Estimating ratings with ChatGPT for ${validated.brand} ${validated.model}`);
+              try {
+                const estimatedRatings = await estimateRacketRatings({
+                  brand: validated.brand,
+                  model: validated.model,
+                  shape: validated.shape,
+                  year: validated.year,
+                  balance: validated.balance,
+                  surface: validated.surface,
+                  hardness: validated.hardness,
+                  core: validated.core,
+                  gameLevel: validated.gameLevel,
+                  gameType: validated.gameType,
+                  player: validated.player,
+                });
+                
+                if (estimatedRatings) {
+                  ratings = estimatedRatings;
+                  console.log(`Row ${i + 2}: ChatGPT estimated ratings - Power: ${ratings.powerRating}, Control: ${ratings.controlRating}, Rebound: ${ratings.reboundRating}, Maneuverability: ${ratings.maneuverabilityRating}, Sweet Spot: ${ratings.sweetSpotRating}`);
+                } else {
+                  console.warn(`Row ${i + 2}: ChatGPT rating estimation failed, using fallback estimates`);
+                }
+              } catch (ratingError) {
+                console.error(`Row ${i + 2}: Error estimating ratings:`, ratingError);
+              }
+            }
+            
+            const newRacket = await storage.createRacket({
+              brand: validated.brand,
+              model: validated.model,
+              year: validated.year,
+              shape: validated.shape,
+              powerRating: ratings.powerRating,
+              controlRating: ratings.controlRating,
+              reboundRating: ratings.reboundRating,
+              maneuverabilityRating: ratings.maneuverabilityRating,
+              sweetSpotRating: ratings.sweetSpotRating,
               currentPrice: validated.currentPrice.toString(),
               originalPrice: validated.originalPrice?.toString(),
               imageUrl: validated.imageUrl || null,
@@ -1426,27 +1407,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
               player: validated.player || null,
             });
             
-            // Generate review if not present
-            if (!newRacket.reviewContent) {
-              console.log(`Row ${i + 2}: Generating review for new racket ${newRacket.id}`);
-              try {
-                const reviewResult = await generateRacketReview(newRacket);
-                if (reviewResult?.reviewContent) {
-                  console.log(`Row ${i + 2}: Review generated successfully (${reviewResult.reviewContent.length} chars)`);
-                  await storage.updateRacket(newRacket.id, {
-                    reviewContent: reviewResult.reviewContent,
-                  });
-                } else {
-                  console.warn(`Row ${i + 2}: Review generation returned no content`);
-                }
-              } catch (reviewError) {
-                console.error(`Row ${i + 2}: Failed to generate review for new racket:`, reviewError);
-                if (reviewError instanceof Error) {
-                  console.error(`Row ${i + 2}: Review error details:`, reviewError.message, reviewError.stack);
-                }
+            // Generate review with ChatGPT
+            console.log(`Row ${i + 2}: Generating review for new racket ${newRacket.id}`);
+            try {
+              const reviewResult = await generateRacketReview(newRacket);
+              if (reviewResult?.reviewContent) {
+                console.log(`Row ${i + 2}: Review generated successfully (${reviewResult.reviewContent.length} chars)`);
+                await storage.updateRacket(newRacket.id, {
+                  reviewContent: reviewResult.reviewContent,
+                });
+              } else {
+                console.warn(`Row ${i + 2}: Review generation returned no content`);
               }
-            } else {
-              console.log(`Row ${i + 2}: Skipping review generation - review already exists`);
+            } catch (reviewError) {
+              console.error(`Row ${i + 2}: Failed to generate review for new racket:`, reviewError);
+              if (reviewError instanceof Error) {
+                console.error(`Row ${i + 2}: Review error details:`, reviewError.message, reviewError.stack);
+              }
             }
             
             results.created++;

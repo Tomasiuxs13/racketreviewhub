@@ -1,7 +1,7 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 
-async function getAuthHeaders() {
+async function getAuthHeaders(): Promise<Record<string, string>> {
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -31,14 +31,16 @@ export async function apiRequest(
 ): Promise<Response> {
   // Check if data is FormData (for file uploads)
   const isFormData = data instanceof FormData;
+  
+  // Get auth headers
   const authHeaders = await getAuthHeaders();
   
   const res = await fetch(url, {
     method,
-    // Don't set Content-Type for FormData - browser will set it with boundary
     headers: {
-      ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...authHeaders,
+      // Don't set Content-Type for FormData - browser will set it with boundary
+      ...(data && !isFormData ? { "Content-Type": "application/json" } : {}),
     },
     // Don't stringify FormData - send it as-is
     body: data ? (isFormData ? data : JSON.stringify(data)) : undefined,
@@ -73,7 +75,9 @@ export const getQueryFn: <T>(options: {
       url = `${url}${separator}lang=${extractedLocale}`;
     }
     
+    // Get auth headers for admin routes
     const authHeaders = await getAuthHeaders();
+    
     const res = await fetch(url, {
       credentials: "include",
       headers: authHeaders,

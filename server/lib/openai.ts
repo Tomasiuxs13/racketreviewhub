@@ -355,20 +355,118 @@ REMEMBER:
 - Output the HTML directly without any code block markers
 - The output should start with <h2> and end with </p> or </ul> tags`;
 
+export interface RacketRatings {
+  powerRating: number;
+  controlRating: number;
+  reboundRating: number;
+  maneuverabilityRating: number;
+  sweetSpotRating: number;
+}
+
 export interface ReviewGenerationResult {
   reviewContent: string;
-  ratings?: {
-    powerRating: number;
-    controlRating: number;
-    reboundRating: number;
-    maneuverabilityRating: number;
-    sweetSpotRating: number;
-  };
+  ratings?: RacketRatings;
 }
 
 export interface ReviewGenerationOptions {
   targetLocales?: string[];
   skipTranslations?: boolean;
+}
+
+// Estimate ratings using ChatGPT based on racket characteristics
+export async function estimateRacketRatings(racketInfo: {
+  brand: string;
+  model: string;
+  shape: string;
+  year?: number;
+  balance?: string;
+  surface?: string;
+  hardness?: string;
+  core?: string;
+  gameLevel?: string;
+  gameType?: string;
+  player?: string;
+}): Promise<RacketRatings | null> {
+  if (!openai) {
+    console.warn("OpenAI client not initialized. Using default ratings.");
+    return null;
+  }
+
+  try {
+    const prompt = `You are a padel racket expert. Based on the following racket characteristics, estimate performance ratings on a scale of 0-100.
+
+Racket Information:
+- Brand: ${racketInfo.brand}
+- Model: ${racketInfo.model}
+- Shape: ${racketInfo.shape}
+- Year: ${racketInfo.year || 'Unknown'}
+${racketInfo.balance ? `- Balance: ${racketInfo.balance}` : ''}
+${racketInfo.surface ? `- Surface: ${racketInfo.surface}` : ''}
+${racketInfo.hardness ? `- Hardness: ${racketInfo.hardness}` : ''}
+${racketInfo.core ? `- Core: ${racketInfo.core}` : ''}
+${racketInfo.gameLevel ? `- Game Level: ${racketInfo.gameLevel}` : ''}
+${racketInfo.gameType ? `- Game Type: ${racketInfo.gameType}` : ''}
+${racketInfo.player ? `- Player Type: ${racketInfo.player}` : ''}
+
+Consider these factors when estimating:
+- Shape affects power vs control balance (Diamond = more power, Round = more control, Teardrop = balanced)
+- Brand reputation and typical quality
+- Balance point affects maneuverability
+- Core material affects sweet spot and feel
+- Game level indicates target player skill
+
+Return ONLY a JSON object with these exact keys (no other text):
+{
+  "powerRating": <number 0-100>,
+  "controlRating": <number 0-100>,
+  "reboundRating": <number 0-100>,
+  "maneuverabilityRating": <number 0-100>,
+  "sweetSpotRating": <number 0-100>
+}`;
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.3,
+      max_tokens: 200,
+    });
+
+    let content = completion.choices[0]?.message?.content?.trim();
+    if (!content) {
+      console.error("Failed to get rating estimation from OpenAI");
+      return null;
+    }
+
+    // Clean up response - remove markdown code blocks if present
+    content = content
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
+
+    const ratings = JSON.parse(content) as RacketRatings;
+
+    // Validate ratings are within bounds
+    const validateRating = (value: number): number => {
+      return Math.max(0, Math.min(100, Math.round(value)));
+    };
+
+    return {
+      powerRating: validateRating(ratings.powerRating),
+      controlRating: validateRating(ratings.controlRating),
+      reboundRating: validateRating(ratings.reboundRating),
+      maneuverabilityRating: validateRating(ratings.maneuverabilityRating),
+      sweetSpotRating: validateRating(ratings.sweetSpotRating),
+    };
+  } catch (error) {
+    console.error("Error estimating ratings with OpenAI:", error);
+    return null;
+  }
 }
 
 export interface TranslationBatchItem {
