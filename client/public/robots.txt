@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://racketreviewhub.com/sitemap.xml
+
+# Disallow admin and login pages
+Disallow: /admin
+Disallow: /login
+Disallow: /signup
+
