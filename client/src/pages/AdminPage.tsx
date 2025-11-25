@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Plus, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -22,9 +23,38 @@ interface UploadResult {
   updated: number;
   errors: string[];
   preview: ExcelRacket[];
+  totalRows: number;
+  processedRows: number;
+}
+
+type UploadJobStatus = "pending" | "processing" | "completed" | "failed";
+
+interface UploadJobProgress {
   totalRows?: number;
   processedRows?: number;
+  created?: number;
+  updated?: number;
+  errors?: number;
+  currentRow?: number;
+  stage?: string;
+  message?: string;
 }
+
+interface UploadJob {
+  id: string;
+  filename: string;
+  status: UploadJobStatus;
+  createdAt: string;
+  startedAt?: string;
+  completedAt?: string;
+  userId?: string;
+  progress: UploadJobProgress;
+  result?: UploadResult;
+  error?: string;
+}
+
+const ACTIVE_UPLOAD_STORAGE_KEY = "activeUploadJob";
+const LAST_UPLOAD_RESULT_KEY = "lastUploadResult";
 
 export default function AdminPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -32,20 +62,40 @@ export default function AdminPage() {
   // Restore upload results from localStorage on mount
   const [result, setResult] = useState<UploadResult | null>(() => {
     try {
-      const savedResult = localStorage.getItem("lastUploadResult");
+      const savedResult = localStorage.getItem(LAST_UPLOAD_RESULT_KEY);
       if (savedResult) {
         const parsed = JSON.parse(savedResult);
         // Only restore if it's less than 1 hour old
         if (parsed.timestamp && Date.now() - parsed.timestamp < 60 * 60 * 1000) {
           console.log("Restored from localStorage:", parsed.data);
-          return parsed.data;
+          const restored = parsed.data ?? {};
+          return {
+            ...restored,
+            totalRows: restored.totalRows ?? restored.processedRows ?? 0,
+            processedRows: restored.processedRows ?? restored.totalRows ?? 0,
+          };
         } else {
-          localStorage.removeItem("lastUploadResult");
+          localStorage.removeItem(LAST_UPLOAD_RESULT_KEY);
         }
       }
     } catch (e) {
       console.error("Error restoring from localStorage:", e);
-      localStorage.removeItem("lastUploadResult");
+      localStorage.removeItem(LAST_UPLOAD_RESULT_KEY);
+    }
+    return null;
+  });
+  const [activeJob, setActiveJob] = useState<UploadJob | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(() => {
+    try {
+      const stored = localStorage.getItem(ACTIVE_UPLOAD_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.jobId && typeof parsed.jobId === "string") {
+          return parsed.jobId;
+        }
+      }
+    } catch {
+      localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
     }
     return null;
   });
@@ -82,42 +132,28 @@ export default function AdminPage() {
 
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      // Save upload start time to localStorage
-      const uploadStart = {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await apiRequest("POST", "/api/admin/upload-rackets", formData);
+      if (!response.ok) {
+        throw new Error("Failed to start upload job");
+      }
+      return (await response.json()) as UploadJob;
+    },
+    onSuccess: (job, file) => {
+      console.log("Upload job queued:", job);
+      const jobMeta = {
+        jobId: job.id,
         fileName: file.name,
         fileSize: file.size,
-        startTime: Date.now(),
+        startedAt: Date.now(),
       };
-      localStorage.setItem("activeUpload", JSON.stringify(uploadStart));
-      
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const response = await apiRequest("POST", "/api/admin/upload-rackets", formData);
-        return await response.json();
-      } finally {
-        // Clear upload tracking when done (success or error)
-        localStorage.removeItem("activeUpload");
-      }
-    },
-    onSuccess: (data: UploadResult) => {
-      console.log("Upload success, data:", data);
-      setResult(data);
-      // Save upload results to localStorage
-      localStorage.setItem("lastUploadResult", JSON.stringify({
-        data,
-        timestamp: Date.now(),
-      }));
-      console.log("Saved to localStorage, totalRows:", data.totalRows, "processedRows:", data.processedRows);
-      queryClient.invalidateQueries({
-        predicate: (query) => {
-          const keyString = JSON.stringify(query.queryKey);
-          return keyString.includes("/api/rackets") || keyString.includes("/api/brands");
-        },
-      });
+      localStorage.setItem(ACTIVE_UPLOAD_STORAGE_KEY, JSON.stringify(jobMeta));
+      setActiveJob(job);
+      setActiveJobId(job.id);
       toast({
-        title: "Upload successful",
-        description: `Created ${data.created} rackets, updated ${data.updated} rackets`,
+        title: "Upload started",
+        description: `Processing "${file.name}" in the background. You can navigate away safely.`,
       });
     },
     onError: (error: Error) => {
@@ -131,29 +167,25 @@ export default function AdminPage() {
 
   // Check for interrupted uploads and restored results on mount
   useEffect(() => {
-    const activeUpload = localStorage.getItem("activeUpload");
-    if (activeUpload) {
+    const storedJob = localStorage.getItem(ACTIVE_UPLOAD_STORAGE_KEY);
+    if (storedJob) {
       try {
-        const upload = JSON.parse(activeUpload);
-        const timeSinceStart = Date.now() - upload.startTime;
-        // If upload started less than 5 minutes ago, it might still be processing
-        if (timeSinceStart < 5 * 60 * 1000) {
+        const upload = JSON.parse(storedJob);
+        if (upload?.jobId) {
+          const timeSinceStart = upload.startedAt ? Date.now() - upload.startedAt : null;
           toast({
-            title: "Upload may be in progress",
-            description: `An upload of "${upload.fileName}" was started ${Math.round(timeSinceStart / 1000)}s ago. If you reloaded the page, the upload may still be processing on the server. Check the server logs or wait a moment.`,
-            variant: "default",
+            title: "Upload in progress",
+            description: timeSinceStart
+              ? `"${upload.fileName}" started ${Math.round(timeSinceStart / 1000)}s ago. You can keep working while it finishes.`
+              : `"${upload.fileName}" is being processed in the background.`,
           });
-        } else {
-          // Old upload, clear it
-          localStorage.removeItem("activeUpload");
         }
-      } catch (e) {
-        localStorage.removeItem("activeUpload");
+      } catch {
+        localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
       }
     }
-    
-    // Notify if results were restored (only on mount)
-    const savedResult = localStorage.getItem("lastUploadResult");
+
+    const savedResult = localStorage.getItem(LAST_UPLOAD_RESULT_KEY);
     if (savedResult && result) {
       try {
         const parsed = JSON.parse(savedResult);
@@ -163,17 +195,102 @@ export default function AdminPage() {
           if (minutesAgo < 60) {
             toast({
               title: "Upload results restored",
-              description: `Showing results from ${minutesAgo === 0 ? 'just now' : `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`}. Created ${result.created}, updated ${result.updated} rackets${result.processedRows !== undefined ? `, processed ${result.processedRows} rows` : ''}.`,
-              variant: "default",
+              description: `Showing results from ${
+                minutesAgo === 0 ? "just now" : `${minutesAgo} minute${minutesAgo > 1 ? "s" : ""} ago`
+              }. Created ${result.created}, updated ${result.updated} rackets${
+                typeof result.processedRows === "number" && typeof result.totalRows === "number"
+                  ? `, processed ${result.processedRows}/${result.totalRows} rows`
+                  : ""
+              }.`,
             });
           }
         }
-      } catch (e) {
+      } catch {
         // Ignore parse errors
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
+
+  useEffect(() => {
+    if (!activeJobId) {
+      setActiveJob(null);
+      return;
+    }
+
+    let isCancelled = false;
+
+    const fetchStatus = async () => {
+      try {
+        const response = await apiRequest("GET", `/api/admin/upload-jobs/${activeJobId}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
+            if (!isCancelled) {
+              setActiveJobId(null);
+              setActiveJob(null);
+            }
+          } else {
+            throw new Error("Failed to fetch upload job");
+          }
+          return;
+        }
+
+        const data: UploadJob = await response.json();
+        if (isCancelled) return;
+        setActiveJob(data);
+
+        if (data.status === "completed" && data.result) {
+          const normalizedResult: UploadResult = {
+            ...data.result,
+            totalRows: data.result.totalRows ?? data.result.processedRows ?? 0,
+            processedRows: data.result.processedRows ?? data.result.totalRows ?? 0,
+          };
+          setResult(normalizedResult);
+          localStorage.setItem(
+            LAST_UPLOAD_RESULT_KEY,
+            JSON.stringify({ data: normalizedResult, timestamp: Date.now() }),
+          );
+          localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
+          setActiveJobId(null);
+          toast({
+            title: "Upload complete",
+            description: `Created ${normalizedResult.created} rackets, updated ${normalizedResult.updated} rackets.`,
+          });
+          queryClient.invalidateQueries({
+            predicate: (query) => {
+              const keyString = JSON.stringify(query.queryKey);
+              return (
+                keyString.includes("/api/rackets") ||
+                keyString.includes("/api/brands") ||
+                keyString.includes("/api/admin/rackets")
+              );
+            },
+          });
+        } else if (data.status === "failed") {
+          localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
+          setActiveJobId(null);
+          toast({
+            title: "Upload failed",
+            description: data.error || "Something went wrong while processing the upload.",
+            variant: "destructive",
+          });
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          console.error("Failed to fetch upload job", error);
+        }
+      }
+    };
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 5000);
+
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeJobId, toast, queryClient]);
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertRacket) => {
@@ -490,13 +607,18 @@ export default function AdminPage() {
                     </div>
                     <Button
                       onClick={handleUpload}
-                      disabled={uploadMutation.isPending}
+                      disabled={uploadMutation.isPending || Boolean(activeJobId)}
                       data-testid="button-upload"
                     >
                       {uploadMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
+                        </>
+                      ) : activeJobId ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Upload running...
                         </>
                       ) : (
                         <>
@@ -534,6 +656,50 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
+            {activeJobId && activeJob && activeJob.status !== "completed" && (
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                      Upload In Progress
+                    </CardTitle>
+                    <Badge variant="secondary" className="uppercase tracking-wide">
+                      {activeJob.status}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Processing <span className="font-medium">{activeJob.filename}</span>
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {activeJob.progress.totalRows ? (
+                    <>
+                      <Progress
+                        value={
+                          ((activeJob.progress.processedRows ?? 0) /
+                            activeJob.progress.totalRows) *
+                          100
+                        }
+                      />
+                      <p className="text-sm text-muted-foreground">
+                        {activeJob.progress.processedRows ?? 0} / {activeJob.progress.totalRows} rows
+                        processed
+                      </p>
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Preparing file...
+                    </div>
+                  )}
+                  {activeJob.progress.message && (
+                    <p className="text-sm text-muted-foreground">{activeJob.progress.message}</p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* Upload Results */}
             {result && (
               <Card>
@@ -548,7 +714,7 @@ export default function AdminPage() {
                       size="sm"
                       onClick={() => {
                         setResult(null);
-                        localStorage.removeItem("lastUploadResult");
+                        localStorage.removeItem(LAST_UPLOAD_RESULT_KEY);
                       }}
                       className="h-8 w-8 p-0"
                     >

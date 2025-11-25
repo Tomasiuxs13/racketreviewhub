@@ -95,6 +95,7 @@ Once logged in as an admin, you'll see:
 - Admin dashboard with statistics
 - Logout button
 - Access to admin functions (to be expanded)
+- Background Excel uploads with progress tracking (you can leave the page while imports run)
 
 ### Troubleshooting
 
