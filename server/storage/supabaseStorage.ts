@@ -124,10 +124,14 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getRacketByBrandAndModel(brand: string, model: string): Promise<Racket | undefined> {
+    // Use case-insensitive matching with ilike
     const result = await db
       .select()
       .from(rackets)
-      .where(and(eq(rackets.brand, brand), eq(rackets.model, model)))
+      .where(and(
+        sql`LOWER(${rackets.brand}) = LOWER(${brand})`,
+        sql`LOWER(${rackets.model}) = LOWER(${model})`
+      ))
       .limit(1);
     return result[0];
   }
