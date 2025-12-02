@@ -16,8 +16,10 @@ export interface IStorage {
   // Rackets
   getAllRackets(): Promise<Racket[]>;
   getPublishedRackets(): Promise<Racket[]>;
+  getPublishedRacketsCompact(): Promise<Omit<Racket, 'reviewContent'>[]>;
   getPendingRackets(): Promise<Racket[]>;
   getRacket(id: string): Promise<Racket | undefined>;
+  getRacketBySlug(slug: string): Promise<Racket | undefined>;
   getRacketByBrandAndModel(brand: string, model: string): Promise<Racket | undefined>;
   getRacketByTitleUrl(titleUrl: string): Promise<Racket | undefined>;
   getRacketByFeedProductId(feedProductId: string): Promise<Racket | undefined>;
@@ -821,6 +823,11 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
+  async getPublishedRacketsCompact(): Promise<Omit<Racket, 'reviewContent'>[]> {
+    const rackets = await this.getPublishedRackets();
+    return rackets.map(({ reviewContent, ...rest }) => rest);
+  }
+
   async getPendingRackets(): Promise<Racket[]> {
     return Array.from(this.rackets.values())
       .filter(r => r.isPublished === false)
@@ -829,6 +836,15 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getRacket(id: string): Promise<Racket | undefined> {
     return this.rackets.get(id);
+  }
+
+  async getRacketBySlug(slug: string): Promise<Racket | undefined> {
+    return Array.from(this.rackets.values()).find(r => {
+      const racketSlug = `${r.brand} ${r.model}`.toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      return racketSlug === slug && r.isPublished !== false;
+    });
   }
 
   async getRacketByBrandAndModel(brand: string, model: string): Promise<Racket | undefined> {

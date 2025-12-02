@@ -1,8 +1,9 @@
-import type { Express } from "express";
+import type { Express, Response } from "express";
 import { createServer, type Server } from "http";
 import multer from "multer";
 import * as XLSX from "xlsx";
 import AdmZip from "adm-zip";
+import crypto from "crypto";
 import { storage } from "./storage";
 import { excelRacketSchema, type ExcelRacket, type Racket } from "@shared/schema";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/auth.js";
@@ -16,6 +17,25 @@ import {
   isValidEntityType,
   upsertTranslation,
 } from "./lib/i18n.js";
+
+// Cache duration constants (in seconds)
+const CACHE_SHORT = 300; // 5 minutes for list endpoints
+const CACHE_MEDIUM = 1800; // 30 minutes for brands, guides
+const CACHE_LONG = 3600; // 1 hour for individual items
+
+/**
+ * Set cache headers on response
+ * @param res Express response
+ * @param maxAge Cache duration in seconds
+ * @param data Data to generate ETag from (optional)
+ */
+function setCacheHeaders(res: Response, maxAge: number, data?: unknown): void {
+  res.set('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 2}`);
+  if (data) {
+    const etag = crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
+    res.set('ETag', `"${etag}"`);
+  }
+}
 
 // Simple hash function to create deterministic pseudo-random values
 function hashString(str: string): number {
@@ -207,22 +227,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Rackets endpoints
   app.get("/api/rackets", async (req, res) => {
     try {
+      // Support compact mode to exclude reviewContent for list views
+      const compact = req.query.fields === "compact";
+      
       // Only show published rackets to the public
-      const rackets = await storage.getPublishedRackets();
+      const rackets = compact 
+        ? await storage.getPublishedRacketsCompact()
+        : await storage.getPublishedRackets();
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("racket_review")) {
-        const translated = await applyTranslationsToEntities(
-          rackets,
+        result = await applyTranslationsToEntities(
+          rackets as Racket[],
           "racket_review",
           locale,
           RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
-        res.json(translated);
       } else {
-        res.json(rackets);
+        result = rackets;
       }
+      
+      // Set cache headers - 5 minutes for list endpoint
+      setCacheHeaders(res, CACHE_SHORT, result);
+      res.json(result);
     } catch (error) {
       console.error("Error in GET /api/rackets:", error);
       res.status(500).json({ error: "Failed to fetch rackets" });
@@ -274,6 +303,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
       }
 
+      // Short cache for search results
+      setCacheHeaders(res, 60, results);
       res.json(results);
     } catch (error) {
       res.status(500).json({ error: "Failed to search rackets" });
@@ -286,20 +317,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("racket_review")) {
-        const translated = await applyTranslationsToEntities(
+        result = await applyTranslationsToEntities(
           rackets,
           "racket_review",
           locale,
           RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
-        res.json(translated);
       } else {
-        res.json(rackets);
+        result = rackets;
       }
+      
+      // Cache for 5 minutes
+      setCacheHeaders(res, CACHE_SHORT, result);
+      res.json(result);
     } catch (error) {
       console.error("Error in GET /api/rackets/recent:", error);
       res.status(500).json({ error: "Failed to fetch recent rackets" });
+    }
+  });
+
+  app.get("/api/rackets/slug/:slug", async (req, res) => {
+    try {
+      const racket = await storage.getRacketBySlug(req.params.slug);
+      if (!racket) {
+        return res.status(404).json({ error: "Racket not found" });
+      }
+      
+      // Apply translations if locale is provided
+      const locale = (req.query.lang as string) || "en";
+      let result;
+      if (locale !== "en" && isValidEntityType("racket_review")) {
+        result = await applyTranslationsToEntity(
+          racket,
+          "racket_review",
+          locale,
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
+        );
+      } else {
+        result = racket;
+      }
+      
+      // Cache individual rackets for 1 hour
+      setCacheHeaders(res, CACHE_LONG, result);
+      res.json(result);
+    } catch (error) {
+      console.error("Error in GET /api/rackets/slug/:slug:", error);
+      res.status(500).json({ error: "Failed to fetch racket" });
     }
   });
 
@@ -312,17 +377,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("racket_review")) {
-        const translated = await applyTranslationsToEntity(
+        result = await applyTranslationsToEntity(
           racket,
           "racket_review",
           locale,
           RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
-        res.json(translated);
       } else {
-        res.json(racket);
+        result = racket;
       }
+      
+      // Cache individual rackets for 1 hour
+      setCacheHeaders(res, CACHE_LONG, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch racket" });
     }
@@ -334,17 +403,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("racket_review")) {
-        const translated = await applyTranslationsToEntities(
+        result = await applyTranslationsToEntities(
           related,
           "racket_review",
           locale,
           RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
-        res.json(translated);
       } else {
-        res.json(related);
+        result = related;
       }
+      
+      // Cache related rackets for 30 minutes
+      setCacheHeaders(res, CACHE_MEDIUM, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch related rackets" });
     }
@@ -362,27 +435,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("guide")) {
         try {
-          const translated = await applyTranslationsToEntities(
+          result = await applyTranslationsToEntities(
             guides,
             "guide",
             locale,
             ["title", "excerpt", "content"],
           );
-          if (!translated || !Array.isArray(translated)) {
+          if (!result || !Array.isArray(result)) {
             console.error("[guides] Translation returned invalid data, using original");
-            return res.json(guides);
+            result = guides;
           }
-          res.json(translated);
         } catch (translationError) {
           console.error(`[guides] Translation error for list (${locale}):`, translationError);
-          // Fallback to original if translation fails
-          res.json(guides);
+          result = guides;
         }
       } else {
-        res.json(guides);
+        result = guides;
       }
+      
+      // Cache guides for 30 minutes
+      setCacheHeaders(res, CACHE_MEDIUM, result);
+      res.json(result);
     } catch (error) {
       console.error("Error in GET /api/guides:", error);
       res.status(500).json({ error: "Failed to fetch guides" });
@@ -395,23 +471,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("guide")) {
         try {
-          const translated = await applyTranslationsToEntities(
+          result = await applyTranslationsToEntities(
             guides,
             "guide",
             locale,
             ["title", "excerpt", "content"],
           );
-          res.json(translated);
         } catch (translationError) {
           console.error(`[guides] Translation error for recent (${locale}):`, translationError);
-          // Fallback to original if translation fails
-          res.json(guides);
+          result = guides;
         }
       } else {
-        res.json(guides);
+        result = guides;
       }
+      
+      // Cache recent guides for 5 minutes
+      setCacheHeaders(res, CACHE_SHORT, result);
+      res.json(result);
     } catch (error) {
       console.error("Error in GET /api/guides/recent:", error);
       res.status(500).json({ error: "Failed to fetch recent guides" });
@@ -427,23 +506,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("guide")) {
         try {
-          const translated = await applyTranslationsToEntity(
+          result = await applyTranslationsToEntity(
             guide,
             "guide",
             locale,
             ["title", "excerpt", "content"],
           );
-          res.json(translated);
         } catch (translationError) {
           console.error(`[guides] Translation error for ${guide.slug} (${locale}):`, translationError);
-          // Fallback to original if translation fails
-          res.json(guide);
+          result = guide;
         }
       } else {
-        res.json(guide);
+        result = guide;
       }
+      
+      // Cache individual guides for 1 hour
+      setCacheHeaders(res, CACHE_LONG, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch guide" });
     }
@@ -459,17 +541,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("guide")) {
-        const translated = await applyTranslationsToEntities(
+        result = await applyTranslationsToEntities(
           related,
           "guide",
           locale,
           ["title", "excerpt", "content"],
         );
-        res.json(translated);
       } else {
-        res.json(related);
+        result = related;
       }
+      
+      // Cache related guides for 30 minutes
+      setCacheHeaders(res, CACHE_MEDIUM, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch related guides" });
     }
@@ -479,6 +565,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/brands", async (req, res) => {
     try {
       const brands = await storage.getAllBrands();
+      
+      // Cache brands for 30 minutes
+      setCacheHeaders(res, CACHE_MEDIUM, brands);
       res.json(brands);
     } catch (error) {
       console.error("Error in GET /api/brands:", error);
@@ -495,23 +584,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("brand")) {
         try {
-          const translated = await applyTranslationsToEntity(
+          result = await applyTranslationsToEntity(
             brand,
             "brand",
             locale,
             ["description", "articleContent"],
           );
-          res.json(translated);
         } catch (translationError) {
           console.error(`[brands] Translation error for ${brand.slug} (${locale}):`, translationError);
-          // Fallback to original if translation fails
-          res.json(brand);
+          result = brand;
         }
       } else {
-        res.json(brand);
+        result = brand;
       }
+      
+      // Cache individual brands for 1 hour
+      setCacheHeaders(res, CACHE_LONG, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch brand" });
     }
@@ -527,17 +619,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("racket_review")) {
-        const translated = await applyTranslationsToEntities(
+        result = await applyTranslationsToEntities(
           rackets,
           "racket_review",
           locale,
           RACKET_REVIEW_TRANSLATABLE_FIELDS as any,
         );
-        res.json(translated);
       } else {
-        res.json(rackets);
+        result = rackets;
       }
+      
+      // Cache brand rackets for 30 minutes
+      setCacheHeaders(res, CACHE_MEDIUM, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch brand rackets" });
     }
@@ -555,27 +651,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("blog_post")) {
         try {
-          const translated = await applyTranslationsToEntities(
+          result = await applyTranslationsToEntities(
             posts,
             "blog_post",
             locale,
             ["title", "excerpt", "content"],
           );
-          if (!translated || !Array.isArray(translated)) {
+          if (!result || !Array.isArray(result)) {
             console.error("[blog] Translation returned invalid data, using original");
-            return res.json(posts);
+            result = posts;
           }
-          res.json(translated);
         } catch (translationError) {
           console.error(`[blog] Translation error for list (${locale}):`, translationError);
-          // Fallback to original if translation fails
-          res.json(posts);
+          result = posts;
         }
       } else {
-        res.json(posts);
+        result = posts;
       }
+      
+      // Cache blog posts for 30 minutes
+      setCacheHeaders(res, CACHE_MEDIUM, result);
+      res.json(result);
     } catch (error) {
       console.error("Error in GET /api/blog:", error);
       res.status(500).json({ error: "Failed to fetch blog posts" });
@@ -591,23 +690,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
+      let result;
       if (locale !== "en" && isValidEntityType("blog_post")) {
         try {
-          const translated = await applyTranslationsToEntity(
+          result = await applyTranslationsToEntity(
             post,
             "blog_post",
             locale,
             ["title", "excerpt", "content"],
           );
-          res.json(translated);
         } catch (translationError) {
           console.error(`[blog] Translation error for ${post.slug} (${locale}):`, translationError);
-          // Fallback to original if translation fails
-          res.json(post);
+          result = post;
         }
       } else {
-        res.json(post);
+        result = post;
       }
+      
+      // Cache individual blog posts for 1 hour
+      setCacheHeaders(res, CACHE_LONG, result);
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch blog post" });
     }
@@ -617,6 +719,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/authors", async (req, res) => {
     try {
       const authors = await storage.getAllAuthors();
+      
+      // Cache authors for 1 hour (rarely changes)
+      setCacheHeaders(res, CACHE_LONG, authors);
       res.json(authors);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch authors" });

@@ -34,17 +34,14 @@ export default function RacketDetailPage() {
   });
 
   // New path: name-based URLs (slug derived from brand + model)
-  const { data: allRackets, isLoading: isLoadingAll } = useLocalizedQuery<Racket[]>({
-    queryKey: ["/api/rackets"],
+  // Uses dedicated slug endpoint to avoid fetching all rackets
+  const { data: racketBySlug, isLoading: isLoadingBySlug } = useLocalizedQuery<Racket>({
+    queryKey: [`/api/rackets/slug/${routeParam}`],
     enabled: !!routeParam && !treatAsId,
   });
 
-  const racketFromSlug = allRackets?.find(
-    (candidate) => getRacketSlug(candidate) === routeParam
-  );
-
-  const racket = treatAsId ? racketById : racketFromSlug;
-  const isLoading = treatAsId ? isLoadingById : isLoadingAll;
+  const racket = treatAsId ? racketById : racketBySlug;
+  const isLoading = treatAsId ? isLoadingById : isLoadingBySlug;
 
   const { data: relatedRackets } = useLocalizedQuery<Racket[]>({
     queryKey: [`/api/rackets/related/${racket?.id ?? "unknown"}`],

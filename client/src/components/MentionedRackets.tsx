@@ -119,9 +119,9 @@ function findMentionedRackets(
 }
 
 export function MentionedRackets({ content, variant = "default" }: MentionedRacketsProps) {
-  // Fetch all rackets to match against
+  // Fetch all rackets to match against (compact mode excludes reviewContent)
   const { data: allRackets } = useQuery<Racket[]>({
-    queryKey: ["/api/rackets"],
+    queryKey: ["/api/rackets?fields=compact"],
   });
 
   if (!allRackets || !content) return null;

@@ -17,7 +17,7 @@ import {
   brands,
   authors,
 } from "@shared/schema";
-import { eq, desc, and, ne, or } from "drizzle-orm";
+import { eq, desc, and, ne, or, sql } from "drizzle-orm";
 import type { IStorage } from "../storage.js";
 
 if (!process.env.DATABASE_URL) {
@@ -44,6 +44,50 @@ export class SupabaseStorage implements IStorage {
     return result;
   }
 
+  async getPublishedRacketsCompact(): Promise<Omit<Racket, 'reviewContent'>[]> {
+    const result = await db
+      .select({
+        id: rackets.id,
+        brand: rackets.brand,
+        model: rackets.model,
+        year: rackets.year,
+        shape: rackets.shape,
+        powerRating: rackets.powerRating,
+        controlRating: rackets.controlRating,
+        reboundRating: rackets.reboundRating,
+        maneuverabilityRating: rackets.maneuverabilityRating,
+        sweetSpotRating: rackets.sweetSpotRating,
+        overallRating: rackets.overallRating,
+        originalPrice: rackets.originalPrice,
+        currentPrice: rackets.currentPrice,
+        imageUrl: rackets.imageUrl,
+        affiliateLink: rackets.affiliateLink,
+        titleUrl: rackets.titleUrl,
+        authorId: rackets.authorId,
+        color: rackets.color,
+        balance: rackets.balance,
+        surface: rackets.surface,
+        hardness: rackets.hardness,
+        finish: rackets.finish,
+        playersCollection: rackets.playersCollection,
+        product: rackets.product,
+        core: rackets.core,
+        format: rackets.format,
+        gameLevel: rackets.gameLevel,
+        gameType: rackets.gameType,
+        player: rackets.player,
+        feedProductId: rackets.feedProductId,
+        isPublished: rackets.isPublished,
+        feedLastUpdated: rackets.feedLastUpdated,
+        createdAt: rackets.createdAt,
+        updatedAt: rackets.updatedAt,
+      })
+      .from(rackets)
+      .where(eq(rackets.isPublished, true))
+      .orderBy(desc(rackets.createdAt));
+    return result;
+  }
+
   async getPendingRackets(): Promise<Racket[]> {
     const result = await db
       .select()
@@ -55,6 +99,27 @@ export class SupabaseStorage implements IStorage {
 
   async getRacket(id: string): Promise<Racket | undefined> {
     const result = await db.select().from(rackets).where(eq(rackets.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getRacketBySlug(slug: string): Promise<Racket | undefined> {
+    // Compute slug on the fly: lowercase brand + model, replace non-alphanumeric with hyphens, trim hyphens
+    const result = await db
+      .select()
+      .from(rackets)
+      .where(
+        and(
+          eq(rackets.isPublished, true),
+          sql`regexp_replace(
+            regexp_replace(
+              lower(${rackets.brand} || ' ' || ${rackets.model}),
+              '[^a-z0-9]+', '-', 'g'
+            ),
+            '^-+|-+$', '', 'g'
+          ) = ${slug}`
+        )
+      )
+      .limit(1);
     return result[0];
   }
 

@@ -34,48 +34,18 @@ import { SITE_URL } from "@/lib/seo";
 
 const ITEMS_PER_PAGE = 12;
 
-const priceFilterOptions = [
-  { value: "all", label: "All prices" },
-  { value: "lt150", label: "Under €150" },
-  { value: "150-200", label: "€150 - €200" },
-  { value: "200-300", label: "€200 - €300" },
-  { value: "gt300", label: "Over €300" },
-] as const;
-
-type PriceFilterValue = (typeof priceFilterOptions)[number]["value"];
-
-function priceMatchesFilter(price: number, filter: PriceFilterValue): boolean {
-  switch (filter) {
-    case "lt150":
-      return price < 150;
-    case "150-200":
-      return price >= 150 && price <= 200;
-    case "200-300":
-      return price > 200 && price <= 300;
-    case "gt300":
-      return price > 300;
-    case "all":
-    default:
-      return true;
-  }
-}
-
-function getPriceFilterLabel(value: PriceFilterValue) {
-  return priceFilterOptions.find((opt) => opt.value === value)?.label ?? "All prices";
-}
-
 export default function RacketsPage() {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedShapes, setSelectedShapes] = useState<string[]>([]);
   const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
   const [minRating, setMinRating] = useState<number>(0);
-  const [priceFilter, setPriceFilter] = useState<PriceFilterValue>("all");
   const [sortBy, setSortBy] = useState<string>("rating");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  // Use compact mode to exclude reviewContent (reduces payload significantly)
   const { data: rackets, isLoading } = useQuery<Racket[]>({
-    queryKey: ["/api/rackets"],
+    queryKey: ["/api/rackets?fields=compact"],
   });
 
   // Get unique brands
@@ -107,10 +77,6 @@ export default function RacketsPage() {
         }
       }
       if (racket.overallRating < minRating) return false;
-      const price = Number(racket.currentPrice);
-      if (Number.isFinite(price) && !priceMatchesFilter(price, priceFilter)) {
-        return false;
-      }
       return true;
     })
     .sort((a, b) => {
@@ -137,7 +103,7 @@ export default function RacketsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedBrands, selectedShapes, selectedGenders, minRating, priceFilter, sortBy]);
+  }, [selectedBrands, selectedShapes, selectedGenders, minRating, sortBy]);
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands((prev) =>
@@ -162,15 +128,9 @@ export default function RacketsPage() {
     setSelectedShapes([]);
     setSelectedGenders([]);
     setMinRating(0);
-    setPriceFilter("all");
   };
 
-  const hasActiveFilters =
-    selectedBrands.length > 0 ||
-    selectedShapes.length > 0 ||
-    selectedGenders.length > 0 ||
-    minRating > 0 ||
-    priceFilter !== "all";
+  const hasActiveFilters = selectedBrands.length > 0 || selectedShapes.length > 0 || selectedGenders.length > 0 || minRating > 0;
 
   const seoData = {
     title: "Padel Racket Reviews - Compare Expert Ratings & Find Best Prices",
@@ -312,27 +272,6 @@ export default function RacketsPage() {
         </Select>
       </div>
 
-      {/* Price Filter */}
-      <div>
-        <h3 className="font-semibold mb-3">Price</h3>
-        <Select value={priceFilter} onValueChange={(v) => setPriceFilter(v as PriceFilterValue)}>
-          <SelectTrigger data-testid="select-price">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {priceFilterOptions.map((option) => (
-              <SelectItem
-                key={option.value}
-                value={option.value}
-                data-testid={`select-price-${option.value}`}
-              >
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Brand Filter */}
       <div>
         <h3 className="font-semibold mb-3">Brand</h3>
@@ -410,11 +349,7 @@ export default function RacketsPage() {
                       Filters
                       {hasActiveFilters && (
                         <Badge variant="secondary" className="ml-2">
-                          {selectedBrands.length +
-                            selectedShapes.length +
-                            selectedGenders.length +
-                            (minRating > 0 ? 1 : 0) +
-                            (priceFilter !== "all" ? 1 : 0)}
+                          {selectedBrands.length + selectedShapes.length + selectedGenders.length + (minRating > 0 ? 1 : 0)}
                         </Badge>
                       )}
                     </Button>
@@ -462,14 +397,6 @@ export default function RacketsPage() {
                     </button>
                   </Badge>
                 )}
-              {priceFilter !== "all" && (
-                <Badge variant="secondary" className="gap-1" data-testid="badge-filter-price">
-                  {getPriceFilterLabel(priceFilter)}
-                  <button onClick={() => setPriceFilter("all")} className="ml-1 hover:text-foreground">
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              )}
               </div>
 
               {/* Sort */}
