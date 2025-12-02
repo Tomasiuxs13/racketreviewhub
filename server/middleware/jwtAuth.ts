@@ -1,10 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { createSupabaseClient } from "../lib/supabaseClient.js";
-
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || "")
-  .split(",")
-  .map((email) => email.trim().toLowerCase())
-  .filter(Boolean);
+import { verifyToken, isAdminEmail, type JwtPayload } from "../lib/jwt.js";
 
 export interface AuthenticatedRequest extends Request {
   user?: {
@@ -32,29 +27,21 @@ function createAuthMiddleware(options: AuthOptions = {}) {
       }
 
       const token = authHeader.replace("Bearer ", "");
-      const supabase = createSupabaseClient(req);
+      const payload = verifyToken(token);
 
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser(token);
-
-      if (error || !user) {
-        return res.status(401).json({ error: "Unauthorized: Invalid token" });
+      if (!payload) {
+        return res.status(401).json({ error: "Unauthorized: Invalid or expired token" });
       }
 
-      const email = user.email || "";
-      const isAdmin = email
-        ? ADMIN_EMAILS.includes(email.toLowerCase())
-        : false;
+      const isAdmin = isAdminEmail(payload.email);
 
       if (options.requireAdmin && !isAdmin) {
         return res.status(403).json({ error: "Forbidden: Admin access required" });
       }
 
       req.user = {
-        id: user.id,
-        email,
+        id: payload.userId,
+        email: payload.email,
         isAdmin,
       };
 
@@ -68,3 +55,4 @@ function createAuthMiddleware(options: AuthOptions = {}) {
 
 export const requireAuth = createAuthMiddleware();
 export const requireAdmin = createAuthMiddleware({ requireAdmin: true });
+

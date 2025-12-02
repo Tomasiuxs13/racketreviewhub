@@ -1,21 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
-import { supabase } from "./supabase";
-
-async function getAuthHeaders(): Promise<Record<string, string>> {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    
-    if (!token) {
-      console.warn("[QueryClient] No active session found when getting auth headers");
-    }
-    
-    return token ? { Authorization: `Bearer ${token}` } : {};
-  } catch (error) {
-    console.error("[QueryClient] Error getting auth headers:", error);
-    return {};
-  }
-}
+import { getAuthHeaders } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -33,7 +17,7 @@ export async function apiRequest(
   const isFormData = data instanceof FormData;
   
   // Get auth headers
-  const authHeaders = await getAuthHeaders();
+  const authHeaders = getAuthHeaders();
   
   const res = await fetch(url, {
     method,
@@ -76,7 +60,7 @@ export const getQueryFn: <T>(options: {
     }
     
     // Get auth headers for admin routes
-    const authHeaders = await getAuthHeaders();
+    const authHeaders = getAuthHeaders();
     
     const res = await fetch(url, {
       credentials: "include",

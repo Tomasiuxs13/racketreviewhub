@@ -6,8 +6,8 @@ import AdmZip from "adm-zip";
 import crypto from "crypto";
 import { storage } from "./storage";
 import { excelRacketSchema, type ExcelRacket, type Racket } from "@shared/schema";
-import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/auth.js";
-import { createSupabaseClient } from "./lib/supabaseClient.js";
+import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/jwtAuth.js";
+import { validateAdminCredentials, generateToken, verifyToken, isAdminEmail } from "./lib/jwt.js";
 import { generateRacketReview, estimateRacketRatings } from "./lib/openai.js";
 import {
   applyTranslationsToEntity,
@@ -142,7 +142,7 @@ const RACKET_REVIEW_TRANSLATABLE_FIELDS = [
 ] as const;
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Authentication endpoints
+  // Authentication endpoints (JWT-based)
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
@@ -150,65 +150,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Email and password are required" });
       }
 
-      const supabase = createSupabaseClient(req);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        return res.status(401).json({ error: error.message });
+      const user = await validateAdminCredentials(email, password);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid email or password" });
       }
+
+      const token = generateToken(user);
 
       res.json({
         user: {
-          id: data.user.id,
-          email: data.user.email,
+          id: user.userId,
+          email: user.email,
+          isAdmin: user.isAdmin,
         },
-        session: data.session,
+        token,
+        // For backward compatibility with client code expecting session
+        session: {
+          access_token: token,
+        },
       });
     } catch (error) {
+      console.error("Login error:", error);
       res.status(500).json({ error: "Login failed" });
     }
   });
 
-  app.post("/api/auth/signup", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
-      }
-
-      const supabase = createSupabaseClient(req);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-
-      if (error) {
-        return res.status(400).json({ error: error.message });
-      }
-
-      res.json({
-        user: {
-          id: data.user?.id,
-          email: data.user?.email,
-        },
-        session: data.session,
-      });
-    } catch (error) {
-      res.status(500).json({ error: "Signup failed" });
-    }
-  });
-
-  app.post("/api/auth/logout", requireAuth, async (req, res) => {
-    try {
-      const supabase = createSupabaseClient(req);
-      await supabase.auth.signOut();
-      res.json({ message: "Logged out successfully" });
-    } catch (error) {
-      res.status(500).json({ error: "Logout failed" });
-    }
+  app.post("/api/auth/logout", (_req, res) => {
+    // With JWT, logout is handled client-side by removing the token
+    res.json({ message: "Logged out successfully" });
   });
 
   app.get("/api/auth/me", requireAuth, async (req: AuthenticatedRequest, res) => {
@@ -217,10 +186,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user: {
           id: req.user?.id,
           email: req.user?.email,
+          isAdmin: req.user?.isAdmin,
         },
       });
     } catch (error) {
       res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
+  app.post("/api/auth/verify", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({ valid: false, error: "No token provided" });
+      }
+
+      const token = authHeader.replace("Bearer ", "");
+      const payload = verifyToken(token);
+
+      if (!payload) {
+        return res.status(401).json({ valid: false, error: "Invalid or expired token" });
+      }
+
+      return res.json({
+        valid: true,
+        user: {
+          id: payload.userId,
+          email: payload.email,
+          isAdmin: isAdminEmail(payload.email),
+        },
+      });
+    } catch (error) {
+      console.error("Verify token error:", error);
+      return res.status(500).json({ valid: false, error: "Internal server error" });
     }
   });
 

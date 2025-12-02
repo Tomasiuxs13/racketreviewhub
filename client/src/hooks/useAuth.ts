@@ -1,44 +1,77 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase";
-import type { User } from "@supabase/supabase-js";
+import {
+  getUser,
+  getToken,
+  verifyToken,
+  logout as authLogout,
+  type AuthUser,
+} from "@/lib/auth";
 
 const ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || "")
   .split(",")
-  .map((email) => email.trim().toLowerCase())
+  .map((email: string) => email.trim().toLowerCase())
   .filter(Boolean);
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    // Check for existing token and verify it
+    const initAuth = async () => {
+      const token = getToken();
+      if (token) {
+        // Verify token is still valid
+        const verifiedUser = await verifyToken();
+        if (verifiedUser) {
+          setUser(verifiedUser);
+        } else {
+          // Token invalid, clear it
+          setUser(null);
+        }
+      } else {
+        // Try to get user from localStorage (may be stale)
+        const storedUser = getUser();
+        if (storedUser) {
+          // Verify if we have a token
+          const verified = await verifyToken();
+          setUser(verified);
+        }
+      }
       setLoading(false);
-    });
+    };
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      // Invalidate queries when auth state changes
-      queryClient.invalidateQueries();
-    });
+    initAuth();
 
-    return () => subscription.unsubscribe();
+    // Listen for storage changes (e.g., login/logout in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "auth_token" || e.key === "auth_user") {
+        const newUser = getUser();
+        setUser(newUser);
+        queryClient.invalidateQueries();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, [queryClient]);
 
-  const signOut = async () => {
-    await supabase.auth.signOut();
+  const signOut = useCallback(async () => {
+    await authLogout();
     setUser(null);
-  };
+    queryClient.invalidateQueries();
+  }, [queryClient]);
 
-  const isAdminUser =
-    !!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase());
+  // Refresh user state (useful after login)
+  const refreshUser = useCallback(() => {
+    const currentUser = getUser();
+    setUser(currentUser);
+  }, []);
+
+  const isAdminUser = user?.isAdmin || 
+    (!!user?.email && ADMIN_EMAILS.includes(user.email.toLowerCase()));
 
   return {
     user,
@@ -46,10 +79,6 @@ export function useAuth() {
     isAuthenticated: !!user,
     isAdmin: isAdminUser,
     signOut,
+    refreshUser,
   };
 }
-
-
-
-
-

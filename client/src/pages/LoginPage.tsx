@@ -1,27 +1,28 @@
 import { useState } from "react";
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
+import { login } from "@/lib/auth";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: { email: string; password: string }) => {
-      const { data, error } = await supabase.auth.signInWithPassword(credentials);
-      if (error) throw error;
-      return data;
+      return await login(credentials.email, credentials.password);
     },
     onSuccess: () => {
+      refreshUser(); // Update auth state
       toast({
         title: "Login successful",
         description: "Welcome back!",
@@ -95,4 +96,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
