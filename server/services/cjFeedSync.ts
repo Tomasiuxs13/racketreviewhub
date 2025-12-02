@@ -6,6 +6,7 @@
 
 import SftpClient from "ssh2-sftp-client";
 import { parse } from "csv-parse/sync";
+import AdmZip from "adm-zip";
 import { cjFeedProductSchema, type CjFeedProduct } from "@shared/schema";
 
 // Environment variable configuration
@@ -13,7 +14,8 @@ const CJ_SFTP_HOST = process.env.CJ_SFTP_HOST || "datatransfer.cj.com";
 const CJ_SFTP_USERNAME = process.env.CJ_SFTP_USERNAME || "";
 const CJ_SFTP_PASSWORD = process.env.CJ_SFTP_PASSWORD || "";
 const CJ_SFTP_PORT = parseInt(process.env.CJ_SFTP_PORT || "22", 10);
-const CJ_FEED_FILENAME = process.env.CJ_FEED_FILENAME || "PadelNuestro_EU-Padel_Nuestro_Product_Feed_INTERNATIONAL_-shopping.txt";
+// File pattern: Padel_Nuestro-shopping-<timestamp>.zip
+const CJ_FEED_FILE_PATTERN = process.env.CJ_FEED_FILE_PATTERN || "Padel_Nuestro-shopping";
 
 export interface SftpConfig {
   host: string;
@@ -121,66 +123,123 @@ export async function listSftpFiles(remotePath: string = "/"): Promise<string[]>
 }
 
 /**
+ * Find the latest feed file in the outgoing directory
+ */
+async function findLatestFeedFile(sftp: SftpClient): Promise<string | null> {
+  try {
+    // List files in outgoing directory
+    const files = await sftp.list("/outgoing");
+    console.log(`[CJ-SFTP] Files in /outgoing: ${files.map(f => f.name).join(", ")}`);
+
+    // Filter for files matching our pattern (Padel_Nuestro-shopping-*.zip)
+    const feedFiles = files
+      .filter(f => f.name.startsWith(CJ_FEED_FILE_PATTERN) && f.name.endsWith(".zip"))
+      .sort((a, b) => {
+        // Sort by modification time, newest first
+        return (b.modifyTime || 0) - (a.modifyTime || 0);
+      });
+
+    if (feedFiles.length === 0) {
+      console.log(`[CJ-SFTP] No files matching pattern '${CJ_FEED_FILE_PATTERN}*.zip' found`);
+      return null;
+    }
+
+    const latestFile = feedFiles[0];
+    console.log(`[CJ-SFTP] Latest feed file: ${latestFile.name} (modified: ${new Date(latestFile.modifyTime || 0).toISOString()})`);
+    return `/outgoing/${latestFile.name}`;
+  } catch (error) {
+    console.error("[CJ-SFTP] Error listing outgoing directory:", error);
+    return null;
+  }
+}
+
+/**
+ * Extract CSV data from ZIP file
+ */
+function extractCsvFromZip(zipBuffer: Buffer): string | null {
+  try {
+    const zip = new AdmZip(zipBuffer);
+    const zipEntries = zip.getEntries();
+    
+    console.log(`[CJ-SFTP] ZIP contains ${zipEntries.length} entries: ${zipEntries.map(e => e.entryName).join(", ")}`);
+
+    // Find CSV file in the ZIP
+    const csvEntry = zipEntries.find(entry => 
+      entry.entryName.endsWith(".csv") || entry.entryName.endsWith(".txt")
+    );
+
+    if (!csvEntry) {
+      console.error("[CJ-SFTP] No CSV or TXT file found in ZIP");
+      return null;
+    }
+
+    console.log(`[CJ-SFTP] Extracting: ${csvEntry.entryName}`);
+    const csvData = zip.readAsText(csvEntry);
+    console.log(`[CJ-SFTP] Extracted ${csvData.length} characters`);
+    
+    return csvData;
+  } catch (error) {
+    console.error("[CJ-SFTP] Error extracting ZIP:", error);
+    return null;
+  }
+}
+
+/**
  * Download the product feed file from CJ SFTP
  */
 export async function downloadFeedFile(filename?: string): Promise<FeedDownloadResult> {
   const sftp = new SftpClient();
   const config = getSftpConfig();
-  const targetFile = filename || CJ_FEED_FILENAME;
 
   try {
     console.log(`[CJ-SFTP] Connecting to ${config.host}:${config.port}...`);
     await sftp.connect(config);
     console.log("[CJ-SFTP] Connected successfully");
 
-    // Try to find the file - it might be in different locations
-    const possiblePaths = [
-      `/${targetFile}`,
-      `/outgoing/${targetFile}`,
-      targetFile,
-      `outgoing/${targetFile}`,
-    ];
-
-    let fileData: Buffer | null = null;
-    let foundPath = "";
-
-    for (const path of possiblePaths) {
-      try {
-        console.log(`[CJ-SFTP] Trying path: ${path}`);
-        const exists = await sftp.exists(path);
-        if (exists) {
-          console.log(`[CJ-SFTP] Found file at: ${path}`);
-          fileData = await sftp.get(path) as Buffer;
-          foundPath = path;
-          break;
+    // Find the latest feed file if no specific filename provided
+    let targetPath = filename;
+    if (!targetPath) {
+      targetPath = await findLatestFeedFile(sftp);
+      if (!targetPath) {
+        // List root directory to help debug
+        try {
+          const rootFiles = await sftp.list("/");
+          console.log("[CJ-SFTP] Files in root directory:", rootFiles.map(f => f.name).join(", "));
+        } catch (e) {
+          console.log("[CJ-SFTP] Could not list root directory");
         }
-      } catch (e) {
-        // Path doesn't exist, try next
-        continue;
+
+        return {
+          success: false,
+          error: `No feed file found matching pattern '${CJ_FEED_FILE_PATTERN}*.zip' in /outgoing directory`,
+        };
       }
     }
 
-    if (!fileData) {
-      // List root directory to help debug
-      try {
-        const rootFiles = await sftp.list("/");
-        console.log("[CJ-SFTP] Files in root directory:", rootFiles.map(f => f.name).join(", "));
-      } catch (e) {
-        console.log("[CJ-SFTP] Could not list root directory");
+    console.log(`[CJ-SFTP] Downloading: ${targetPath}`);
+    const fileData = await sftp.get(targetPath) as Buffer;
+    console.log(`[CJ-SFTP] Downloaded ${fileData.length} bytes`);
+
+    // Check if it's a ZIP file
+    let csvData: string;
+    if (targetPath.endsWith(".zip")) {
+      const extracted = extractCsvFromZip(fileData);
+      if (!extracted) {
+        return {
+          success: false,
+          error: "Failed to extract CSV from ZIP file",
+        };
       }
-
-      return {
-        success: false,
-        error: `File not found: ${targetFile}. Tried paths: ${possiblePaths.join(", ")}`,
-      };
+      csvData = extracted;
+    } else {
+      // Plain text file
+      csvData = fileData.toString("utf-8");
     }
-
-    console.log(`[CJ-SFTP] Downloaded ${fileData.length} bytes from ${foundPath}`);
 
     return {
       success: true,
-      data: fileData.toString("utf-8"),
-      filename: foundPath,
+      data: csvData,
+      filename: targetPath,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown SFTP error";
