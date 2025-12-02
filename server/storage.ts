@@ -15,9 +15,12 @@ import { randomUUID } from "crypto";
 export interface IStorage {
   // Rackets
   getAllRackets(): Promise<Racket[]>;
+  getPublishedRackets(): Promise<Racket[]>;
+  getPendingRackets(): Promise<Racket[]>;
   getRacket(id: string): Promise<Racket | undefined>;
   getRacketByBrandAndModel(brand: string, model: string): Promise<Racket | undefined>;
   getRacketByTitleUrl(titleUrl: string): Promise<Racket | undefined>;
+  getRacketByFeedProductId(feedProductId: string): Promise<Racket | undefined>;
   getRecentRackets(limit: number): Promise<Racket[]>;
   getRelatedRackets(racketId: string, limit: number): Promise<Racket[]>;
   getRacketsByBrand(brand: string): Promise<Racket[]>;
@@ -812,6 +815,18 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     );
   }
 
+  async getPublishedRackets(): Promise<Racket[]> {
+    return Array.from(this.rackets.values())
+      .filter(r => r.isPublished !== false)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getPendingRackets(): Promise<Racket[]> {
+    return Array.from(this.rackets.values())
+      .filter(r => r.isPublished === false)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
   async getRacket(id: string): Promise<Racket | undefined> {
     return this.rackets.get(id);
   }
@@ -826,6 +841,12 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   async getRacketByTitleUrl(titleUrl: string): Promise<Racket | undefined> {
     return Array.from(this.rackets.values()).find(
       (r) => r.titleUrl !== null && r.titleUrl === titleUrl
+    );
+  }
+
+  async getRacketByFeedProductId(feedProductId: string): Promise<Racket | undefined> {
+    return Array.from(this.rackets.values()).find(
+      (r) => r.feedProductId !== null && r.feedProductId === feedProductId
     );
   }
 

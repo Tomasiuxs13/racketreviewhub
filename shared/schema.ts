@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, jsonb, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, jsonb, uniqueIndex, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -54,6 +54,10 @@ export const rackets = pgTable("rackets", {
   gameLevel: text("game_level"),
   gameType: text("game_type"),
   player: text("player"), // man, woman, or both
+  // CJ Feed sync fields
+  feedProductId: text("feed_product_id"), // CJ product ID for matching
+  isPublished: boolean("is_published").default(true).notNull(), // false for new imports pending review
+  feedLastUpdated: timestamp("feed_last_updated"), // timestamp of last CJ feed sync
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -196,3 +200,36 @@ export const insertContentTranslationSchema = createInsertSchema(contentTranslat
 
 export type InsertContentTranslation = z.infer<typeof insertContentTranslationSchema>;
 export type ContentTranslation = typeof contentTranslations.$inferSelect;
+
+// CJ Feed product schema for validation
+export const cjFeedProductSchema = z.object({
+  ID: z.string().min(1),
+  TITLE: z.string().min(1),
+  DESCRIPTION: z.string().optional(),
+  LINK: z.string().url(),
+  IMAGE_LINK: z.string().url().optional(),
+  PRICE: z.string().optional(), // "109.95 EUR" format
+  SALE_PRICE: z.string().optional(), // "59.95 EUR" format
+  BRAND: z.string().min(1),
+  GTIN: z.string().optional(),
+  CONDITION: z.string().optional(),
+  COLOR: z.string().optional(),
+  PRODUCT_TYPE: z.string(),
+});
+
+export type CjFeedProduct = z.infer<typeof cjFeedProductSchema>;
+
+// CJ Sync settings table for tracking sync status
+export const cjSyncSettings = pgTable("cj_sync_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  lastSyncAt: timestamp("last_sync_at"),
+  lastSyncStatus: text("last_sync_status"), // success, failed
+  lastSyncMessage: text("last_sync_message"),
+  racketsSynced: integer("rackets_synced").default(0),
+  racketsCreated: integer("rackets_created").default(0),
+  racketsUpdated: integer("rackets_updated").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export type CjSyncSettings = typeof cjSyncSettings.$inferSelect;

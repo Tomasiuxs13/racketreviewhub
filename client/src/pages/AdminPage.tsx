@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Plus, X } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Plus, X, RefreshCw, Clock, Eye, EyeOff, Zap } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { ExcelRacket, InsertRacket, Racket, Guide, Brand, BlogPost, InsertGuide, InsertBrand, InsertBlogPost } from "@shared/schema";
 import { RacketForm } from "@/components/admin/RacketForm";
@@ -17,44 +16,29 @@ import { BrandForm } from "@/components/admin/BrandForm";
 import { BrandTable } from "@/components/admin/BrandTable";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
 import { BlogPostTable } from "@/components/admin/BlogPostTable";
+import { Checkbox } from "@/components/ui/checkbox";
 
 interface UploadResult {
   created: number;
   updated: number;
   errors: string[];
   preview: ExcelRacket[];
-  totalRows: number;
-  processedRows: number;
-}
-
-type UploadJobStatus = "pending" | "processing" | "completed" | "failed";
-
-interface UploadJobProgress {
   totalRows?: number;
   processedRows?: number;
-  created?: number;
-  updated?: number;
-  errors?: number;
-  currentRow?: number;
-  stage?: string;
-  message?: string;
 }
 
-interface UploadJob {
-  id: string;
-  filename: string;
-  status: UploadJobStatus;
-  createdAt: string;
-  startedAt?: string;
-  completedAt?: string;
-  userId?: string;
-  progress: UploadJobProgress;
-  result?: UploadResult;
-  error?: string;
+interface CjSyncResult {
+  success: boolean;
+  message: string;
+  totalProcessed: number;
+  created: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+  totalProducts?: number;
+  padelRackets?: number;
+  duration?: number;
 }
-
-const ACTIVE_UPLOAD_STORAGE_KEY = "activeUploadJob";
-const LAST_UPLOAD_RESULT_KEY = "lastUploadResult";
 
 export default function AdminPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -62,40 +46,20 @@ export default function AdminPage() {
   // Restore upload results from localStorage on mount
   const [result, setResult] = useState<UploadResult | null>(() => {
     try {
-      const savedResult = localStorage.getItem(LAST_UPLOAD_RESULT_KEY);
+      const savedResult = localStorage.getItem("lastUploadResult");
       if (savedResult) {
         const parsed = JSON.parse(savedResult);
         // Only restore if it's less than 1 hour old
         if (parsed.timestamp && Date.now() - parsed.timestamp < 60 * 60 * 1000) {
           console.log("Restored from localStorage:", parsed.data);
-          const restored = parsed.data ?? {};
-          return {
-            ...restored,
-            totalRows: restored.totalRows ?? restored.processedRows ?? 0,
-            processedRows: restored.processedRows ?? restored.totalRows ?? 0,
-          };
+          return parsed.data;
         } else {
-          localStorage.removeItem(LAST_UPLOAD_RESULT_KEY);
+          localStorage.removeItem("lastUploadResult");
         }
       }
     } catch (e) {
       console.error("Error restoring from localStorage:", e);
-      localStorage.removeItem(LAST_UPLOAD_RESULT_KEY);
-    }
-    return null;
-  });
-  const [activeJob, setActiveJob] = useState<UploadJob | null>(null);
-  const [activeJobId, setActiveJobId] = useState<string | null>(() => {
-    try {
-      const stored = localStorage.getItem(ACTIVE_UPLOAD_STORAGE_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        if (parsed?.jobId && typeof parsed.jobId === "string") {
-          return parsed.jobId;
-        }
-      }
-    } catch {
-      localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
+      localStorage.removeItem("lastUploadResult");
     }
     return null;
   });
@@ -130,30 +94,52 @@ export default function AdminPage() {
     queryKey: ["/api/admin/blog"],
   });
 
+  // Fetch pending rackets
+  const { data: pendingRackets = [], isLoading: pendingLoading, refetch: refetchPending } = useQuery<Racket[]>({
+    queryKey: ["/api/admin/pending-rackets"],
+  });
+
+  // Selected pending rackets for bulk actions
+  const [selectedPending, setSelectedPending] = useState<Set<string>>(new Set());
+
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append("file", file);
-      const response = await apiRequest("POST", "/api/admin/upload-rackets", formData);
-      if (!response.ok) {
-        throw new Error("Failed to start upload job");
-      }
-      return (await response.json()) as UploadJob;
-    },
-    onSuccess: (job, file) => {
-      console.log("Upload job queued:", job);
-      const jobMeta = {
-        jobId: job.id,
+      // Save upload start time to localStorage
+      const uploadStart = {
         fileName: file.name,
         fileSize: file.size,
-        startedAt: Date.now(),
+        startTime: Date.now(),
       };
-      localStorage.setItem(ACTIVE_UPLOAD_STORAGE_KEY, JSON.stringify(jobMeta));
-      setActiveJob(job);
-      setActiveJobId(job.id);
+      localStorage.setItem("activeUpload", JSON.stringify(uploadStart));
+      
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await apiRequest("POST", "/api/admin/upload-rackets", formData);
+        return await response.json();
+      } finally {
+        // Clear upload tracking when done (success or error)
+        localStorage.removeItem("activeUpload");
+      }
+    },
+    onSuccess: (data: UploadResult) => {
+      console.log("Upload success, data:", data);
+      setResult(data);
+      // Save upload results to localStorage
+      localStorage.setItem("lastUploadResult", JSON.stringify({
+        data,
+        timestamp: Date.now(),
+      }));
+      console.log("Saved to localStorage, totalRows:", data.totalRows, "processedRows:", data.processedRows);
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const keyString = JSON.stringify(query.queryKey);
+          return keyString.includes("/api/rackets") || keyString.includes("/api/brands");
+        },
+      });
       toast({
-        title: "Upload started",
-        description: `Processing "${file.name}" in the background. You can navigate away safely.`,
+        title: "Upload successful",
+        description: `Created ${data.created} rackets, updated ${data.updated} rackets`,
       });
     },
     onError: (error: Error) => {
@@ -167,25 +153,29 @@ export default function AdminPage() {
 
   // Check for interrupted uploads and restored results on mount
   useEffect(() => {
-    const storedJob = localStorage.getItem(ACTIVE_UPLOAD_STORAGE_KEY);
-    if (storedJob) {
+    const activeUpload = localStorage.getItem("activeUpload");
+    if (activeUpload) {
       try {
-        const upload = JSON.parse(storedJob);
-        if (upload?.jobId) {
-          const timeSinceStart = upload.startedAt ? Date.now() - upload.startedAt : null;
+        const upload = JSON.parse(activeUpload);
+        const timeSinceStart = Date.now() - upload.startTime;
+        // If upload started less than 5 minutes ago, it might still be processing
+        if (timeSinceStart < 5 * 60 * 1000) {
           toast({
-            title: "Upload in progress",
-            description: timeSinceStart
-              ? `"${upload.fileName}" started ${Math.round(timeSinceStart / 1000)}s ago. You can keep working while it finishes.`
-              : `"${upload.fileName}" is being processed in the background.`,
+            title: "Upload may be in progress",
+            description: `An upload of "${upload.fileName}" was started ${Math.round(timeSinceStart / 1000)}s ago. If you reloaded the page, the upload may still be processing on the server. Check the server logs or wait a moment.`,
+            variant: "default",
           });
+        } else {
+          // Old upload, clear it
+          localStorage.removeItem("activeUpload");
         }
-      } catch {
-        localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
+      } catch (e) {
+        localStorage.removeItem("activeUpload");
       }
     }
-
-    const savedResult = localStorage.getItem(LAST_UPLOAD_RESULT_KEY);
+    
+    // Notify if results were restored (only on mount)
+    const savedResult = localStorage.getItem("lastUploadResult");
     if (savedResult && result) {
       try {
         const parsed = JSON.parse(savedResult);
@@ -195,102 +185,17 @@ export default function AdminPage() {
           if (minutesAgo < 60) {
             toast({
               title: "Upload results restored",
-              description: `Showing results from ${
-                minutesAgo === 0 ? "just now" : `${minutesAgo} minute${minutesAgo > 1 ? "s" : ""} ago`
-              }. Created ${result.created}, updated ${result.updated} rackets${
-                typeof result.processedRows === "number" && typeof result.totalRows === "number"
-                  ? `, processed ${result.processedRows}/${result.totalRows} rows`
-                  : ""
-              }.`,
+              description: `Showing results from ${minutesAgo === 0 ? 'just now' : `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`}. Created ${result.created}, updated ${result.updated} rackets${result.processedRows !== undefined ? `, processed ${result.processedRows} rows` : ''}.`,
+              variant: "default",
             });
           }
         }
-      } catch {
+      } catch (e) {
         // Ignore parse errors
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
-
-  useEffect(() => {
-    if (!activeJobId) {
-      setActiveJob(null);
-      return;
-    }
-
-    let isCancelled = false;
-
-    const fetchStatus = async () => {
-      try {
-        const response = await apiRequest("GET", `/api/admin/upload-jobs/${activeJobId}`);
-        if (!response.ok) {
-          if (response.status === 404) {
-            localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
-            if (!isCancelled) {
-              setActiveJobId(null);
-              setActiveJob(null);
-            }
-          } else {
-            throw new Error("Failed to fetch upload job");
-          }
-          return;
-        }
-
-        const data: UploadJob = await response.json();
-        if (isCancelled) return;
-        setActiveJob(data);
-
-        if (data.status === "completed" && data.result) {
-          const normalizedResult: UploadResult = {
-            ...data.result,
-            totalRows: data.result.totalRows ?? data.result.processedRows ?? 0,
-            processedRows: data.result.processedRows ?? data.result.totalRows ?? 0,
-          };
-          setResult(normalizedResult);
-          localStorage.setItem(
-            LAST_UPLOAD_RESULT_KEY,
-            JSON.stringify({ data: normalizedResult, timestamp: Date.now() }),
-          );
-          localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
-          setActiveJobId(null);
-          toast({
-            title: "Upload complete",
-            description: `Created ${normalizedResult.created} rackets, updated ${normalizedResult.updated} rackets.`,
-          });
-          queryClient.invalidateQueries({
-            predicate: (query) => {
-              const keyString = JSON.stringify(query.queryKey);
-              return (
-                keyString.includes("/api/rackets") ||
-                keyString.includes("/api/brands") ||
-                keyString.includes("/api/admin/rackets")
-              );
-            },
-          });
-        } else if (data.status === "failed") {
-          localStorage.removeItem(ACTIVE_UPLOAD_STORAGE_KEY);
-          setActiveJobId(null);
-          toast({
-            title: "Upload failed",
-            description: data.error || "Something went wrong while processing the upload.",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        if (!isCancelled) {
-          console.error("Failed to fetch upload job", error);
-        }
-      }
-    };
-
-    fetchStatus();
-    const interval = setInterval(fetchStatus, 5000);
-
-    return () => {
-      isCancelled = true;
-      clearInterval(interval);
-    };
-  }, [activeJobId, toast, queryClient]);
 
   const createMutation = useMutation({
     mutationFn: async (data: InsertRacket) => {
@@ -504,6 +409,131 @@ export default function AdminPage() {
     setPostFormOpen(true);
   };
 
+  // CJ Sync mutations
+  const cjSyncMutation = useMutation({
+    mutationFn: async (quick: boolean = false) => {
+      const endpoint = quick ? "/api/admin/cj-sync/quick" : "/api/admin/cj-sync";
+      const response = await apiRequest("POST", endpoint, {});
+      return await response.json() as CjSyncResult;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Sync completed" : "Sync completed with errors",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const cjLocalSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/cj-sync/local", {
+        generateRatings: true,
+        generateReviews: true,
+      });
+      return await response.json() as CjSyncResult;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Local sync completed" : "Local sync completed with errors",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Local sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Publish/Unpublish mutations
+  const publishMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("POST", `/api/admin/publish-racket/${id}`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Racket published",
+        description: "The racket is now visible to users.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Publish failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const bulkPublishMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const response = await apiRequest("POST", "/api/admin/publish-rackets", { ids });
+      return await response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Rackets published",
+        description: `${data.published} rackets are now visible to users.`,
+      });
+      setSelectedPending(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Bulk publish failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleTogglePendingSelection = (id: string) => {
+    const newSelected = new Set(selectedPending);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedPending(newSelected);
+  };
+
+  const handleSelectAllPending = () => {
+    if (selectedPending.size === pendingRackets.length) {
+      setSelectedPending(new Set());
+    } else {
+      setSelectedPending(new Set(pendingRackets.map(r => r.id)));
+    }
+  };
+
+  const handleBulkPublish = () => {
+    if (selectedPending.size > 0) {
+      bulkPublishMutation.mutate(Array.from(selectedPending));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto px-6 py-8">
@@ -518,8 +548,17 @@ export default function AdminPage() {
         </div>
 
         <Tabs defaultValue="manage" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="manage">Manage Rackets</TabsTrigger>
+            <TabsTrigger value="pending" className="relative">
+              Pending Review
+              {pendingRackets.length > 0 && (
+                <Badge variant="destructive" className="ml-2 h-5 min-w-5 px-1">
+                  {pendingRackets.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="cj-sync">CJ Sync</TabsTrigger>
             <TabsTrigger value="guides">Guides</TabsTrigger>
             <TabsTrigger value="brands">Brands</TabsTrigger>
             <TabsTrigger value="blog">Blog Posts</TabsTrigger>
@@ -546,6 +585,299 @@ export default function AdminPage() {
             ) : (
               <RacketTable rackets={rackets} onEdit={handleEdit} />
             )}
+          </TabsContent>
+
+          <TabsContent value="pending" className="space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <div>
+                <h2 className="text-2xl font-semibold">Pending Review</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Rackets imported from CJ feed that need review before publishing
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => refetchPending()}
+                  disabled={pendingLoading}
+                >
+                  <RefreshCw className={`mr-2 h-4 w-4 ${pendingLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                {selectedPending.size > 0 && (
+                  <Button 
+                    onClick={handleBulkPublish}
+                    disabled={bulkPublishMutation.isPending}
+                  >
+                    {bulkPublishMutation.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Eye className="mr-2 h-4 w-4" />
+                    )}
+                    Publish Selected ({selectedPending.size})
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {pendingLoading ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : pendingRackets.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <CheckCircle className="h-12 w-12 mx-auto text-primary mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">All caught up!</h3>
+                  <p className="text-muted-foreground">
+                    No rackets pending review. Run a CJ sync to import new products.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="border-b bg-muted/50">
+                        <tr>
+                          <th className="p-3 text-left">
+                            <Checkbox
+                              checked={selectedPending.size === pendingRackets.length && pendingRackets.length > 0}
+                              onCheckedChange={handleSelectAllPending}
+                            />
+                          </th>
+                          <th className="p-3 text-left font-medium">Image</th>
+                          <th className="p-3 text-left font-medium">Brand</th>
+                          <th className="p-3 text-left font-medium">Model</th>
+                          <th className="p-3 text-left font-medium">Price</th>
+                          <th className="p-3 text-left font-medium">Overall</th>
+                          <th className="p-3 text-left font-medium">Added</th>
+                          <th className="p-3 text-left font-medium">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pendingRackets.map((racket) => (
+                          <tr key={racket.id} className="border-b hover:bg-muted/30">
+                            <td className="p-3">
+                              <Checkbox
+                                checked={selectedPending.has(racket.id)}
+                                onCheckedChange={() => handleTogglePendingSelection(racket.id)}
+                              />
+                            </td>
+                            <td className="p-3">
+                              {racket.imageUrl ? (
+                                <img 
+                                  src={racket.imageUrl} 
+                                  alt={`${racket.brand} ${racket.model}`}
+                                  className="w-12 h-12 object-contain rounded"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 bg-muted rounded flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground">No img</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="p-3 font-medium">{racket.brand}</td>
+                            <td className="p-3">{racket.model}</td>
+                            <td className="p-3">
+                              <span className="font-medium">€{racket.currentPrice}</span>
+                              {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) && (
+                                <span className="text-muted-foreground line-through ml-2 text-sm">
+                                  €{racket.originalPrice}
+                                </span>
+                              )}
+                            </td>
+                            <td className="p-3">
+                              <Badge variant="outline">{racket.overallRating}/100</Badge>
+                            </td>
+                            <td className="p-3 text-sm text-muted-foreground">
+                              {new Date(racket.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="p-3">
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleEdit(racket)}
+                                >
+                                  Edit
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => publishMutation.mutate(racket.id)}
+                                  disabled={publishMutation.isPending}
+                                >
+                                  {publishMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Eye className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+
+          <TabsContent value="cj-sync" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold">CJ Affiliate Feed Sync</h2>
+              <p className="text-muted-foreground mt-1">
+                Sync product data from CJ affiliate feed to update prices and import new rackets
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Full Sync Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5" />
+                    Full Sync
+                  </CardTitle>
+                  <CardDescription>
+                    Downloads feed from CJ SFTP, updates prices, and imports new rackets with AI-generated ratings and reviews
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Updates prices for existing rackets</li>
+                    <li>• Imports new rackets (pending review)</li>
+                    <li>• Generates AI ratings for new rackets</li>
+                    <li>• Creates AI reviews for new rackets</li>
+                  </ul>
+                  <Button
+                    onClick={() => cjSyncMutation.mutate(false)}
+                    disabled={cjSyncMutation.isPending}
+                    className="w-full"
+                  >
+                    {cjSyncMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Run Full Sync
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Quick Sync Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5" />
+                    Quick Price Update
+                  </CardTitle>
+                  <CardDescription>
+                    Fast sync that only updates prices without AI generation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Updates prices for existing rackets</li>
+                    <li>• Skips new racket imports</li>
+                    <li>• No AI processing (faster)</li>
+                    <li>• Ideal for daily price updates</li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    onClick={() => cjSyncMutation.mutate(true)}
+                    disabled={cjSyncMutation.isPending}
+                    className="w-full"
+                  >
+                    {cjSyncMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Quick Price Update
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Local File Sync Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    Local File Sync
+                  </CardTitle>
+                  <CardDescription>
+                    Process a local CJ feed file (for testing or manual imports)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Uses local data file</li>
+                    <li>• Same processing as full sync</li>
+                    <li>• Good for testing without SFTP</li>
+                  </ul>
+                  <Button
+                    variant="secondary"
+                    onClick={() => cjLocalSyncMutation.mutate()}
+                    disabled={cjLocalSyncMutation.isPending}
+                    className="w-full"
+                  >
+                    {cjLocalSyncMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        Sync from Local File
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Info Card */}
+              <Card className="bg-muted/50">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Scheduled Sync
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    CJ feed sync is automatically scheduled to run daily via Render cron jobs.
+                  </p>
+                  <div className="p-3 bg-background rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">Environment Variables:</h4>
+                    <ul className="text-xs text-muted-foreground font-mono space-y-1">
+                      <li>CJ_SFTP_HOST</li>
+                      <li>CJ_SFTP_USERNAME</li>
+                      <li>CJ_SFTP_PASSWORD</li>
+                      <li>CJ_FEED_FILENAME</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="upload" className="space-y-6">
@@ -607,18 +939,13 @@ export default function AdminPage() {
                     </div>
                     <Button
                       onClick={handleUpload}
-                      disabled={uploadMutation.isPending || Boolean(activeJobId)}
+                      disabled={uploadMutation.isPending}
                       data-testid="button-upload"
                     >
                       {uploadMutation.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processing...
-                        </>
-                      ) : activeJobId ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Upload running...
                         </>
                       ) : (
                         <>
@@ -656,50 +983,6 @@ export default function AdminPage() {
               </CardContent>
             </Card>
 
-            {activeJobId && activeJob && activeJob.status !== "completed" && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                      Upload In Progress
-                    </CardTitle>
-                    <Badge variant="secondary" className="uppercase tracking-wide">
-                      {activeJob.status}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Processing <span className="font-medium">{activeJob.filename}</span>
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {activeJob.progress.totalRows ? (
-                    <>
-                      <Progress
-                        value={
-                          ((activeJob.progress.processedRows ?? 0) /
-                            activeJob.progress.totalRows) *
-                          100
-                        }
-                      />
-                      <p className="text-sm text-muted-foreground">
-                        {activeJob.progress.processedRows ?? 0} / {activeJob.progress.totalRows} rows
-                        processed
-                      </p>
-                    </>
-                  ) : (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Preparing file...
-                    </div>
-                  )}
-                  {activeJob.progress.message && (
-                    <p className="text-sm text-muted-foreground">{activeJob.progress.message}</p>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-
             {/* Upload Results */}
             {result && (
               <Card>
@@ -714,7 +997,7 @@ export default function AdminPage() {
                       size="sm"
                       onClick={() => {
                         setResult(null);
-                        localStorage.removeItem(LAST_UPLOAD_RESULT_KEY);
+                        localStorage.removeItem("lastUploadResult");
                       }}
                       className="h-8 w-8 p-0"
                     >

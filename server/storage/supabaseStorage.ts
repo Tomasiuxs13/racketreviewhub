@@ -35,6 +35,24 @@ export class SupabaseStorage implements IStorage {
     return result;
   }
 
+  async getPublishedRackets(): Promise<Racket[]> {
+    const result = await db
+      .select()
+      .from(rackets)
+      .where(eq(rackets.isPublished, true))
+      .orderBy(desc(rackets.createdAt));
+    return result;
+  }
+
+  async getPendingRackets(): Promise<Racket[]> {
+    const result = await db
+      .select()
+      .from(rackets)
+      .where(eq(rackets.isPublished, false))
+      .orderBy(desc(rackets.createdAt));
+    return result;
+  }
+
   async getRacket(id: string): Promise<Racket | undefined> {
     const result = await db.select().from(rackets).where(eq(rackets.id, id)).limit(1);
     return result[0];
@@ -54,6 +72,15 @@ export class SupabaseStorage implements IStorage {
       .select()
       .from(rackets)
       .where(eq(rackets.titleUrl, titleUrl))
+      .limit(1);
+    return result[0];
+  }
+
+  async getRacketByFeedProductId(feedProductId: string): Promise<Racket | undefined> {
+    const result = await db
+      .select()
+      .from(rackets)
+      .where(eq(rackets.feedProductId, feedProductId))
       .limit(1);
     return result[0];
   }

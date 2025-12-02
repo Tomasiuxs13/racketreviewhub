@@ -15,7 +15,11 @@
     "update:brands": "node scripts/update-brand-pages.js",
     "generate:all": "npm run generate:reviews && npm run update:brands",
     "generate:all:ai": "npm run generate:reviews:ai && npm run update:brands",
-    "sync:with-reviews": "AUTO_GENERATE_REVIEWS=true npm run sync:padel && npm run generate:reviews && npm run update:brands"
+    "sync:with-reviews": "AUTO_GENERATE_REVIEWS=true npm run sync:padel && npm run generate:reviews && npm run update:brands",
+    "cj:sync": "tsx server/scripts/cjCronJob.ts",
+    "cj:sync:quick": "tsx server/scripts/cjCronJob.ts --quick",
+    "cj:sync:local": "tsx server/scripts/cjCronJob.ts --local",
+    "cj:sync:dry-run": "tsx server/scripts/cjCronJob.ts --dry-run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -52,6 +56,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "cmdk": "^1.0.0",
+    "csv-parse": "^6.1.0",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.30.7",
@@ -78,6 +83,7 @@
     "react-hook-form": "^7.51.1",
     "react-resizable-panels": "^2.0.16",
     "recharts": "^2.12.3",
+    "ssh2-sftp-client": "^12.0.1",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
     "tsx": "^4.7.1",
@@ -89,7 +95,6 @@
   "devDependencies": {
     "@tailwindcss/typography": "^0.5.15",
     "@types/adm-zip": "^0.5.5",
-    "esbuild": "^0.20.2",
     "@types/express": "4.17.21",
     "@types/express-session": "^1.18.0",
     "@types/fs-extra": "^11.0.4",
@@ -99,9 +104,11 @@
     "@types/passport-local": "^1.0.38",
     "@types/react": "^18.2.70",
     "@types/react-dom": "^18.2.22",
+    "@types/ssh2-sftp-client": "^9.0.6",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.19",
     "drizzle-kit": "^0.20.14",
+    "esbuild": "^0.20.2",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.1",
     "typescript": "5.4.3",

@@ -1,0 +1,277 @@
+/**
+ * CJ Affiliate SFTP Feed Sync Service
+ * 
+ * Handles SFTP connection to CJ affiliate program and downloads the product feed.
+ */
+
+import SftpClient from "ssh2-sftp-client";
+import { parse } from "csv-parse/sync";
+import { cjFeedProductSchema, type CjFeedProduct } from "@shared/schema";
+
+// Environment variable configuration
+const CJ_SFTP_HOST = process.env.CJ_SFTP_HOST || "datatransfer.cj.com";
+const CJ_SFTP_USERNAME = process.env.CJ_SFTP_USERNAME || "";
+const CJ_SFTP_PASSWORD = process.env.CJ_SFTP_PASSWORD || "";
+const CJ_SFTP_PORT = parseInt(process.env.CJ_SFTP_PORT || "22", 10);
+const CJ_FEED_FILENAME = process.env.CJ_FEED_FILENAME || "PadelNuestro_EU-Padel_Nuestro_Product_Feed_INTERNATIONAL_-shopping.txt";
+
+export interface SftpConfig {
+  host: string;
+  port: number;
+  username: string;
+  password: string;
+}
+
+export interface FeedDownloadResult {
+  success: boolean;
+  data?: string;
+  error?: string;
+  filename?: string;
+}
+
+export interface ParsedFeedResult {
+  success: boolean;
+  products?: CjFeedProduct[];
+  totalProducts?: number;
+  padelRackets?: number;
+  error?: string;
+}
+
+/**
+ * Get SFTP configuration from environment variables
+ */
+export function getSftpConfig(): SftpConfig {
+  if (!CJ_SFTP_USERNAME || !CJ_SFTP_PASSWORD) {
+    throw new Error("CJ SFTP credentials not configured. Set CJ_SFTP_USERNAME and CJ_SFTP_PASSWORD environment variables.");
+  }
+
+  return {
+    host: CJ_SFTP_HOST,
+    port: CJ_SFTP_PORT,
+    username: CJ_SFTP_USERNAME,
+    password: CJ_SFTP_PASSWORD,
+  };
+}
+
+/**
+ * List available files in the SFTP directory
+ */
+export async function listSftpFiles(remotePath: string = "/"): Promise<string[]> {
+  const sftp = new SftpClient();
+  const config = getSftpConfig();
+
+  try {
+    console.log(`[CJ-SFTP] Connecting to ${config.host}:${config.port}...`);
+    await sftp.connect(config);
+    console.log("[CJ-SFTP] Connected successfully");
+
+    const fileList = await sftp.list(remotePath);
+    const files = fileList.map(f => f.name);
+    console.log(`[CJ-SFTP] Found ${files.length} files in ${remotePath}`);
+    
+    return files;
+  } catch (error) {
+    console.error("[CJ-SFTP] Error listing files:", error);
+    throw error;
+  } finally {
+    await sftp.end();
+  }
+}
+
+/**
+ * Download the product feed file from CJ SFTP
+ */
+export async function downloadFeedFile(filename?: string): Promise<FeedDownloadResult> {
+  const sftp = new SftpClient();
+  const config = getSftpConfig();
+  const targetFile = filename || CJ_FEED_FILENAME;
+
+  try {
+    console.log(`[CJ-SFTP] Connecting to ${config.host}:${config.port}...`);
+    await sftp.connect(config);
+    console.log("[CJ-SFTP] Connected successfully");
+
+    // Try to find the file - it might be in different locations
+    const possiblePaths = [
+      `/${targetFile}`,
+      `/outgoing/${targetFile}`,
+      targetFile,
+      `outgoing/${targetFile}`,
+    ];
+
+    let fileData: Buffer | null = null;
+    let foundPath = "";
+
+    for (const path of possiblePaths) {
+      try {
+        console.log(`[CJ-SFTP] Trying path: ${path}`);
+        const exists = await sftp.exists(path);
+        if (exists) {
+          console.log(`[CJ-SFTP] Found file at: ${path}`);
+          fileData = await sftp.get(path) as Buffer;
+          foundPath = path;
+          break;
+        }
+      } catch (e) {
+        // Path doesn't exist, try next
+        continue;
+      }
+    }
+
+    if (!fileData) {
+      // List root directory to help debug
+      try {
+        const rootFiles = await sftp.list("/");
+        console.log("[CJ-SFTP] Files in root directory:", rootFiles.map(f => f.name).join(", "));
+      } catch (e) {
+        console.log("[CJ-SFTP] Could not list root directory");
+      }
+
+      return {
+        success: false,
+        error: `File not found: ${targetFile}. Tried paths: ${possiblePaths.join(", ")}`,
+      };
+    }
+
+    console.log(`[CJ-SFTP] Downloaded ${fileData.length} bytes from ${foundPath}`);
+
+    return {
+      success: true,
+      data: fileData.toString("utf-8"),
+      filename: foundPath,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown SFTP error";
+    console.error("[CJ-SFTP] Error downloading feed:", error);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  } finally {
+    await sftp.end();
+  }
+}
+
+/**
+ * Parse price from CJ feed format (e.g., "109.95 EUR")
+ */
+export function parseCjPrice(priceStr: string | undefined): number | undefined {
+  if (!priceStr) return undefined;
+  
+  // Remove currency code and whitespace
+  const cleaned = priceStr.replace(/[A-Z]{3}$/i, "").trim();
+  const price = parseFloat(cleaned);
+  
+  return isNaN(price) ? undefined : price;
+}
+
+/**
+ * Extract model name from title by removing brand prefix
+ */
+export function extractModelFromTitle(title: string, brand: string): string {
+  // Remove brand from the beginning of the title (case insensitive)
+  const brandRegex = new RegExp(`^${brand}\\s+`, "i");
+  let model = title.replace(brandRegex, "").trim();
+  
+  // If model is empty or same as title, use title as model
+  if (!model || model === title) {
+    model = title;
+  }
+  
+  return model;
+}
+
+/**
+ * Parse the CSV feed data and extract Padel Racket products
+ */
+export function parseFeedData(csvData: string): ParsedFeedResult {
+  try {
+    console.log("[CJ-Feed] Parsing CSV data...");
+    
+    // Parse CSV with proper handling of quoted fields
+    const records = parse(csvData, {
+      columns: true,
+      skip_empty_lines: true,
+      trim: true,
+      relax_quotes: true,
+      relax_column_count: true,
+    }) as Record<string, string>[];
+
+    console.log(`[CJ-Feed] Parsed ${records.length} total records`);
+
+    // Filter for Padel Racket products only
+    const padelRackets: CjFeedProduct[] = [];
+    let validationErrors = 0;
+
+    for (const record of records) {
+      // Check if this is a Padel Racket
+      if (record.PRODUCT_TYPE !== "Padel Racket") {
+        continue;
+      }
+
+      try {
+        // Validate the record against our schema
+        const validated = cjFeedProductSchema.parse(record);
+        padelRackets.push(validated);
+      } catch (validationError) {
+        validationErrors++;
+        if (validationErrors <= 5) {
+          console.warn(`[CJ-Feed] Validation error for product ${record.ID}:`, validationError);
+        }
+      }
+    }
+
+    console.log(`[CJ-Feed] Found ${padelRackets.length} Padel Racket products (${validationErrors} validation errors)`);
+
+    return {
+      success: true,
+      products: padelRackets,
+      totalProducts: records.length,
+      padelRackets: padelRackets.length,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown parsing error";
+    console.error("[CJ-Feed] Error parsing feed data:", error);
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
+}
+
+/**
+ * Main function to download and parse the CJ feed
+ */
+export async function fetchAndParseCjFeed(): Promise<ParsedFeedResult> {
+  // Download the feed file
+  const downloadResult = await downloadFeedFile();
+  
+  if (!downloadResult.success || !downloadResult.data) {
+    return {
+      success: false,
+      error: downloadResult.error || "Failed to download feed",
+    };
+  }
+
+  // Parse the feed data
+  return parseFeedData(downloadResult.data);
+}
+
+/**
+ * Parse feed from local file (for testing or manual import)
+ */
+export function parseFeedFromFile(filePath: string): ParsedFeedResult {
+  const fs = require("fs");
+  
+  try {
+    const csvData = fs.readFileSync(filePath, "utf-8");
+    return parseFeedData(csvData);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown file error";
+    return {
+      success: false,
+      error: `Failed to read file: ${errorMessage}`,
+    };
+  }
+}
+
