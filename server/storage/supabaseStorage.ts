@@ -158,6 +158,7 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
+      .where(eq(rackets.isPublished, true))
       .orderBy(desc(rackets.createdAt))
       .limit(limit);
     return result;
@@ -168,11 +169,15 @@ export class SupabaseStorage implements IStorage {
     const racket = await this.getRacket(racketId);
     if (!racket) return [];
 
-    // Get other rackets from the same brand, sorted by overall rating
+    // Get other published rackets from the same brand, sorted by overall rating
     const result = await db
       .select()
       .from(rackets)
-      .where(and(eq(rackets.brand, racket.brand), ne(rackets.id, racketId)))
+      .where(and(
+        eq(rackets.brand, racket.brand), 
+        ne(rackets.id, racketId),
+        eq(rackets.isPublished, true)
+      ))
       .orderBy(desc(rackets.overallRating))
       .limit(limit);
     return result;

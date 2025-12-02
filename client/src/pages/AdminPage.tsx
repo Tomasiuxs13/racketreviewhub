@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Plus, X, RefreshCw, Clock, Eye, EyeOff, Zap } from "lucide-react";
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, Loader2, Plus, X, RefreshCw, Clock, Eye, EyeOff, Zap, Trash2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { ExcelRacket, InsertRacket, Racket, Guide, Brand, BlogPost, InsertGuide, InsertBrand, InsertBlogPost } from "@shared/schema";
 import { RacketForm } from "@/components/admin/RacketForm";
@@ -510,6 +510,61 @@ export default function AdminPage() {
     },
   });
 
+  // Decline (delete) a pending racket
+  const declineMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await apiRequest("DELETE", `/api/admin/rackets/${id}`, {});
+      return await response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Racket declined",
+        description: "The racket has been removed.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Decline failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Bulk decline (delete) multiple pending rackets
+  const bulkDeclineMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const results = await Promise.all(
+        ids.map(id => apiRequest("DELETE", `/api/admin/rackets/${id}`, {}))
+      );
+      return { deleted: results.length };
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Rackets declined",
+        description: `${data.deleted} rackets have been removed.`,
+      });
+      setSelectedPending(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Bulk decline failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleBulkDecline = () => {
+    if (selectedPending.size > 0 && confirm(`Are you sure you want to decline ${selectedPending.size} racket(s)? This action cannot be undone.`)) {
+      bulkDeclineMutation.mutate(Array.from(selectedPending));
+    }
+  };
+
   const handleTogglePendingSelection = (id: string) => {
     const newSelected = new Set(selectedPending);
     if (newSelected.has(id)) {
@@ -605,17 +660,31 @@ export default function AdminPage() {
                   Refresh
                 </Button>
                 {selectedPending.size > 0 && (
-                  <Button 
-                    onClick={handleBulkPublish}
-                    disabled={bulkPublishMutation.isPending}
-                  >
-                    {bulkPublishMutation.isPending ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Eye className="mr-2 h-4 w-4" />
-                    )}
-                    Publish Selected ({selectedPending.size})
-                  </Button>
+                  <>
+                    <Button 
+                      variant="destructive"
+                      onClick={handleBulkDecline}
+                      disabled={bulkDeclineMutation.isPending}
+                    >
+                      {bulkDeclineMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="mr-2 h-4 w-4" />
+                      )}
+                      Decline Selected ({selectedPending.size})
+                    </Button>
+                    <Button 
+                      onClick={handleBulkPublish}
+                      disabled={bulkPublishMutation.isPending}
+                    >
+                      {bulkPublishMutation.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Eye className="mr-2 h-4 w-4" />
+                      )}
+                      Publish Selected ({selectedPending.size})
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -709,8 +778,26 @@ export default function AdminPage() {
                                 </Button>
                                 <Button
                                   size="sm"
+                                  variant="destructive"
+                                  onClick={() => {
+                                    if (confirm(`Decline "${racket.brand} ${racket.model}"? This will permanently delete this racket.`)) {
+                                      declineMutation.mutate(racket.id);
+                                    }
+                                  }}
+                                  disabled={declineMutation.isPending}
+                                  title="Decline (delete)"
+                                >
+                                  {declineMutation.isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
                                   onClick={() => publishMutation.mutate(racket.id)}
                                   disabled={publishMutation.isPending}
+                                  title="Approve & Publish"
                                 >
                                   {publishMutation.isPending ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -867,8 +867,8 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   }
 
   async getRecentRackets(limit: number): Promise<Racket[]> {
-    const all = await this.getAllRackets();
-    return all.slice(0, limit);
+    const published = await this.getPublishedRackets();
+    return published.slice(0, limit);
   }
 
   async getRelatedRackets(racketId: string, limit: number): Promise<Racket[]> {
@@ -876,7 +876,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     if (!racket) return [];
 
     return Array.from(this.rackets.values())
-      .filter(r => r.id !== racketId && r.brand === racket.brand)
+      .filter(r => r.id !== racketId && r.brand === racket.brand && r.isPublished !== false)
       .sort((a, b) => b.overallRating - a.overallRating)
       .slice(0, limit);
   }
