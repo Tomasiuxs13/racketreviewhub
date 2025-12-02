@@ -111,6 +111,7 @@ async function main() {
     console.log(`  - Total Processed: ${result.totalProcessed}`);
     console.log(`  - Created: ${result.created}`);
     console.log(`  - Updated: ${result.updated}`);
+    console.log(`  - Unchanged: ${result.unchanged}`);
     console.log(`  - Skipped: ${result.skipped}`);
     console.log(`  - Errors: ${result.errors.length}`);
 

@@ -1690,7 +1690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...processingResult,
-        message: `Sync completed: ${processingResult.created} created, ${processingResult.updated} updated, ${processingResult.skipped} skipped`,
+        message: `Sync completed: ${processingResult.created} created, ${processingResult.updated} updated, ${processingResult.unchanged} unchanged, ${processingResult.skipped} skipped`,
         totalProducts: feedResult.totalProducts,
         padelRackets: feedResult.padelRackets,
       });
@@ -1722,7 +1722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...processingResult,
-        message: `Quick sync completed: ${processingResult.updated} prices updated`,
+        message: `Quick sync completed: ${processingResult.updated} updated, ${processingResult.unchanged} unchanged`,
       });
     } catch (error) {
       console.error("[CJ-Sync] Quick sync error:", error);
@@ -1761,7 +1761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         ...processingResult,
-        message: `Local sync completed: ${processingResult.created} created, ${processingResult.updated} updated`,
+        message: `Local sync completed: ${processingResult.created} created, ${processingResult.updated} updated, ${processingResult.unchanged} unchanged`,
         totalProducts: feedResult.totalProducts,
         padelRackets: feedResult.padelRackets,
       });
@@ -1781,6 +1781,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching pending rackets:", error);
       res.status(500).json({ error: "Failed to fetch pending rackets" });
+    }
+  });
+
+  // Cleanup duplicate rackets (keeps most recently updated one)
+  app.post("/api/admin/cleanup-duplicates", requireAdmin, async (req, res) => {
+    try {
+      console.log("[Cleanup] Starting duplicate cleanup...");
+      
+      // Get all rackets
+      const allRackets = await storage.getAllRackets();
+      
+      // Group by brand + model (case-insensitive)
+      const groups = new Map<string, typeof allRackets>();
+      for (const racket of allRackets) {
+        const key = `${racket.brand.toLowerCase()}|${racket.model.toLowerCase()}`;
+        const group = groups.get(key) || [];
+        group.push(racket);
+        groups.set(key, group);
+      }
+      
+      // Find duplicates and delete older ones
+      const deleted: { id: string; brand: string; model: string }[] = [];
+      const errors: string[] = [];
+      
+      for (const [key, group] of groups) {
+        if (group.length > 1) {
+          // Sort by updatedAt descending (newest first)
+          group.sort((a, b) => 
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          );
+          
+          // Keep the first (newest), delete the rest
+          const [keep, ...toDelete] = group;
+          console.log(`[Cleanup] Keeping: ${keep.brand} ${keep.model} (${keep.id}, updated: ${keep.updatedAt})`);
+          
+          for (const racket of toDelete) {
+            try {
+              await storage.deleteRacket(racket.id);
+              deleted.push({ id: racket.id, brand: racket.brand, model: racket.model });
+              console.log(`[Cleanup] Deleted: ${racket.brand} ${racket.model} (${racket.id})`);
+            } catch (err) {
+              errors.push(`Failed to delete ${racket.id}: ${err}`);
+            }
+          }
+        }
+      }
+      
+      console.log(`[Cleanup] Complete: ${deleted.length} duplicates removed`);
+      
+      res.json({
+        success: true,
+        deleted: deleted.length,
+        deletedRackets: deleted,
+        errors,
+      });
+    } catch (error) {
+      console.error("[Cleanup] Error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to cleanup duplicates" 
+      });
     }
   });
 

@@ -14,7 +14,8 @@ export interface ProcessingResult {
   totalProcessed: number;
   created: number;
   updated: number;
-  skipped: number;
+  unchanged: number; // Products where data was identical, no DB write needed
+  skipped: number; // Products skipped due to errors or missing data
   errors: string[];
   startTime: Date;
   endTime?: Date;
@@ -131,12 +132,31 @@ function getDefaultRatings(brand: string): {
 }
 
 /**
+ * Normalize price string for comparison (remove trailing zeros, handle decimals)
+ */
+function normalizePrice(price: string | number | null | undefined): string {
+  if (price === null || price === undefined) return "";
+  const numPrice = typeof price === "string" ? parseFloat(price) : price;
+  if (isNaN(numPrice)) return "";
+  return numPrice.toFixed(2);
+}
+
+/**
+ * Check if two values are different (handles null/undefined)
+ */
+function hasChanged(oldValue: string | null | undefined, newValue: string | null | undefined): boolean {
+  const old = oldValue ?? "";
+  const newVal = newValue ?? "";
+  return old !== newVal;
+}
+
+/**
  * Process a single CJ feed product
  */
 async function processProduct(
   product: CjFeedProduct,
   options: { generateRatings?: boolean; generateReviews?: boolean } = {}
-): Promise<{ action: "created" | "updated" | "skipped"; error?: string }> {
+): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; error?: string }> {
   const { generateRatings = true, generateReviews = true } = options;
   
   try {
@@ -177,26 +197,70 @@ async function processProduct(
     const now = new Date();
 
     if (existingRacket) {
-      // Update existing racket - only update price and affiliate data
+      // Prepare new values for comparison
+      const newCurrentPrice = currentPrice.toFixed(2);
+      const newOriginalPrice = originalPrice && originalPrice !== currentPrice 
+        ? originalPrice.toFixed(2) 
+        : null;
+      const newAffiliateLink = product.LINK;
+      const newImageUrl = product.IMAGE_LINK || null;
+
+      // Check what has actually changed
+      const priceChanged = hasChanged(
+        normalizePrice(existingRacket.currentPrice), 
+        newCurrentPrice
+      );
+      const originalPriceChanged = hasChanged(
+        normalizePrice(existingRacket.originalPrice),
+        newOriginalPrice || ""
+      );
+      const linkChanged = hasChanged(existingRacket.affiliateLink, newAffiliateLink);
+      const feedProductIdChanged = hasChanged(existingRacket.feedProductId, feedProductId);
+      
+      // Only update image if we don't have one and feed provides one
+      const shouldUpdateImage = !existingRacket.imageUrl && newImageUrl;
+
+      // If nothing has changed, skip the update entirely
+      if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage) {
+        console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - Price: €${currentPrice} (no update needed)`);
+        return { action: "unchanged" };
+      }
+
+      // Build update data only with changed fields
       const updateData: Partial<RacketUpdateData> = {
-        currentPrice: currentPrice.toFixed(2),
-        affiliateLink: product.LINK,
-        feedProductId: feedProductId,
         feedLastUpdated: now,
       };
 
-      // Update original price if different from sale price
-      if (originalPrice && originalPrice !== currentPrice) {
-        updateData.originalPrice = originalPrice.toFixed(2);
+      // Log what's being updated
+      const changes: string[] = [];
+
+      if (priceChanged) {
+        updateData.currentPrice = newCurrentPrice;
+        changes.push(`price: €${normalizePrice(existingRacket.currentPrice)} → €${newCurrentPrice}`);
       }
 
-      // Update image if we don't have one or if it's from the feed
-      if (!existingRacket.imageUrl && product.IMAGE_LINK) {
-        updateData.imageUrl = product.IMAGE_LINK;
+      if (originalPriceChanged && newOriginalPrice) {
+        updateData.originalPrice = newOriginalPrice;
+        changes.push(`original price updated`);
+      }
+
+      if (linkChanged) {
+        updateData.affiliateLink = newAffiliateLink;
+        changes.push(`affiliate link updated`);
+      }
+
+      if (feedProductIdChanged) {
+        updateData.feedProductId = feedProductId;
+        changes.push(`feed product ID linked`);
+      }
+
+      if (shouldUpdateImage) {
+        updateData.imageUrl = newImageUrl!;
+        changes.push(`image added`);
       }
 
       await storage.updateRacket(existingRacket.id, updateData);
-      console.log(`[CJ-Processor] Updated: ${brand} ${model} - Price: €${currentPrice}`);
+      console.log(`[CJ-Processor] Updated: ${brand} ${model} - Changes: ${changes.join(", ")}`);
       return { action: "updated" };
     } else {
       // Create new racket
@@ -286,6 +350,7 @@ export async function processCjFeed(
     totalProcessed: 0,
     created: 0,
     updated: 0,
+    unchanged: 0,
     skipped: 0,
     errors: [],
     startTime: new Date(),
@@ -306,6 +371,8 @@ export async function processCjFeed(
           result.created++;
         } else if (action === "updated") {
           result.updated++;
+        } else if (action === "unchanged") {
+          result.unchanged++;
         } else {
           result.skipped++;
           if (error) {
@@ -320,7 +387,7 @@ export async function processCjFeed(
     }
 
     // Progress logging
-    console.log(`[CJ-Processor] Progress: ${result.totalProcessed}/${products.length} (Created: ${result.created}, Updated: ${result.updated}, Skipped: ${result.skipped})`);
+    console.log(`[CJ-Processor] Progress: ${result.totalProcessed}/${products.length} (Created: ${result.created}, Updated: ${result.updated}, Unchanged: ${result.unchanged}, Skipped: ${result.skipped})`);
 
     // Delay between batches to avoid rate limits
     if (i + batchSize < products.length && delayBetweenBatches > 0) {
@@ -330,10 +397,10 @@ export async function processCjFeed(
 
   result.endTime = new Date();
   result.duration = result.endTime.getTime() - result.startTime.getTime();
-  result.success = result.errors.length === 0 || result.created > 0 || result.updated > 0;
+  result.success = result.errors.length === 0 || result.created > 0 || result.updated > 0 || result.unchanged > 0;
 
   console.log(`[CJ-Processor] Completed in ${(result.duration / 1000).toFixed(2)}s`);
-  console.log(`[CJ-Processor] Results: Created ${result.created}, Updated ${result.updated}, Skipped ${result.skipped}, Errors ${result.errors.length}`);
+  console.log(`[CJ-Processor] Results: Created ${result.created}, Updated ${result.updated}, Unchanged ${result.unchanged}, Skipped ${result.skipped}, Errors ${result.errors.length}`);
 
   return result;
 }
