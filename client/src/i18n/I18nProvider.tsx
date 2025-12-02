@@ -102,6 +102,18 @@ function interpolate(template: string, vars?: TranslationVariables): string {
 
 export const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 
+// Minimal loading screen to prevent flash of untranslated content
+function I18nLoadingScreen() {
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      <div className="flex flex-col items-center gap-4">
+        <div className="w-10 h-10 border-3 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />
+        <div className="text-slate-400 text-sm font-medium tracking-wide">Loading...</div>
+      </div>
+    </div>
+  );
+}
+
 export function I18nProvider({
   children,
   defaultLocale = DEFAULT_LOCALE,
@@ -218,6 +230,15 @@ export function I18nProvider({
     }),
     [changeLocale, isLoading, isReady, locale, translate],
   );
+
+  // Show loading screen until translations are ready to prevent FOUC
+  if (!isReady) {
+    return (
+      <I18nContext.Provider value={value}>
+        <I18nLoadingScreen />
+      </I18nContext.Provider>
+    );
+  }
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }
