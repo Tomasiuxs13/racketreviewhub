@@ -20,6 +20,11 @@ export interface SftpConfig {
   port: number;
   username: string;
   password: string;
+  algorithms?: {
+    serverHostKey?: string[];
+    kex?: string[];
+    cipher?: string[];
+  };
 }
 
 export interface FeedDownloadResult {
@@ -50,6 +55,43 @@ export function getSftpConfig(): SftpConfig {
     port: CJ_SFTP_PORT,
     username: CJ_SFTP_USERNAME,
     password: CJ_SFTP_PASSWORD,
+    // Enable legacy algorithms for older SFTP servers like CJ
+    algorithms: {
+      serverHostKey: [
+        'ssh-rsa',
+        'ssh-dss',
+        'ecdsa-sha2-nistp256',
+        'ecdsa-sha2-nistp384',
+        'ecdsa-sha2-nistp521',
+        'rsa-sha2-512',
+        'rsa-sha2-256',
+      ],
+      kex: [
+        'diffie-hellman-group1-sha1',
+        'diffie-hellman-group14-sha1',
+        'diffie-hellman-group14-sha256',
+        'diffie-hellman-group16-sha512',
+        'diffie-hellman-group18-sha512',
+        'diffie-hellman-group-exchange-sha1',
+        'diffie-hellman-group-exchange-sha256',
+        'ecdh-sha2-nistp256',
+        'ecdh-sha2-nistp384',
+        'ecdh-sha2-nistp521',
+      ],
+      cipher: [
+        'aes128-ctr',
+        'aes192-ctr',
+        'aes256-ctr',
+        'aes128-gcm',
+        'aes128-gcm@openssh.com',
+        'aes256-gcm',
+        'aes256-gcm@openssh.com',
+        'aes256-cbc',
+        'aes192-cbc',
+        'aes128-cbc',
+        '3des-cbc',
+      ],
+    },
   };
 }
 
