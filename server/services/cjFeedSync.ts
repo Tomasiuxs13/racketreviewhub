@@ -14,6 +14,10 @@ const CJ_SFTP_HOST = process.env.CJ_SFTP_HOST || "datatransfer.cj.com";
 const CJ_SFTP_USERNAME = process.env.CJ_SFTP_USERNAME || "";
 const CJ_SFTP_PASSWORD = process.env.CJ_SFTP_PASSWORD || "";
 const CJ_SFTP_PORT = parseInt(process.env.CJ_SFTP_PORT || "22", 10);
+// CJ Subscription ID (from your CJ account)
+const CJ_SUBSCRIPTION_ID = process.env.CJ_SUBSCRIPTION_ID || "311284";
+// Feed directory path: /outgoing/productcatalog/{subscription_id}/
+const CJ_FEED_DIRECTORY = process.env.CJ_FEED_DIRECTORY || `/outgoing/productcatalog/${CJ_SUBSCRIPTION_ID}`;
 // File pattern: Padel_Nuestro-shopping-<timestamp>.zip
 const CJ_FEED_FILE_PATTERN = process.env.CJ_FEED_FILE_PATTERN || "Padel_Nuestro-shopping";
 
@@ -123,13 +127,14 @@ export async function listSftpFiles(remotePath: string = "/"): Promise<string[]>
 }
 
 /**
- * Find the latest feed file in the outgoing directory
+ * Find the latest feed file in the CJ feed directory
  */
 async function findLatestFeedFile(sftp: SftpClient): Promise<string | null> {
   try {
-    // List files in outgoing directory
-    const files = await sftp.list("/outgoing");
-    console.log(`[CJ-SFTP] Files in /outgoing: ${files.map(f => f.name).join(", ")}`);
+    // List files in the feed directory (e.g., /outgoing/productcatalog/311284)
+    console.log(`[CJ-SFTP] Looking for feed files in: ${CJ_FEED_DIRECTORY}`);
+    const files = await sftp.list(CJ_FEED_DIRECTORY);
+    console.log(`[CJ-SFTP] Files found: ${files.map(f => f.name).join(", ")}`);
 
     // Filter for files matching our pattern (Padel_Nuestro-shopping-*.zip)
     const feedFiles = files
@@ -146,9 +151,9 @@ async function findLatestFeedFile(sftp: SftpClient): Promise<string | null> {
 
     const latestFile = feedFiles[0];
     console.log(`[CJ-SFTP] Latest feed file: ${latestFile.name} (modified: ${new Date(latestFile.modifyTime || 0).toISOString()})`);
-    return `/outgoing/${latestFile.name}`;
+    return `${CJ_FEED_DIRECTORY}/${latestFile.name}`;
   } catch (error) {
-    console.error("[CJ-SFTP] Error listing outgoing directory:", error);
+    console.error("[CJ-SFTP] Error listing feed directory:", error);
     return null;
   }
 }
@@ -211,7 +216,7 @@ export async function downloadFeedFile(filename?: string): Promise<FeedDownloadR
 
         return {
           success: false,
-          error: `No feed file found matching pattern '${CJ_FEED_FILE_PATTERN}*.zip' in /outgoing directory`,
+          error: `No feed file found matching pattern '${CJ_FEED_FILE_PATTERN}*.zip' in ${CJ_FEED_DIRECTORY}`,
         };
       }
     }
