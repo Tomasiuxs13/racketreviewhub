@@ -22,6 +22,7 @@ import {
 const CACHE_SHORT = 300; // 5 minutes for list endpoints
 const CACHE_MEDIUM = 1800; // 30 minutes for brands, guides
 const CACHE_LONG = 3600; // 1 hour for individual items
+const CACHE_RACKET = 300; // 5 minutes for racket data (prices update frequently)
 
 /**
  * Set cache headers on response
@@ -358,8 +359,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         result = racket;
       }
       
-      // Cache individual rackets for 1 hour
-      setCacheHeaders(res, CACHE_LONG, result);
+      // Cache individual rackets for 5 minutes (prices update frequently)
+      setCacheHeaders(res, CACHE_RACKET, result);
       res.json(result);
     } catch (error) {
       console.error("Error in GET /api/rackets/slug/:slug:", error);
@@ -388,8 +389,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         result = racket;
       }
       
-      // Cache individual rackets for 1 hour
-      setCacheHeaders(res, CACHE_LONG, result);
+      // Cache individual rackets for 5 minutes (prices update frequently)
+      setCacheHeaders(res, CACHE_RACKET, result);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch racket" });

@@ -103,7 +103,8 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getRacketBySlug(slug: string): Promise<Racket | undefined> {
-    // Compute slug on the fly: lowercase brand + model, replace non-alphanumeric with hyphens, trim hyphens
+    // Compute slug on the fly, avoiding duplicate brand if model already starts with brand name
+    // Example: "Adidas" + "ADIDAS METALBONE" -> "adidas-metalbone" (not "adidas-adidas-metalbone")
     const result = await db
       .select()
       .from(rackets)
@@ -112,7 +113,11 @@ export class SupabaseStorage implements IStorage {
           eq(rackets.isPublished, true),
           sql`regexp_replace(
             regexp_replace(
-              lower(${rackets.brand} || ' ' || ${rackets.model}),
+              CASE 
+                WHEN lower(${rackets.model}) LIKE lower(${rackets.brand}) || '%' 
+                THEN lower(${rackets.model})
+                ELSE lower(${rackets.brand} || ' ' || ${rackets.model})
+              END,
               '[^a-z0-9]+', '-', 'g'
             ),
             '^-+|-+$', '', 'g'

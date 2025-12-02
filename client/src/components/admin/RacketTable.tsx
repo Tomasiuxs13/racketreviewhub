@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { getRacketSlug } from "@/lib/utils";
 import { Edit, Trash2, Sparkles, Loader2 } from "lucide-react";
 
 interface RacketTableProps {
@@ -125,7 +126,7 @@ export function RacketTable({ rackets, onEdit }: RacketTableProps) {
                     ) {
                       return;
                     }
-                    setLocation(`/rackets/${racket.id}`);
+                    setLocation(`/rackets/${getRacketSlug(racket)}`);
                   }}
                 >
                   <TableCell className="font-medium">{racket.brand}</TableCell>

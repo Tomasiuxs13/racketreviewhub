@@ -840,7 +840,11 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getRacketBySlug(slug: string): Promise<Racket | undefined> {
     return Array.from(this.rackets.values()).find(r => {
-      const racketSlug = `${r.brand} ${r.model}`.toLowerCase()
+      const brandLower = r.brand.toLowerCase();
+      const modelLower = r.model.toLowerCase();
+      // Avoid duplicate brand if model already starts with brand name
+      const base = modelLower.startsWith(brandLower) ? modelLower : `${brandLower} ${modelLower}`;
+      const racketSlug = base
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
       return racketSlug === slug && r.isPublished !== false;

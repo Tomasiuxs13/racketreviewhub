@@ -222,7 +222,7 @@ async function processProduct(
 
       // If nothing has changed, skip the update entirely
       if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage) {
-        console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - Price: €${currentPrice} (no update needed)`);
+        console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - DB Price: €${normalizePrice(existingRacket.currentPrice)}, Feed Price: €${newCurrentPrice} (no update needed)`);
         return { action: "unchanged" };
       }
 

@@ -45,10 +45,20 @@ export function cleanReviewContent(content: string): string {
 
 /**
  * Builds a URL-friendly slug for a racket based on brand and model.
+ * Avoids duplicating brand name if model already includes it.
  * Example: "Nox" + "ML10 Pro Cup" -> "nox-ml10-pro-cup"
+ * Example: "Adidas" + "ADIDAS METALBONE PRO" -> "adidas-metalbone-pro" (not "adidas-adidas-metalbone-pro")
  */
 export function getRacketSlug(racket: Pick<Racket, "brand" | "model">): string {
-  const base = `${racket.brand} ${racket.model}`.toLowerCase();
+  const brandLower = racket.brand.toLowerCase();
+  const modelLower = racket.model.toLowerCase();
+  
+  // Check if model already starts with the brand name
+  const modelStartsWithBrand = modelLower.startsWith(brandLower);
+  
+  // If model includes brand, just use model; otherwise prepend brand
+  const base = modelStartsWithBrand ? modelLower : `${brandLower} ${modelLower}`;
+  
   return base
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");

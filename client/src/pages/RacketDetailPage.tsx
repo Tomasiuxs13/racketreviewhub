@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import type { Racket, Author } from "@shared/schema";
 import SEO from "@/components/SEO";
 import { StructuredData } from "@/components/StructuredData";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 
@@ -24,6 +24,7 @@ function isUuid(value: string | undefined): boolean {
 
 export default function RacketDetailPage() {
   const [, params] = useRoute("/rackets/:id");
+  const [, setLocation] = useLocation();
   const routeParam = params?.id;
   const treatAsId = isUuid(routeParam);
 
@@ -42,6 +43,15 @@ export default function RacketDetailPage() {
 
   const racket = treatAsId ? racketById : racketBySlug;
   const isLoading = treatAsId ? isLoadingById : isLoadingBySlug;
+
+  // Redirect UUID URLs to SEO-friendly slug URLs
+  useEffect(() => {
+    if (treatAsId && racket && !isLoading) {
+      const seoSlug = getRacketSlug(racket);
+      // Replace URL without adding to browser history (for SEO redirect)
+      setLocation(`/rackets/${seoSlug}`, { replace: true });
+    }
+  }, [treatAsId, racket, isLoading, setLocation]);
 
   const { data: relatedRackets } = useLocalizedQuery<Racket[]>({
     queryKey: [`/api/rackets/related/${racket?.id ?? "unknown"}`],
