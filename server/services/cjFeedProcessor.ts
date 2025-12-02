@@ -154,8 +154,24 @@ async function processProduct(
     let existingRacket = await storage.getRacketByFeedProductId(feedProductId);
     
     if (!existingRacket) {
-      // Try matching by brand and model
+      // Try matching by brand and model (multiple variations)
+      // Variation 1: Direct match (brand + extracted model)
       existingRacket = await storage.getRacketByBrandAndModel(brand, model);
+      
+      // Variation 2: Model might include brand prefix in database
+      if (!existingRacket) {
+        const modelWithBrand = `${brand} ${model}`;
+        existingRacket = await storage.getRacketByBrandAndModel(brand, modelWithBrand);
+      }
+      
+      // Variation 3: Try using full TITLE as model (some databases store it this way)
+      if (!existingRacket) {
+        existingRacket = await storage.getRacketByBrandAndModel(brand, product.TITLE);
+      }
+      
+      if (existingRacket) {
+        console.log(`[CJ-Processor] Matched existing racket: ${existingRacket.brand} ${existingRacket.model}`);
+      }
     }
 
     const now = new Date();
