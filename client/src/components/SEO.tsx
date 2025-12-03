@@ -52,12 +52,14 @@ export function SEO({
   const path = url || "/";
   const localizedPageUrl = localizedUrl(path, locale);
   const canonicalPath = canonical || path;
-  const canonicalUrl = absoluteUrl(canonicalPath);
+  // Self-referencing canonical for the current language version
+  // This ensures each language version is treated as a distinct indexable page
+  const canonicalUrl = localizedUrl(canonicalPath, locale);
   const imageUrl = absoluteUrl(image);
   const ogLocale = getOgLocale(locale);
   const ogAlternateLocales = SUPPORTED_LOCALES.filter((code) => code !== locale);
   const alternateLinks = buildHrefLangAlternates(canonicalPath, SUPPORTED_LOCALES);
-  const xDefaultHref = localizedUrl(canonicalPath, "en");
+  const xDefaultHref = absoluteUrl(canonicalPath);
 
   return (
     <Helmet htmlAttributes={{ lang: locale }}>

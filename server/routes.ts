@@ -771,7 +771,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return `${brandSlug}-${modelSlug}`;
   }
 
-  // Sitemap endpoint
+  // Sitemap endpoint with hreflang support for multilingual SEO
+  const SITEMAP_LOCALES = ['en', 'es', 'pt', 'it', 'fr'];
+  
+  function buildHrefLangLinks(baseUrl: string, path: string): string {
+    let links = '';
+    for (const locale of SITEMAP_LOCALES) {
+      const href = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+      links += `    <xhtml:link rel="alternate" hreflang="${locale}" href="${href}" />\n`;
+    }
+    // Add x-default pointing to English version
+    links += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}${path}" />\n`;
+    return links;
+  }
+
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const baseUrl = req.protocol + "://" + req.get("host");
@@ -780,48 +793,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const guides = await storage.getAllGuides();
       const blogPosts = await storage.getAllBlogPosts();
 
-      // Build sitemap XML
+      // Build sitemap XML with xhtml namespace for hreflang
       let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+      sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
 
-      // Homepage
-      sitemap += `  <url>\n    <loc>${baseUrl}/</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n  </url>\n`;
+      // Homepage (with all language variants)
+      for (const locale of SITEMAP_LOCALES) {
+        const loc = locale === 'en' ? `${baseUrl}/` : `${baseUrl}/?lang=${locale}`;
+        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n`;
+        sitemap += buildHrefLangLinks(baseUrl, '/');
+        sitemap += `  </url>\n`;
+      }
 
-      // Rackets listing page
-      sitemap += `  <url>\n    <loc>${baseUrl}/rackets</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n  </url>\n`;
+      // Rackets listing page (with all language variants)
+      for (const locale of SITEMAP_LOCALES) {
+        const loc = locale === 'en' ? `${baseUrl}/rackets` : `${baseUrl}/rackets?lang=${locale}`;
+        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
+        sitemap += buildHrefLangLinks(baseUrl, '/rackets');
+        sitemap += `  </url>\n`;
+      }
 
-      // Individual racket pages
+      // Individual racket pages (with all language variants)
       for (const racket of rackets) {
         const slug = getRacketSlug(racket);
+        const path = `/rackets/${slug}`;
         const lastmod = racket.updatedAt ? new Date(racket.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        sitemap += `  <url>\n    <loc>${baseUrl}/rackets/${slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+        for (const locale of SITEMAP_LOCALES) {
+          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+          sitemap += buildHrefLangLinks(baseUrl, path);
+          sitemap += `  </url>\n`;
+        }
       }
 
-      // Brands listing page
-      sitemap += `  <url>\n    <loc>${baseUrl}/brands</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      // Brands listing page (with all language variants)
+      for (const locale of SITEMAP_LOCALES) {
+        const loc = locale === 'en' ? `${baseUrl}/brands` : `${baseUrl}/brands?lang=${locale}`;
+        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+        sitemap += buildHrefLangLinks(baseUrl, '/brands');
+        sitemap += `  </url>\n`;
+      }
 
-      // Individual brand pages
+      // Individual brand pages (with all language variants)
       for (const brand of brands) {
+        const path = `/brands/${brand.slug}`;
         const lastmod = brand.createdAt ? new Date(brand.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        sitemap += `  <url>\n    <loc>${baseUrl}/brands/${brand.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+        for (const locale of SITEMAP_LOCALES) {
+          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n`;
+          sitemap += buildHrefLangLinks(baseUrl, path);
+          sitemap += `  </url>\n`;
+        }
       }
 
-      // Guides listing page
-      sitemap += `  <url>\n    <loc>${baseUrl}/guides</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      // Guides listing page (with all language variants)
+      for (const locale of SITEMAP_LOCALES) {
+        const loc = locale === 'en' ? `${baseUrl}/guides` : `${baseUrl}/guides?lang=${locale}`;
+        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
+        sitemap += buildHrefLangLinks(baseUrl, '/guides');
+        sitemap += `  </url>\n`;
+      }
 
-      // Individual guide pages
+      // Individual guide pages (with all language variants)
       for (const guide of guides) {
+        const path = `/guides/${guide.slug}`;
         const lastmod = guide.updatedAt ? new Date(guide.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        sitemap += `  <url>\n    <loc>${baseUrl}/guides/${guide.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+        for (const locale of SITEMAP_LOCALES) {
+          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n`;
+          sitemap += buildHrefLangLinks(baseUrl, path);
+          sitemap += `  </url>\n`;
+        }
       }
 
-      // Blog listing page
-      sitemap += `  <url>\n    <loc>${baseUrl}/blog</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
+      // Blog listing page (with all language variants)
+      for (const locale of SITEMAP_LOCALES) {
+        const loc = locale === 'en' ? `${baseUrl}/blog` : `${baseUrl}/blog?lang=${locale}`;
+        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n`;
+        sitemap += buildHrefLangLinks(baseUrl, '/blog');
+        sitemap += `  </url>\n`;
+      }
 
-      // Individual blog post pages
+      // Individual blog post pages (with all language variants)
       for (const post of blogPosts) {
+        const path = `/blog/${post.slug}`;
         const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        sitemap += `  <url>\n    <loc>${baseUrl}/blog/${post.slug}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n  </url>\n`;
+        for (const locale of SITEMAP_LOCALES) {
+          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n`;
+          sitemap += buildHrefLangLinks(baseUrl, path);
+          sitemap += `  </url>\n`;
+        }
       }
 
       sitemap += '</urlset>';
