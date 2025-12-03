@@ -262,9 +262,13 @@ async function processProduct(
         changes.push(`original price updated`);
       }
 
-      if (linkChanged) {
+      // Only update affiliate link if it doesn't already exist (preserve manual edits)
+      if (linkChanged && !existingRacket.affiliateLink && !existingRacket.titleUrl) {
         updateData.affiliateLink = newAffiliateLink;
-        changes.push(`affiliate link updated`);
+        changes.push(`affiliate link added`);
+      } else if (linkChanged && (existingRacket.affiliateLink || existingRacket.titleUrl)) {
+        // Link exists, skip update to preserve manual edits
+        console.log(`[CJ-Processor] Preserving existing affiliate link for ${brand} ${model} (manual edit detected)`);
       }
 
       if (feedProductIdChanged) {
