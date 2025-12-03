@@ -17,7 +17,10 @@ export type TranslatableEntityType = (typeof TRANSLATABLE_ENTITY_TYPES)[number];
 export type TranslationFields = Record<string, string>;
 
 const databaseUrl = process.env.DATABASE_URL;
-const postgresClient = databaseUrl ? postgres(databaseUrl) : null;
+const isRenderDatabase = databaseUrl ? (databaseUrl.includes("render.com") || databaseUrl.includes("dpg-")) : false;
+const postgresClient = databaseUrl ? postgres(databaseUrl, {
+  ssl: isRenderDatabase ? { rejectUnauthorized: false } : undefined,
+}) : null;
 const db: PostgresJsDatabase<typeof schema> | null = postgresClient
   ? drizzle(postgresClient, { schema })
   : null;
