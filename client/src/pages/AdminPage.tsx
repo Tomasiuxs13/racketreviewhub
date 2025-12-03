@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, AlertCircle, Loader2, Plus, X, RefreshCw, Clock, Eye, EyeOff, Zap, Trash2, FileSpreadsheet } from "lucide-react";
+import { CheckCircle, AlertCircle, Loader2, Plus, X, RefreshCw, Clock, Eye, EyeOff, Zap, Trash2, FileSpreadsheet, BarChart3, Package, ShoppingCart, TrendingUp, Search, Filter } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertRacket, Racket, Guide, Brand, BlogPost, InsertGuide, InsertBrand, InsertBlogPost } from "@shared/schema";
 import { RacketForm } from "@/components/admin/RacketForm";
@@ -31,6 +31,45 @@ interface CjSyncResult {
   duration?: number;
 }
 
+interface PadelMarketSyncResult {
+  success: boolean;
+  message: string;
+  totalProcessed: number;
+  matched: number;
+  updated: number;
+  unchanged: number;
+  skipped: number;
+  markedOutOfStock: number;
+  errors: string[];
+  totalProducts?: number;
+  rackets?: number;
+  duration?: number;
+}
+
+interface AdminStats {
+  rackets: {
+    total: number;
+    published: number;
+    pending: number;
+    inStock: number;
+    outOfStock: number;
+    withPadelMarket: number;
+    withPadelNuestro: number;
+  };
+  guides: { total: number };
+  brands: { total: number };
+  blogPosts: { total: number };
+  recentActivity: {
+    recentRackets: Array<{
+      id: string;
+      brand: string;
+      model: string;
+      createdAt: string;
+      isPublished: boolean;
+    }>;
+  };
+}
+
 export default function AdminPage() {
   const [editingRacket, setEditingRacket] = useState<Racket | undefined>(undefined);
   const [editingGuide, setEditingGuide] = useState<Guide | undefined>(undefined);
@@ -40,6 +79,8 @@ export default function AdminPage() {
   const [guideFormOpen, setGuideFormOpen] = useState(false);
   const [brandFormOpen, setBrandFormOpen] = useState(false);
   const [postFormOpen, setPostFormOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterPublished, setFilterPublished] = useState<boolean | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -66,6 +107,12 @@ export default function AdminPage() {
   // Fetch pending rackets
   const { data: pendingRackets = [], isLoading: pendingLoading, refetch: refetchPending } = useQuery<Racket[]>({
     queryKey: ["/api/admin/pending-rackets"],
+  });
+
+  // Fetch admin statistics
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery<AdminStats>({
+    queryKey: ["/api/admin/stats"],
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
   // Selected pending rackets for bulk actions
@@ -255,6 +302,7 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
     },
     onError: (error: Error) => {
       toast({
@@ -282,10 +330,60 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-rackets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Local sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Padel Market Sync mutations
+  const padelMarketSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/padel-market-sync", {});
+      return await response.json() as PadelMarketSyncResult;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Padel Market sync completed" : "Padel Market sync completed with errors",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Padel Market sync failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const padelMarketLocalSyncMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/admin/padel-market-sync/local", {});
+      return await response.json() as PadelMarketSyncResult;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: data.success ? "Local Padel Market sync completed" : "Local sync completed with errors",
+        description: data.message,
+        variant: data.success ? "default" : "destructive",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/rackets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Local Padel Market sync failed",
         description: error.message,
         variant: "destructive",
       });
@@ -432,8 +530,12 @@ export default function AdminPage() {
           </p>
         </div>
 
-        <Tabs defaultValue="manage" className="space-y-6">
+        <Tabs defaultValue="dashboard" className="space-y-6">
           <TabsList className="flex-wrap">
+            <TabsTrigger value="dashboard">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Dashboard
+            </TabsTrigger>
             <TabsTrigger value="manage">Manage Rackets</TabsTrigger>
             <TabsTrigger value="pending" className="relative">
               Pending Review
@@ -444,18 +546,212 @@ export default function AdminPage() {
               )}
             </TabsTrigger>
             <TabsTrigger value="cj-sync">CJ Sync</TabsTrigger>
+            <TabsTrigger value="padel-market-sync">Padel Market Sync</TabsTrigger>
             <TabsTrigger value="guides">Guides</TabsTrigger>
             <TabsTrigger value="brands">Brands</TabsTrigger>
             <TabsTrigger value="blog">Blog Posts</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="manage" className="space-y-4">
+          <TabsContent value="dashboard" className="space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">Rackets</h2>
-              <Button onClick={handleCreate}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Racket
+              <div>
+                <h2 className="text-2xl font-semibold">Dashboard</h2>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Overview of your racket catalog and system status
+                </p>
+              </div>
+              <Button variant="outline" onClick={() => refetchStats()}>
+                <RefreshCw className={`mr-2 h-4 w-4 ${statsLoading ? 'animate-spin' : ''}`} />
+                Refresh
               </Button>
+            </div>
+
+            {statsLoading ? (
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : stats ? (
+              <>
+                {/* Statistics Cards */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Rackets</CardTitle>
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{stats.rackets.total}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.rackets.published} published, {stats.rackets.pending} pending
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">In Stock</CardTitle>
+                      <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{stats.rackets.inStock}</div>
+                      <p className="text-xs text-muted-foreground">
+                        {stats.rackets.outOfStock} out of stock
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Padel Nuestro</CardTitle>
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{stats.rackets.withPadelNuestro}</div>
+                      <p className="text-xs text-muted-foreground">
+                        Rackets with affiliate links
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Padel Market</CardTitle>
+                      <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{stats.rackets.withPadelMarket}</div>
+                      <p className="text-xs text-muted-foreground">
+                        Rackets with alternative links
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Additional Stats */}
+                <div className="grid gap-4 md:grid-cols-3">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Content</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Guides</span>
+                          <span className="font-medium">{stats.guides.total}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Brands</span>
+                          <span className="font-medium">{stats.brands.total}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-sm text-muted-foreground">Blog Posts</span>
+                          <span className="font-medium">{stats.blogPosts.total}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {stats.recentActivity.recentRackets.length > 0 ? (
+                          stats.recentActivity.recentRackets.map((racket) => (
+                            <div key={racket.id} className="flex items-center justify-between text-sm">
+                              <span className="truncate">
+                                {racket.brand} {racket.model}
+                              </span>
+                              <Badge variant={racket.isPublished ? "default" : "secondary"} className="ml-2">
+                                {racket.isPublished ? "Published" : "Pending"}
+                              </Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-sm text-muted-foreground">No recent activity</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-sm font-medium">Quick Actions</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          const manageTab = document.querySelector('[value="manage"]') as HTMLElement;
+                          if (manageTab) manageTab.click();
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Racket
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full justify-start"
+                        onClick={() => {
+                          const syncTab = document.querySelector('[value="cj-sync"]') as HTMLElement;
+                          if (syncTab) syncTab.click();
+                        }}
+                      >
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Sync CJ Feed
+                      </Button>
+                      {stats.rackets.pending > 0 && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full justify-start"
+                          onClick={() => {
+                            const pendingTab = document.querySelector('[value="pending"]') as HTMLElement;
+                            if (pendingTab) pendingTab.click();
+                          }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          Review Pending ({stats.rackets.pending})
+                        </Button>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="manage" className="space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <h2 className="text-2xl font-semibold">Rackets</h2>
+              <div className="flex gap-2">
+                  <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search rackets..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 pr-4 py-2 border rounded-md text-sm w-64"
+                  />
+                </div>
+                <Button variant="outline" onClick={() => setFilterPublished(filterPublished === null ? true : filterPublished === true ? false : null)}>
+                  <Filter className="mr-2 h-4 w-4" />
+                  {filterPublished === null ? "All" : filterPublished ? "Published" : "Unpublished"}
+                </Button>
+                <Button onClick={handleCreate}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Racket
+                </Button>
+              </div>
             </div>
 
             {racketsLoading ? (
@@ -467,7 +763,17 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             ) : (
-              <RacketTable rackets={rackets} onEdit={handleEdit} />
+              <RacketTable 
+                rackets={rackets.filter(r => {
+                  const matchesSearch = !searchQuery || 
+                    r.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    r.model.toLowerCase().includes(searchQuery.toLowerCase());
+                  const matchesFilter = filterPublished === null || 
+                    (filterPublished ? r.isPublished : !r.isPublished);
+                  return matchesSearch && matchesFilter;
+                })} 
+                onEdit={handleEdit} 
+              />
             )}
           </TabsContent>
 
@@ -796,6 +1102,114 @@ export default function AdminPage() {
             </div>
           </TabsContent>
 
+          <TabsContent value="padel-market-sync" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold">Padel Market Affiliate Feed Sync</h2>
+              <p className="text-muted-foreground mt-1">
+                Sync product data from Padel Market Awin feed to add alternative affiliate links
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              {/* Full Sync Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <RefreshCw className="h-5 w-5" />
+                    Sync Padel Market Feed
+                  </CardTitle>
+                  <CardDescription>
+                    Downloads feed from Awin URL, matches products to existing rackets, and updates affiliate links
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Downloads gzipped CSV from Awin</li>
+                    <li>• Matches products by brand, model, and year</li>
+                    <li>• Updates Padel Market affiliate links</li>
+                    <li>• Marks products as in/out of stock</li>
+                  </ul>
+                  <Button
+                    onClick={() => padelMarketSyncMutation.mutate()}
+                    disabled={padelMarketSyncMutation.isPending}
+                    className="w-full"
+                  >
+                    {padelMarketSyncMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Syncing...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Sync Padel Market Feed
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Local File Sync Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileSpreadsheet className="h-5 w-5" />
+                    Local File Sync
+                  </CardTitle>
+                  <CardDescription>
+                    Process a local Padel Market feed file (for testing or manual imports)
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    <li>• Uses local gzipped or plain CSV file</li>
+                    <li>• Same processing as full sync</li>
+                    <li>• Good for testing without network</li>
+                  </ul>
+                  <Button
+                    variant="outline"
+                    onClick={() => padelMarketLocalSyncMutation.mutate()}
+                    disabled={padelMarketLocalSyncMutation.isPending}
+                    className="w-full"
+                  >
+                    {padelMarketLocalSyncMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <FileSpreadsheet className="mr-2 h-4 w-4" />
+                        Sync from Local File
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Info Card */}
+              <Card className="bg-muted/50 md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Clock className="h-5 w-5" />
+                    Scheduled Sync
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Padel Market feed sync is automatically scheduled to run daily at 4pm GMT via Render cron jobs.
+                  </p>
+                  <div className="p-3 bg-background rounded-lg border">
+                    <h4 className="font-medium text-sm mb-2">Environment Variables:</h4>
+                    <ul className="text-xs text-muted-foreground font-mono space-y-1">
+                      <li>PADEL_MARKET_FEED_URL (optional, has default)</li>
+                      <li>DATABASE_URL</li>
+                    </ul>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           <TabsContent value="guides" className="space-y-4">
             <div className="flex items-center justify-between">

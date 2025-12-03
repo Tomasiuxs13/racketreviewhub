@@ -1344,6 +1344,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin statistics endpoint
+  app.get("/api/admin/stats", requireAdmin, async (req, res) => {
+    try {
+      const allRackets = await storage.getAllRackets();
+      const publishedRackets = await storage.getPublishedRackets();
+      const pendingRackets = await storage.getPendingRackets();
+      const guides = await storage.getAllGuides();
+      const brands = await storage.getAllBrands();
+      const blogPosts = await storage.getAllBlogPosts();
+
+      // Calculate statistics
+      const stats = {
+        rackets: {
+          total: allRackets.length,
+          published: publishedRackets.length,
+          pending: pendingRackets.length,
+          inStock: allRackets.filter(r => r.inStock).length,
+          outOfStock: allRackets.filter(r => !r.inStock).length,
+          withPadelMarket: allRackets.filter(r => r.padelMarketInStock && r.padelMarketAffiliateLink).length,
+          withPadelNuestro: allRackets.filter(r => r.inStock && (r.affiliateLink || r.titleUrl)).length,
+        },
+        guides: {
+          total: guides.length,
+        },
+        brands: {
+          total: brands.length,
+        },
+        blogPosts: {
+          total: blogPosts.length,
+        },
+        recentActivity: {
+          recentRackets: allRackets
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 5)
+            .map(r => ({
+              id: r.id,
+              brand: r.brand,
+              model: r.model,
+              createdAt: r.createdAt,
+              isPublished: r.isPublished,
+            })),
+        },
+      };
+
+      res.json(stats);
+    } catch (error) {
+      console.error("[Admin] Error fetching stats:", error);
+      res.status(500).json({ error: "Failed to fetch statistics" });
+    }
+  });
+
   // Cleanup duplicate rackets (keeps most recently updated one)
   app.post("/api/admin/cleanup-duplicates", requireAdmin, async (req, res) => {
     try {
