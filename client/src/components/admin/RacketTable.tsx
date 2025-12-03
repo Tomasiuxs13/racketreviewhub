@@ -25,6 +25,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { getRacketSlug } from "@/lib/utils";
 import { Edit, Trash2, Sparkles, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface RacketTableProps {
   rackets: Racket[];
@@ -99,13 +100,14 @@ export function RacketTable({ rackets, onEdit }: RacketTableProps) {
               <TableHead>Rating</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Original Price</TableHead>
+              <TableHead>Affiliate Links</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {rackets.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   No rackets found
                 </TableCell>
               </TableRow>
@@ -139,6 +141,26 @@ export function RacketTable({ rackets, onEdit }: RacketTableProps) {
                   </TableCell>
                   <TableCell>
                     {racket.originalPrice ? `$${Number(racket.originalPrice).toFixed(2)}` : "-"}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex flex-col gap-1">
+                      {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
+                        <Badge variant="default" className="w-fit text-xs">
+                          Padel Nuestro
+                        </Badge>
+                      ) : null}
+                      {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+                        <Badge variant="outline" className="w-fit text-xs">
+                          Padel Market
+                        </Badge>
+                      ) : null}
+                      {!(racket.inStock && (racket.affiliateLink || racket.titleUrl)) && 
+                       !(racket.padelMarketInStock && racket.padelMarketAffiliateLink) ? (
+                        <Badge variant="secondary" className="w-fit text-xs">
+                          None
+                        </Badge>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-end gap-2">

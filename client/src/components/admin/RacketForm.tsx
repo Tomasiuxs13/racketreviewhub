@@ -69,6 +69,9 @@ export function RacketForm({ racket, open, onOpenChange, onSubmit }: RacketFormP
         imageUrl: racket.imageUrl || undefined,
         affiliateLink: racket.affiliateLink || undefined,
         titleUrl: racket.titleUrl || undefined,
+        padelMarketAffiliateLink: racket.padelMarketAffiliateLink || undefined,
+        inStock: racket.inStock ?? true,
+        padelMarketInStock: racket.padelMarketInStock ?? false,
         reviewContent: racket.reviewContent || undefined,
         // Specification fields
         color: racket.color || undefined,
@@ -255,14 +258,52 @@ export function RacketForm({ racket, open, onOpenChange, onSubmit }: RacketFormP
             <Input id="imageUrl" {...register("imageUrl")} />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="affiliateLink">Affiliate Link</Label>
-            <Input id="affiliateLink" {...register("affiliateLink")} />
-          </div>
+          {/* Affiliate Links Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="font-semibold text-sm">Affiliate Links</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="affiliateLink">Padel Nuestro Affiliate Link</Label>
+              <Input id="affiliateLink" {...register("affiliateLink")} placeholder="Padel Nuestro affiliate link" />
+              <p className="text-xs text-muted-foreground">Primary affiliate link from Padel Nuestro (CJ feed)</p>
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="titleUrl">Title URL</Label>
-            <Input id="titleUrl" {...register("titleUrl")} placeholder="Product URL from Excel" />
+            <div className="space-y-2">
+              <Label htmlFor="titleUrl">Title URL (Padel Nuestro)</Label>
+              <Input id="titleUrl" {...register("titleUrl")} placeholder="Product URL from Excel" />
+              <p className="text-xs text-muted-foreground">Alternative Padel Nuestro product URL</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="padelMarketAffiliateLink">Padel Market Affiliate Link</Label>
+              <Input id="padelMarketAffiliateLink" {...register("padelMarketAffiliateLink")} placeholder="Padel Market affiliate link" />
+              <p className="text-xs text-muted-foreground">Alternative affiliate link from Padel Market (Awin feed)</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="inStock"
+                  {...register("inStock")}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="inStock" className="text-sm font-normal cursor-pointer">
+                  In Stock (Padel Nuestro)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="padelMarketInStock"
+                  {...register("padelMarketInStock")}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="padelMarketInStock" className="text-sm font-normal cursor-pointer">
+                  In Stock (Padel Market)
+                </Label>
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">
