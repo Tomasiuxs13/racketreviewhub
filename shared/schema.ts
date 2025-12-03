@@ -171,6 +171,21 @@ export const excelRacketSchema = z.object({
 
 export type ExcelRacket = z.infer<typeof excelRacketSchema>;
 
+// Excel upload schema for price-only updates (no brand/model/shape required)
+// Used when updating existing rackets by Title_URL
+export const excelPriceUpdateSchema = z.object({
+  titleUrl: z.string().min(1),
+  title: z.string().optional(),
+  currentPrice: z.number(),
+  originalPrice: z.number().optional(),
+  imageUrl: z.string().optional(),
+  affiliateLink: z.string().optional(),
+  label: z.string().optional(),
+  keywords: z.string().optional(),
+});
+
+export type ExcelPriceUpdate = z.infer<typeof excelPriceUpdateSchema>;
+
 // Content translations table
 export const contentTranslations = pgTable(
   "content_translations",

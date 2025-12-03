@@ -1054,16 +1054,32 @@ export default function AdminPage() {
                     <p className="text-sm text-muted-foreground mb-2">
                       <strong>Note:</strong> Numbers files work best when uploaded via drag-and-drop. If you experience issues, export to Excel format (File → Export To → Excel in Numbers app).
                     </p>
-                    <p className="text-sm text-primary/80 mb-2 mt-4 font-medium">
+                    
+                    {/* Price Update Only Mode */}
+                    <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 mt-4 mb-4">
+                      <h5 className="font-medium text-blue-600 dark:text-blue-400 mb-2">💰 Price Update Only Mode</h5>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        To update prices for existing rackets without brand/model/shape columns:
+                      </p>
+                      <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
+                        <li><strong>Required:</strong> Title_URL (product URL), current_price</li>
+                        <li><strong>Optional:</strong> original_price, Image, affiliateLink</li>
+                      </ul>
+                      <p className="text-sm text-muted-foreground mt-2 italic">
+                        The system will match rackets by Title_URL and update only the prices.
+                      </p>
+                    </div>
+                    
+                    <p className="text-sm text-primary/80 mb-2 font-medium">
                       ✨ Automatic Rating Estimation: If your file doesn't include performance ratings, they will be automatically estimated based on brand reputation and industry standards.
                     </p>
                     <p className="text-sm text-muted-foreground mb-2 mt-4">
-                      Your file should contain these columns:
+                      <strong>For creating new rackets,</strong> your file should contain these columns:
                     </p>
                     <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
                       <li><strong>Required:</strong> brand, model, shape (diamond/round/teardrop), currentPrice</li>
                       <li><strong>Auto-estimated if missing:</strong> powerRating, controlRating, reboundRating, maneuverabilityRating, sweetSpotRating (0-100)</li>
-                      <li><strong>Optional:</strong> year, originalPrice, imageUrl, affiliateLink, reviewContent</li>
+                      <li><strong>Optional:</strong> year, originalPrice, imageUrl, affiliateLink, reviewContent, Title_URL</li>
                     </ul>
                   </CardContent>
                 </Card>

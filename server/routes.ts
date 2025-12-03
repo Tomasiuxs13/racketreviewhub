@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 import AdmZip from "adm-zip";
 import crypto from "crypto";
 import { storage } from "./storage";
-import { excelRacketSchema, type ExcelRacket, type Racket } from "@shared/schema";
+import { excelRacketSchema, excelPriceUpdateSchema, type ExcelRacket, type ExcelPriceUpdate, type Racket } from "@shared/schema";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/jwtAuth.js";
 import { validateAdminCredentials, generateToken, verifyToken, isAdminEmail } from "./lib/jwt.js";
 import { generateRacketReview, estimateRacketRatings } from "./lib/openai.js";
@@ -1410,28 +1410,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get brand and model for rating estimation
           const brand = getBrand();
           const model = getModel();
+          const titleUrl = getTitleUrl();
+          const affiliateLink = getAffiliateLink() || titleUrl; // Use titleUrl as fallback for affiliateLink
+          const currentPrice = getCurrentPrice();
+          const originalPrice = getOriginalPrice();
+          const shape = getShape();
           
+          // Check if this is a "price update only" row
+          // This happens when we have titleUrl but missing brand/model/shape
+          const isPriceUpdateOnly = titleUrl && (!brand || !model || !shape) && currentPrice !== undefined;
+          
+          if (isPriceUpdateOnly) {
+            // Price update only mode - match by titleUrl and update prices
+            console.log(`Row ${i + 2}: Price update only mode - titleUrl: ${titleUrl}, price: ${currentPrice}`);
+            
+            const priceUpdateData = {
+              titleUrl,
+              title: normalizedRow.title,
+              currentPrice,
+              originalPrice,
+              imageUrl: getImageUrl(),
+              affiliateLink,
+              label: normalizedRow.label,
+              keywords: normalizedRow.keywords,
+            };
+            
+            // Validate with price update schema
+            const validated = excelPriceUpdateSchema.parse(priceUpdateData);
+            
+            // Try to find existing racket by titleUrl
+            const existing = await storage.getRacketByTitleUrl(validated.titleUrl);
+            
+            if (existing) {
+              // Update existing racket - ONLY update prices and affiliateLink
+              const updateData: any = {
+                currentPrice: validated.currentPrice.toString(),
+              };
+              
+              // Update originalPrice if provided
+              if (validated.originalPrice !== undefined) {
+                updateData.originalPrice = validated.originalPrice.toString();
+              }
+              
+              // Update affiliateLink if provided
+              if (validated.affiliateLink) {
+                updateData.affiliateLink = validated.affiliateLink;
+              }
+              
+              // Update imageUrl if provided
+              if (validated.imageUrl) {
+                updateData.imageUrl = validated.imageUrl;
+              }
+              
+              console.log(`Row ${i + 2}: Updating existing racket (price update mode) - ${existing.brand} ${existing.model}, updating: ${Object.keys(updateData).join(', ')}`);
+              
+              await storage.updateRacket(existing.id, updateData);
+              results.updated++;
+            } else {
+              // Can't create new racket without brand/model/shape
+              results.errors.push(`Row ${i + 2}: No matching racket found for titleUrl "${validated.titleUrl}". To create new rackets, please include brand, model, and shape columns.`);
+            }
+            
+            continue; // Move to next row
+          }
+          
+          // Full racket mode - requires brand, model, shape
           // Check if we have ratings in the file
           const hasRatings = getPower() !== undefined || getControl() !== undefined;
           
           // If no ratings in file, estimate based on brand and model (deterministic)
           const estimatedRatings = !hasRatings && brand && model ? estimateRatingsByBrand(brand, model) : null;
-
-          const titleUrl = getTitleUrl();
-          const affiliateLink = getAffiliateLink() || titleUrl; // Use titleUrl as fallback for affiliateLink
           
           const racketData: any = {
             brand,
             model: getModel(),
             year: getYear() || new Date().getFullYear(), // Default to current year if missing
-            shape: getShape(),
+            shape: shape,
             powerRating: getPower() || estimatedRatings?.powerRating,
             controlRating: getControl() || estimatedRatings?.controlRating,
             reboundRating: getRebound() || estimatedRatings?.reboundRating,
             maneuverabilityRating: getManeuverability() || estimatedRatings?.maneuverabilityRating,
             sweetSpotRating: getSweetSpot() || estimatedRatings?.sweetSpotRating,
-            currentPrice: getCurrentPrice(),
-            originalPrice: getOriginalPrice(),
+            currentPrice: currentPrice,
+            originalPrice: originalPrice,
             imageUrl: getImageUrl(),
             affiliateLink: affiliateLink,
             titleUrl: titleUrl,
@@ -1452,8 +1513,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
 
           // Validate with Zod
-          const originalPrice = getOriginalPrice();
-          const currentPrice = getCurrentPrice();
           console.log(`Row ${i + 2}: Processing racket - Brand: ${brand}, Model: ${getModel()}, Current Price: ${currentPrice || 'not found'}, Original Price: ${originalPrice || 'not found'}`);
           console.log(`Row ${i + 2}: racketData.originalPrice before validation: ${racketData.originalPrice} (type: ${typeof racketData.originalPrice})`);
           
