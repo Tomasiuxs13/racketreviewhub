@@ -879,7 +879,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin CRUD endpoints for rackets
   app.get("/api/admin/rackets", requireAdmin, async (req, res) => {
     try {
-      const rackets = await storage.getAllRackets();
+      // Only show published (approved) rackets in the manage rackets section
+      // Use query parameter ?all=true to get all rackets if needed
+      const showAll = req.query.all === "true";
+      const rackets = showAll 
+        ? await storage.getAllRackets()
+        : await storage.getPublishedRackets();
       res.json(rackets);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch rackets" });
