@@ -101,20 +101,37 @@ export function RacketCard({ racket }: RacketCardProps) {
                     <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
                       €{Number(racket.currentPrice).toFixed(2)}
                     </span>
-                    {racket.affiliateLink || racket.titleUrl ? (
-                      <Button
-                        size="default"
-                        className="shrink-0 w-full sm:w-auto px-4"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
-                        }}
-                        data-testid={`button-buy-now-${racket.id}`}
-                      >
-                        Buy Now
-                        <ExternalLink className="ml-1 h-3 w-3" />
-                      </Button>
-                    ) : null}
+                    <div className="flex flex-col gap-1.5 shrink-0 w-full sm:w-auto">
+                      {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
+                        <Button
+                          size="default"
+                          className="w-full sm:w-auto px-4"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
+                          }}
+                          data-testid={`button-buy-now-pn-${racket.id}`}
+                        >
+                          Buy from Padel Nuestro
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </Button>
+                      ) : null}
+                      {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+                        <Button
+                          size="default"
+                          variant={racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "outline" : "default"}
+                          className="w-full sm:w-auto px-4"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            window.open(racket.padelMarketAffiliateLink || "#", "_blank", "noopener,noreferrer");
+                          }}
+                          data-testid={`button-buy-now-pm-${racket.id}`}
+                        >
+                          Buy from Padel Market
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </Button>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -122,20 +139,37 @@ export function RacketCard({ racket }: RacketCardProps) {
                   <span className="text-2xl font-bold text-primary" data-testid={`text-price-${racket.id}`}>
                     €{Number(racket.currentPrice).toFixed(2)}
                   </span>
-                  {racket.affiliateLink || racket.titleUrl ? (
-                    <Button
-                      size="default"
-                      className="shrink-0 w-full sm:w-auto"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
-                      }}
-                      data-testid={`button-buy-now-${racket.id}`}
-                    >
-                      Buy Now
-                      <ExternalLink className="ml-1 h-3 w-3" />
-                    </Button>
-                  ) : null}
+                  <div className="flex flex-col gap-1.5 shrink-0 w-full sm:w-auto">
+                    {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
+                      <Button
+                        size="default"
+                        className="w-full sm:w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
+                        }}
+                        data-testid={`button-buy-now-pn-${racket.id}`}
+                      >
+                        Buy from Padel Nuestro
+                        <ExternalLink className="ml-1 h-3 w-3" />
+                      </Button>
+                    ) : null}
+                    {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+                      <Button
+                        size="default"
+                        variant={racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "outline" : "default"}
+                        className="w-full sm:w-auto"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          window.open(racket.padelMarketAffiliateLink || "#", "_blank", "noopener,noreferrer");
+                        }}
+                        data-testid={`button-buy-now-pm-${racket.id}`}
+                      >
+                        Buy from Padel Market
+                        <ExternalLink className="ml-1 h-3 w-3" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               )}
             </div>

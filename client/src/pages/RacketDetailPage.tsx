@@ -377,24 +377,45 @@ export default function RacketDetailPage() {
                   )}
                 </div>
 
-                    <div className="pt-2 border-t">
-                  {racket.affiliateLink || racket.titleUrl ? (
+                    <div className="pt-2 border-t space-y-2">
+                  {/* Padel Nuestro link (primary) */}
+                  {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
                     <Button
                       asChild
                       size="default"
                       className="w-full font-semibold"
-                      data-testid="button-buy-now"
+                      data-testid="button-buy-now-pn"
                     >
                       <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
-                        Buy Now
+                        Buy from Padel Nuestro
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
                     </Button>
-                  ) : (
+                  ) : null}
+
+                  {/* Padel Market link (alternative or primary if PN is out of stock) */}
+                  {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+                    <Button
+                      asChild
+                      size="default"
+                      variant={racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "outline" : "default"}
+                      className={`w-full ${racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "" : "font-semibold"}`}
+                      data-testid="button-buy-now-pm"
+                    >
+                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer">
+                        Buy from Padel Market
+                        <ExternalLink className="ml-2 h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : null}
+
+                  {/* Show "Not Available" only if neither is available */}
+                  {!(racket.inStock && (racket.affiliateLink || racket.titleUrl)) && 
+                   !(racket.padelMarketInStock && racket.padelMarketAffiliateLink) ? (
                     <Button size="default" className="w-full" disabled>
                       Not Available
                     </Button>
-                  )}
+                  ) : null}
 
                   <p className="text-xs text-muted-foreground text-center mt-2 leading-relaxed">
                     As an Amazon Associate, we earn from qualifying purchases

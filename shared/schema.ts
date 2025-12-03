@@ -59,6 +59,11 @@ export const rackets = pgTable("rackets", {
   isPublished: boolean("is_published").default(true).notNull(), // false for new imports pending review
   inStock: boolean("in_stock").default(true).notNull(), // false when product not in CJ feed (out of stock)
   feedLastUpdated: timestamp("feed_last_updated"), // timestamp of last CJ feed sync
+  // Padel Market Feed sync fields
+  padelMarketAffiliateLink: text("padel_market_affiliate_link"), // Padel Market affiliate link
+  padelMarketInStock: boolean("padel_market_in_stock").default(false).notNull(), // Padel Market stock status
+  padelMarketFeedProductId: text("padel_market_feed_product_id"), // Padel Market product ID for matching
+  padelMarketFeedLastUpdated: timestamp("padel_market_feed_last_updated"), // timestamp of last Padel Market feed sync
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

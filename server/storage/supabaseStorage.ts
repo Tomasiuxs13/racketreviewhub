@@ -24,8 +24,12 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
 }
 
-// Create postgres connection
-const client = postgres(process.env.DATABASE_URL);
+// Create postgres connection with SSL for Render databases
+const databaseUrl = process.env.DATABASE_URL;
+const isRenderDatabase = databaseUrl.includes("render.com") || databaseUrl.includes("dpg-");
+const client = postgres(databaseUrl, {
+  ssl: isRenderDatabase ? { rejectUnauthorized: false } : undefined,
+});
 const db = drizzle(client);
 
 export class SupabaseStorage implements IStorage {
@@ -80,6 +84,10 @@ export class SupabaseStorage implements IStorage {
         isPublished: rackets.isPublished,
         inStock: rackets.inStock,
         feedLastUpdated: rackets.feedLastUpdated,
+        padelMarketAffiliateLink: rackets.padelMarketAffiliateLink,
+        padelMarketInStock: rackets.padelMarketInStock,
+        padelMarketFeedProductId: rackets.padelMarketFeedProductId,
+        padelMarketFeedLastUpdated: rackets.padelMarketFeedLastUpdated,
         createdAt: rackets.createdAt,
         updatedAt: rackets.updatedAt,
       })
@@ -137,6 +145,20 @@ export class SupabaseStorage implements IStorage {
       .where(and(
         sql`LOWER(${rackets.brand}) = LOWER(${brand})`,
         sql`LOWER(${rackets.model}) = LOWER(${model})`
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async getRacketByBrandModelAndYear(brand: string, model: string, year: number): Promise<Racket | undefined> {
+    // Use case-insensitive matching for brand and model, exact match for year
+    const result = await db
+      .select()
+      .from(rackets)
+      .where(and(
+        sql`LOWER(${rackets.brand}) = LOWER(${brand})`,
+        sql`LOWER(${rackets.model}) = LOWER(${model})`,
+        eq(rackets.year, year)
       ))
       .limit(1);
     return result[0];

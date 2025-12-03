@@ -21,6 +21,7 @@ export interface IStorage {
   getRacket(id: string): Promise<Racket | undefined>;
   getRacketBySlug(slug: string): Promise<Racket | undefined>;
   getRacketByBrandAndModel(brand: string, model: string): Promise<Racket | undefined>;
+  getRacketByBrandModelAndYear(brand: string, model: string, year: number): Promise<Racket | undefined>;
   getRacketByTitleUrl(titleUrl: string): Promise<Racket | undefined>;
   getRacketByFeedProductId(feedProductId: string): Promise<Racket | undefined>;
   getRecentRackets(limit: number): Promise<Racket[]>;
@@ -856,6 +857,14 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     return Array.from(this.rackets.values()).find(
       r => r.brand.toLowerCase() === brand.toLowerCase() && 
            r.model.toLowerCase() === model.toLowerCase()
+    );
+  }
+
+  async getRacketByBrandModelAndYear(brand: string, model: string, year: number): Promise<Racket | undefined> {
+    return Array.from(this.rackets.values()).find(
+      r => r.brand.toLowerCase() === brand.toLowerCase() && 
+           r.model.toLowerCase() === model.toLowerCase() &&
+           r.year === year
     );
   }
 

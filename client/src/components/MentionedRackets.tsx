@@ -258,7 +258,7 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                           Review
                         </Button>
                       </Link>
-                      {(racket.affiliateLink || racket.titleUrl) && (
+                      {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
                         <Button
                           size="sm"
                           className="text-xs h-7"
@@ -271,10 +271,28 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                             );
                           }}
                         >
-                          Buy Now
+                          Buy from Padel Nuestro
                           <ExternalLink className="ml-1 h-3 w-3" />
                         </Button>
-                      )}
+                      ) : null}
+                      {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+                        <Button
+                          size="sm"
+                          variant={racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "outline" : "default"}
+                          className="text-xs h-7"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            window.open(
+                              racket.padelMarketAffiliateLink || "#",
+                              "_blank",
+                              "noopener,noreferrer"
+                            );
+                          }}
+                        >
+                          Buy from Padel Market
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                 </div>

@@ -1256,6 +1256,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Padel Market Feed Sync Endpoints
+  
+  // Manual sync trigger - downloads feed from Awin URL and processes it
+  app.post("/api/admin/padel-market-sync", requireAdmin, async (req, res) => {
+    try {
+      const { fetchAndParsePadelMarketFeed } = await import("./services/padelMarketFeedSync.js");
+      const { processPadelMarketFeed } = await import("./services/padelMarketFeedProcessor.js");
+
+      console.log("[PadelMarket-Sync] Starting manual sync...");
+      
+      // Fetch and parse the feed
+      const feedResult = await fetchAndParsePadelMarketFeed();
+      
+      if (!feedResult.success || !feedResult.products) {
+        return res.status(500).json({ 
+          error: feedResult.error || "Failed to fetch Padel Market feed",
+          details: "Could not download or parse the product feed from Awin"
+        });
+      }
+
+      console.log(`[PadelMarket-Sync] Found ${feedResult.rackets} rackets in stock to process`);
+
+      // Process the products
+      const processingResult = await processPadelMarketFeed(feedResult.products);
+
+      res.json({
+        ...processingResult,
+        message: `Sync completed: ${processingResult.matched} matched, ${processingResult.updated} updated, ${processingResult.unchanged} unchanged, ${processingResult.skipped} skipped`,
+        totalProducts: feedResult.totalProducts,
+        rackets: feedResult.rackets,
+      });
+    } catch (error) {
+      console.error("[PadelMarket-Sync] Error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to sync Padel Market feed" 
+      });
+    }
+  });
+
+  // Process local file (for testing or manual import)
+  app.post("/api/admin/padel-market-sync/local", requireAdmin, async (req, res) => {
+    try {
+      const { parsePadelMarketFeedFromFile } = await import("./services/padelMarketFeedSync.js");
+      const { processPadelMarketFeed } = await import("./services/padelMarketFeedProcessor.js");
+
+      const filePath = req.body.filePath || "data/padel-market-feed.csv.gz";
+      
+      console.log(`[PadelMarket-Sync] Processing local file: ${filePath}`);
+      
+      const feedResult = parsePadelMarketFeedFromFile(filePath);
+      
+      if (!feedResult.success || !feedResult.products) {
+        return res.status(500).json({ 
+          error: feedResult.error || "Failed to parse local file",
+          details: "Could not parse the product feed from local file"
+        });
+      }
+
+      console.log(`[PadelMarket-Sync] Found ${feedResult.rackets} rackets in stock to process`);
+
+      // Process the products
+      const processingResult = await processPadelMarketFeed(feedResult.products);
+
+      res.json({
+        ...processingResult,
+        message: `Local sync completed: ${processingResult.matched} matched, ${processingResult.updated} updated, ${processingResult.unchanged} unchanged`,
+        totalProducts: feedResult.totalProducts,
+        rackets: feedResult.rackets,
+      });
+    } catch (error) {
+      console.error("[PadelMarket-Sync] Local sync error:", error);
+      res.status(500).json({ 
+        error: error instanceof Error ? error.message : "Failed to process local file" 
+      });
+    }
+  });
+
   // Get pending (unpublished) rackets
   app.get("/api/admin/pending-rackets", requireAdmin, async (req, res) => {
     try {
