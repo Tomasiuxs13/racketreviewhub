@@ -784,9 +784,11 @@ export default function AdminPage() {
                   const matchesSearch = !searchQuery || 
                     r.brand.toLowerCase().includes(searchQuery.toLowerCase()) ||
                     r.model.toLowerCase().includes(searchQuery.toLowerCase());
-                  const matchesFilter = filterPublished === null || 
+                  const matchesPublishedFilter = filterPublished === null || 
                     (filterPublished ? r.isPublished : !r.isPublished);
-                  return matchesSearch && matchesFilter;
+                  const matchesStockFilter = filterInStock === null || 
+                    (filterInStock ? (r.inStock || r.padelMarketInStock) : (!r.inStock && !r.padelMarketInStock));
+                  return matchesSearch && matchesPublishedFilter && matchesStockFilter;
                 })} 
                 onEdit={handleEdit} 
               />
