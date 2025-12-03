@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch server/index.ts",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server && esbuild server/scripts/cjCronJob.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server/scripts",
+    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server && esbuild server/scripts/cjCronJob.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server/scripts && esbuild server/scripts/padelMarketCronJob.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server/scripts && esbuild server/scripts/combinedFeedSyncCronJob.ts --platform=node --packages=external --bundle --format=esm --outdir=dist/server/scripts",
     "start": "node dist/server/index.js",
     "check": "tsc",
     "sync:padel": "node scripts/sync-padel-data.js",
@@ -20,6 +20,13 @@
     "cj:sync:quick": "tsx server/scripts/cjCronJob.ts --quick",
     "cj:sync:local": "tsx server/scripts/cjCronJob.ts --local",
     "cj:sync:dry-run": "tsx server/scripts/cjCronJob.ts --dry-run",
+    "padel-market:sync": "tsx server/scripts/padelMarketCronJob.ts",
+    "padel-market:sync:local": "tsx server/scripts/padelMarketCronJob.ts --local",
+    "padel-market:sync:dry-run": "tsx server/scripts/padelMarketCronJob.ts --dry-run",
+    "sync:combined": "tsx server/scripts/combinedFeedSyncCronJob.ts",
+    "sync:combined:quick": "tsx server/scripts/combinedFeedSyncCronJob.ts --quick",
+    "sync:combined:local": "tsx server/scripts/combinedFeedSyncCronJob.ts --local",
+    "sync:combined:dry-run": "tsx server/scripts/combinedFeedSyncCronJob.ts --dry-run",
     "bulk:publish": "tsx server/scripts/bulkPublishRackets.ts",
     "bulk:publish:skip-reviews": "tsx server/scripts/bulkPublishRackets.ts --skip-reviews",
     "bulk:publish:skip-translations": "tsx server/scripts/bulkPublishRackets.ts --skip-translations"
