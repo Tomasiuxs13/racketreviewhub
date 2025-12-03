@@ -285,7 +285,8 @@ export function RacketForm({ racket, open, onOpenChange, onSubmit }: RacketFormP
                 <input
                   type="checkbox"
                   id="inStock"
-                  {...register("inStock")}
+                  {...register("inStock", { setValueAs: (v) => v === true || v === "true" })}
+                  defaultChecked={racket?.inStock ?? true}
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <Label htmlFor="inStock" className="text-sm font-normal cursor-pointer">
@@ -296,7 +297,8 @@ export function RacketForm({ racket, open, onOpenChange, onSubmit }: RacketFormP
                 <input
                   type="checkbox"
                   id="padelMarketInStock"
-                  {...register("padelMarketInStock")}
+                  {...register("padelMarketInStock", { setValueAs: (v) => v === true || v === "true" })}
+                  defaultChecked={racket?.padelMarketInStock ?? false}
                   className="h-4 w-4 rounded border-gray-300"
                 />
                 <Label htmlFor="padelMarketInStock" className="text-sm font-normal cursor-pointer">
