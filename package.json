@@ -19,7 +19,10 @@
     "cj:sync": "tsx server/scripts/cjCronJob.ts",
     "cj:sync:quick": "tsx server/scripts/cjCronJob.ts --quick",
     "cj:sync:local": "tsx server/scripts/cjCronJob.ts --local",
-    "cj:sync:dry-run": "tsx server/scripts/cjCronJob.ts --dry-run"
+    "cj:sync:dry-run": "tsx server/scripts/cjCronJob.ts --dry-run",
+    "bulk:publish": "tsx server/scripts/bulkPublishRackets.ts",
+    "bulk:publish:skip-reviews": "tsx server/scripts/bulkPublishRackets.ts --skip-reviews",
+    "bulk:publish:skip-translations": "tsx server/scripts/bulkPublishRackets.ts --skip-translations"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
