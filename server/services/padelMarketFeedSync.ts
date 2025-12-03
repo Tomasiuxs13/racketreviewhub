@@ -172,15 +172,17 @@ export function extractBrandModelYear(productName: string, feedBrandName?: strin
   let cleaned = productName.replace(/\s*\(Racket\)\s*$/i, "").trim();
   
   // First, try to extract 4-digit year (prioritize this over 2-digit)
+  // If multiple years found (e.g., "2024 2025"), use the first/lower one
   let year: number | undefined;
   let yearStr: string | undefined;
-  const fourDigitYearMatch = cleaned.match(/\b(20\d{2})\b/);
+  const fourDigitYearMatches = cleaned.match(/\b(20\d{2})\b/g);
   
-  if (fourDigitYearMatch) {
-    yearStr = fourDigitYearMatch[1];
+  if (fourDigitYearMatches && fourDigitYearMatches.length > 0) {
+    // If multiple years, use the first (usually the correct model year)
+    yearStr = fourDigitYearMatches[0];
     year = parseInt(yearStr, 10);
-    // Remove 4-digit year from cleaned string
-    cleaned = cleaned.replace(/\b20\d{2}\b/, "").trim();
+    // Remove all 4-digit years from cleaned string
+    cleaned = cleaned.replace(/\b20\d{2}\b/g, "").trim();
   } else {
     // Only look for 2-digit year if no 4-digit found
     // But be careful - model numbers like "02", "03", "04" are not years
@@ -243,6 +245,17 @@ export function extractBrandModelYear(productName: string, feedBrandName?: strin
     }
     if (foundIndex >= 0) {
       modelStartIndex = foundIndex;
+    }
+    
+    // Handle duplicate brand names (e.g., "Head Head Radical Elite" -> remove duplicate "Head")
+    // Check if the word at modelStartIndex is the same as the brand
+    if (modelStartIndex < words.length) {
+      const nextWord = words[modelStartIndex].toUpperCase();
+      const firstBrandWord = brandWords[0];
+      if (nextWord === firstBrandWord) {
+        // Skip the duplicate brand word
+        modelStartIndex++;
+      }
     }
   }
   

@@ -128,6 +128,21 @@ async function processProduct(
     // Try to find existing racket by brand, model, and year
     let existingRacket;
     
+    // Helper to normalize model for comparison (remove brand prefix, year suffix)
+    const normalizeModelForMatching = (model: string, brand: string): string => {
+      let normalized = normalizeModel(model);
+      const brandLower = normalizeBrand(brand);
+      // Remove brand prefix if present
+      if (normalized.startsWith(brandLower + " ")) {
+        normalized = normalized.substring(brandLower.length + 1);
+      }
+      // Remove year suffix if present (4-digit years)
+      normalized = normalized.replace(/\s+20\d{2}\s*$/, "").trim();
+      return normalized;
+    };
+    
+    const normalizedExtractedModel = normalizeModelForMatching(extracted.model, extracted.brand);
+    
     if (extracted.year) {
       // First try exact match with year
       existingRacket = await storage.getRacketByBrandModelAndYear(
@@ -154,6 +169,33 @@ async function processProduct(
       }
     }
     
+    // Try variations: model with brand prefix
+    if (!existingRacket) {
+      const modelWithBrand = `${extracted.brand} ${extracted.model}`;
+      if (extracted.year) {
+        existingRacket = await storage.getRacketByBrandModelAndYear(
+          extracted.brand,
+          modelWithBrand,
+          extracted.year
+        );
+      }
+      if (!existingRacket) {
+        existingRacket = await storage.getRacketByBrandAndModel(
+          extracted.brand,
+          modelWithBrand
+        );
+      }
+    }
+    
+    // Try variations: model with year suffix
+    if (!existingRacket && extracted.year) {
+      const modelWithYear = `${extracted.model} ${extracted.year}`;
+      existingRacket = await storage.getRacketByBrandAndModel(
+        extracted.brand,
+        modelWithYear
+      );
+    }
+    
     // If still no match, try fuzzy model matching with all rackets of the same brand
     if (!existingRacket) {
       const allRackets = await storage.getAllRackets();
@@ -162,7 +204,24 @@ async function processProduct(
       );
       
       for (const racket of brandRackets) {
-        if (isSimilar(racket.model, extracted.model)) {
+        const normalizedRacketModel = normalizeModelForMatching(racket.model, racket.brand);
+        
+        // Try exact normalized match first
+        if (normalizedRacketModel === normalizedExtractedModel) {
+          // Check year compatibility
+          if (extracted.year) {
+            if (Math.abs(racket.year - extracted.year) <= 1) {
+              existingRacket = racket;
+              break;
+            }
+          } else {
+            existingRacket = racket;
+            break;
+          }
+        }
+        
+        // Try fuzzy similarity match
+        if (!existingRacket && isSimilar(normalizedRacketModel, normalizedExtractedModel)) {
           // Check year compatibility
           if (extracted.year) {
             if (Math.abs(racket.year - extracted.year) <= 1) {
