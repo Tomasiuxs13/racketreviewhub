@@ -361,6 +361,7 @@ export interface RacketRatings {
   reboundRating: number;
   maneuverabilityRating: number;
   sweetSpotRating: number;
+  overallRating: number;
 }
 
 export interface ReviewGenerationResult {
@@ -421,8 +422,16 @@ Return ONLY a JSON object with these exact keys (no other text):
   "controlRating": <number 0-100>,
   "reboundRating": <number 0-100>,
   "maneuverabilityRating": <number 0-100>,
-  "sweetSpotRating": <number 0-100>
-}`;
+  "sweetSpotRating": <number 0-100>,
+  "overallRating": <number 0-100>
+}
+
+The overallRating should be a comprehensive assessment considering all factors, not just a simple average. Consider:
+- Brand reputation and quality
+- Price point and value proposition
+- Target player level and suitability
+- Overall balance of power, control, and other characteristics
+- Innovation and technology level`;
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
@@ -462,6 +471,13 @@ Return ONLY a JSON object with these exact keys (no other text):
       reboundRating: validateRating(ratings.reboundRating),
       maneuverabilityRating: validateRating(ratings.maneuverabilityRating),
       sweetSpotRating: validateRating(ratings.sweetSpotRating),
+      overallRating: validateRating(ratings.overallRating || Math.round(
+        (ratings.powerRating +
+          ratings.controlRating +
+          ratings.reboundRating +
+          ratings.maneuverabilityRating +
+          ratings.sweetSpotRating) / 5
+      )), // Fallback to average if not provided
     };
   } catch (error) {
     console.error("Error estimating ratings with OpenAI:", error);
