@@ -159,62 +159,162 @@ export interface ExtractedProductInfo {
   year: number | undefined;
 }
 
-export function extractBrandModelYear(productName: string): ExtractedProductInfo {
+// Common multi-word brand names (exact matches only)
+const MULTI_WORD_BRANDS = [
+  "BLACK CROWN", "DROP SHOT", "ROYAL PADEL", "STAR VIE", "STARVIE"
+];
+
+// Common player name indicators
+const PLAYER_INDICATORS = ["BY", "BY:", "DI", "DE", "FOR"];
+
+export function extractBrandModelYear(productName: string, feedBrandName?: string): ExtractedProductInfo {
   // Remove "(Racket)" suffix and trim
   let cleaned = productName.replace(/\s*\(Racket\)\s*$/i, "").trim();
   
-  // Extract year (4-digit or 2-digit)
-  const yearMatch = cleaned.match(/\b(20\d{2}|\d{2})\b/);
+  // First, try to extract 4-digit year (prioritize this over 2-digit)
   let year: number | undefined;
   let yearStr: string | undefined;
+  const fourDigitYearMatch = cleaned.match(/\b(20\d{2})\b/);
   
-  if (yearMatch) {
-    yearStr = yearMatch[1];
-    year = normalizeYear(yearStr);
-    // Remove year from cleaned string
-    cleaned = cleaned.replace(/\b(20\d{2}|\d{2})\b/, "").trim();
-  }
-  
-  // Split into words
-  const words = cleaned.split(/\s+/);
-  
-  if (words.length === 0) {
-    return { brand: "", model: "", year: undefined };
-  }
-  
-  // First word is typically the brand
-  const brand = words[0].toUpperCase();
-  
-  // Rest is the model, but we need to clean it up
-  // Remove common player names and variations (Junior, Boy, Girl, etc.)
-  const modelWords = words.slice(1).filter(word => {
-    const upper = word.toUpperCase();
-    // Skip common variations
-    return !["JUNIOR", "BOY", "GIRL", "WOMAN", "MAN", "PRO", "PLAYER"].includes(upper) &&
-           !/^[A-Z]{2,3}$/.test(upper); // Skip 2-3 letter acronyms that might be player initials
-  });
-  
-  // Also try to remove player names (typically all caps or mixed case names)
-  // This is a heuristic - player names are often after the model
-  let model = modelWords.join(" ");
-  
-  // If we have a year, try to find where the model ends and player name begins
-  // Common pattern: MODEL YEAR PLAYER_NAME
-  if (yearStr && modelWords.length > 2) {
-    // Look for all-caps words that might be player names
-    const allCapsWords = modelWords.filter(w => /^[A-Z]+$/.test(w) && w.length > 3);
-    if (allCapsWords.length > 0) {
-      // Find the index of the first all-caps word
-      const firstAllCapsIndex = modelWords.findIndex(w => allCapsWords.includes(w));
-      if (firstAllCapsIndex > 0) {
-        model = modelWords.slice(0, firstAllCapsIndex).join(" ");
-      }
+  if (fourDigitYearMatch) {
+    yearStr = fourDigitYearMatch[1];
+    year = parseInt(yearStr, 10);
+    // Remove 4-digit year from cleaned string
+    cleaned = cleaned.replace(/\b20\d{2}\b/, "").trim();
+  } else {
+    // Only look for 2-digit year if no 4-digit found
+    // But be careful - model numbers like "02", "03", "04" are not years
+    // Look for 2-digit years that are likely years (20-29, or standalone)
+    const twoDigitYearMatch = cleaned.match(/\b(2[0-9])\b/);
+    if (twoDigitYearMatch) {
+      yearStr = twoDigitYearMatch[1];
+      year = normalizeYear(yearStr);
+      // Remove 2-digit year from cleaned string
+      cleaned = cleaned.replace(/\b2[0-9]\b/, "").trim();
     }
   }
   
+  // Use brand_name from feed if available (more reliable)
+  let brand = "";
+  let brandWordCount = 1;
+  
+  if (feedBrandName) {
+    brand = feedBrandName.toUpperCase().trim();
+    // Count words in brand name
+    brandWordCount = brand.split(/\s+/).length;
+  } else {
+    // Split into words
+    const words = cleaned.split(/\s+/);
+    
+    if (words.length === 0) {
+      return { brand: "", model: "", year: undefined };
+    }
+    
+    // Try to identify multi-word brand (exact match only)
+    if (words.length >= 2) {
+      const twoWordBrand = `${words[0].toUpperCase()} ${words[1].toUpperCase()}`;
+      if (MULTI_WORD_BRANDS.includes(twoWordBrand)) {
+        brand = twoWordBrand;
+        brandWordCount = 2;
+      }
+    }
+    
+    // Fallback to first word
+    if (!brand) {
+      brand = words[0].toUpperCase();
+    }
+  }
+  
+  // Split into words for model extraction
+  const words = cleaned.split(/\s+/);
+  
+  // If we used feed brand, we need to find where brand ends in the product name
+  let modelStartIndex = brandWordCount;
+  if (feedBrandName) {
+    // Find the brand in the product name (case-insensitive)
+    const brandWords = feedBrandName.toUpperCase().split(/\s+/);
+    let foundIndex = -1;
+    for (let i = 0; i <= words.length - brandWords.length; i++) {
+      const slice = words.slice(i, i + brandWords.length).map(w => w.toUpperCase());
+      if (slice.join(" ") === brandWords.join(" ")) {
+        foundIndex = i + brandWords.length;
+        break;
+      }
+    }
+    if (foundIndex >= 0) {
+      modelStartIndex = foundIndex;
+    }
+  }
+  
+  // Get remaining words as potential model
+  let modelWords = words.slice(modelStartIndex);
+  
+  // Remove player indicators and everything after them
+  const playerIndicatorIndex = modelWords.findIndex(w => 
+    PLAYER_INDICATORS.includes(w.toUpperCase())
+  );
+  if (playerIndicatorIndex >= 0) {
+    modelWords = modelWords.slice(0, playerIndicatorIndex);
+  }
+  
+  // Remove common variations and player name patterns
+  modelWords = modelWords.filter(word => {
+    const upper = word.toUpperCase();
+    // Skip common variations
+    if (["JUNIOR", "BOY", "GIRL", "WOMAN", "MAN", "PRO", "PLAYER", "WOMEN", "MEN"].includes(upper)) {
+      return false;
+    }
+    // Skip 2-3 letter acronyms that might be player initials (but keep model codes like "X", "LT", etc.)
+    if (/^[A-Z]{2,3}$/.test(upper) && upper.length === 3) {
+      // Keep common model codes
+      if (!["LTD", "PRO", "CTR", "HL", "LT", "ST", "GO", "EVO"].includes(upper)) {
+        return false;
+      }
+    }
+    return true;
+  });
+  
+  // Remove model numbers that look like years but aren't (e.g., "02", "03", "04" when we already have a year)
+  if (year) {
+    modelWords = modelWords.filter(word => {
+      // Remove 2-digit numbers that are likely model numbers, not years
+      if (/^\d{2}$/.test(word) && parseInt(word, 10) < 20) {
+        return false;
+      }
+      return true;
+    });
+  }
+  
+  // Try to identify where player name starts (all caps words after model)
+  // Look for patterns like: MODEL [optional words] ALL_CAPS_NAME ALL_CAPS_NAME
+  let modelEndIndex = modelWords.length;
+  for (let i = 0; i < modelWords.length - 1; i++) {
+    const word = modelWords[i];
+    const nextWord = modelWords[i + 1];
+    // If we see two consecutive all-caps words (likely player name), stop before them
+    if (/^[A-Z]+$/.test(word) && /^[A-Z]+$/.test(nextWord) && 
+        word.length > 3 && nextWord.length > 3 &&
+        !["COMFORT", "SPEED", "POWER", "CONTROL", "ATTACK", "SOFT", "HARD"].includes(word)) {
+      modelEndIndex = i;
+      break;
+    }
+  }
+  
+  let model = modelWords.slice(0, modelEndIndex).join(" ").trim();
+  
+  // Clean up model - remove redundant year mentions if we already extracted year
+  if (year) {
+    model = model.replace(new RegExp(`\\b${year}\\b`, "g"), "").trim();
+    // Also remove "20XX" format if present
+    model = model.replace(/\b20\d{2}\b/g, "").trim();
+  }
+  
+  // Remove extra whitespace
+  model = model.replace(/\s+/g, " ");
+  
   // Fallback: if model is empty, use remaining words
   if (!model || model.trim() === "") {
-    model = words.slice(1).join(" ");
+    model = words.slice(brandWordCount).join(" ").trim();
   }
   
   return {

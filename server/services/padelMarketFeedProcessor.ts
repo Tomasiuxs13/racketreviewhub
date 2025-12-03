@@ -16,6 +16,7 @@ export interface ProcessingResult {
   success: boolean;
   totalProcessed: number;
   matched: number;
+  created: number;
   updated: number;
   unchanged: number;
   skipped: number;
@@ -66,14 +67,56 @@ function isSimilar(str1: string, str2: string, threshold: number = 0.8): boolean
 }
 
 /**
+ * Estimate racket shape from product name/description
+ */
+function estimateShape(product: PadelMarketFeedProduct): "diamond" | "round" | "teardrop" {
+  const text = `${product.product_name} ${product.description || ""} ${product.product_short_description || ""}`.toLowerCase();
+  
+  // Check for shape keywords
+  if (text.includes("diamond") || text.includes("diamante")) {
+    return "diamond";
+  }
+  if (text.includes("round") || text.includes("redondo") || text.includes("control")) {
+    return "round";
+  }
+  if (text.includes("teardrop") || text.includes("lágrima") || text.includes("drop")) {
+    return "teardrop";
+  }
+  
+  // Default to teardrop (most common)
+  return "teardrop";
+}
+
+/**
+ * Get default ratings for a brand
+ */
+function getDefaultRatings(brand: string): {
+  powerRating: number;
+  controlRating: number;
+  reboundRating: number;
+  maneuverabilityRating: number;
+  sweetSpotRating: number;
+} {
+  // Default balanced ratings
+  return {
+    powerRating: 75,
+    controlRating: 75,
+    reboundRating: 75,
+    maneuverabilityRating: 75,
+    sweetSpotRating: 75,
+  };
+}
+
+/**
  * Process a single Padel Market feed product
  */
 async function processProduct(
   product: PadelMarketFeedProduct
-): Promise<{ action: "updated" | "unchanged" | "skipped"; error?: string }> {
+): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; error?: string }> {
   try {
     // Extract brand, model, and year from product name
-    const extracted = extractBrandModelYear(product.product_name);
+    // Use brand_name from feed if available (more reliable)
+    const extracted = extractBrandModelYear(product.product_name, product.brand_name);
     
     if (!extracted.brand || !extracted.model) {
       return { 
@@ -101,11 +144,11 @@ async function processProduct(
         extracted.model
       );
       
-      // If found by brand+model but year doesn't match, try fuzzy model matching
+      // If found by brand+model but year doesn't match, check if years are close
       if (existingRacket && extracted.year && existingRacket.year !== extracted.year) {
         // Check if years are close (within 1 year difference)
         if (Math.abs(existingRacket.year - extracted.year) > 1) {
-          // Years are too different, skip this match
+          // Years are too different, don't match - will create new racket
           existingRacket = undefined;
         }
       }
@@ -134,44 +177,101 @@ async function processProduct(
       }
     }
     
-    if (!existingRacket) {
-      return { 
-        action: "skipped", 
-        error: `No matching racket found for: ${extracted.brand} ${extracted.model} ${extracted.year || ''}` 
-      };
-    }
-    
     const now = new Date();
     const feedProductId = product.aw_product_id || product.merchant_product_id || "";
+    const price = parsePadelMarketPrice(product.store_price || product.search_price || "0");
     
-    // Prepare update data
-    const updateData: {
-      padelMarketAffiliateLink?: string;
-      padelMarketInStock: boolean;
-      padelMarketFeedProductId?: string;
-      padelMarketFeedLastUpdated: Date;
-    } = {
-      padelMarketAffiliateLink: product.aw_deep_link,
-      padelMarketInStock: true,
-      padelMarketFeedProductId: feedProductId || undefined,
-      padelMarketFeedLastUpdated: now,
-    };
-    
-    // Check if anything actually changed
-    const hasChanged = 
-      existingRacket.padelMarketAffiliateLink !== updateData.padelMarketAffiliateLink ||
-      existingRacket.padelMarketInStock !== updateData.padelMarketInStock ||
-      existingRacket.padelMarketFeedProductId !== updateData.padelMarketFeedProductId;
-    
-    if (!hasChanged) {
-      return { action: "unchanged" };
+    if (existingRacket) {
+      // UPDATE EXISTING RACKET: Only update affiliate link and price (never delete)
+      const updateData: {
+        padelMarketAffiliateLink?: string;
+        padelMarketInStock: boolean;
+        padelMarketFeedProductId?: string;
+        padelMarketFeedLastUpdated: Date;
+        currentPrice?: string;
+      } = {
+        padelMarketAffiliateLink: product.aw_deep_link,
+        padelMarketInStock: true,
+        padelMarketFeedProductId: feedProductId || undefined,
+        padelMarketFeedLastUpdated: now,
+        // Update price if available
+        currentPrice: price > 0 ? price.toFixed(2) : undefined,
+      };
+      
+      // Check if anything actually changed
+      const hasChanged = 
+        existingRacket.padelMarketAffiliateLink !== updateData.padelMarketAffiliateLink ||
+        existingRacket.padelMarketInStock !== updateData.padelMarketInStock ||
+        existingRacket.padelMarketFeedProductId !== updateData.padelMarketFeedProductId ||
+        (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice);
+      
+      if (!hasChanged) {
+        return { action: "unchanged" };
+      }
+      
+      // Update the racket (only Padel Market fields and price - never delete or modify other fields)
+      await storage.updateRacket(existingRacket.id, updateData);
+      
+      console.log(`[PadelMarket-Processor] Updated: ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year} - Price: €${price.toFixed(2)}`);
+      return { action: "updated" };
+    } else {
+      // CREATE NEW RACKET: Check for duplicates first
+      // Double-check we're not creating a duplicate by checking all rackets again
+      const allRackets = await storage.getAllRackets();
+      const potentialDuplicate = allRackets.find(
+        r => normalizeBrand(r.brand) === normalizeBrand(extracted.brand) &&
+             normalizeModel(r.model) === normalizeModel(extracted.model) &&
+             (extracted.year ? Math.abs(r.year - extracted.year) <= 1 : true)
+      );
+      
+      if (potentialDuplicate) {
+        // Found a potential duplicate, update it instead
+        const updateData: {
+          padelMarketAffiliateLink?: string;
+          padelMarketInStock: boolean;
+          padelMarketFeedProductId?: string;
+          padelMarketFeedLastUpdated: Date;
+          currentPrice?: string;
+        } = {
+          padelMarketAffiliateLink: product.aw_deep_link,
+          padelMarketInStock: true,
+          padelMarketFeedProductId: feedProductId || undefined,
+          padelMarketFeedLastUpdated: now,
+          currentPrice: price > 0 ? price.toFixed(2) : undefined,
+        };
+        
+        await storage.updateRacket(potentialDuplicate.id, updateData);
+        console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}`);
+        return { action: "updated" };
+      }
+      
+      // No duplicate found, create new racket
+      const shape = estimateShape(product);
+      const ratings = getDefaultRatings(extracted.brand);
+      const year = extracted.year || new Date().getFullYear();
+      
+      const createData = {
+        brand: extracted.brand,
+        model: extracted.model,
+        year: year,
+        shape: shape,
+        ...ratings,
+        currentPrice: price > 0 ? price.toFixed(2) : "0.00",
+        imageUrl: product.aw_image_url || product.merchant_image_url || undefined,
+        padelMarketAffiliateLink: product.aw_deep_link,
+        padelMarketInStock: true,
+        padelMarketFeedProductId: feedProductId || undefined,
+        padelMarketFeedLastUpdated: now,
+        isPublished: false, // New rackets need review before publishing
+        inStock: true, // Products from feed are in stock
+        color: product.colour || undefined,
+      };
+      
+      const newRacket = await storage.createRacket(createData);
+      
+      console.log(`[PadelMarket-Processor] Created: ${extracted.brand} ${extracted.model} ${year} - Price: €${price.toFixed(2)} (pending review, isPublished=false)`);
+      return { action: "created" };
     }
-    
-    // Update the racket
-    await storage.updateRacket(existingRacket.id, updateData);
-    
-    console.log(`[PadelMarket-Processor] Updated: ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year} - Link: ${product.aw_deep_link.substring(0, 50)}...`);
-    return { action: "updated" };
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
@@ -184,6 +284,73 @@ async function processProduct(
 }
 
 /**
+ * Deduplicate products by brand+model+year, keeping the best one from each group
+ * Best = lowest price, or if prices are similar, prefer non-special editions
+ */
+function deduplicateProducts(products: PadelMarketFeedProduct[]): PadelMarketFeedProduct[] {
+  const productMap = new Map<string, PadelMarketFeedProduct[]>();
+  
+  // Group products by brand+model+year
+  for (const product of products) {
+    const extracted = extractBrandModelYear(product.product_name, product.brand_name);
+    if (!extracted.brand || !extracted.model) continue;
+    
+    const key = `${extracted.brand.toUpperCase()}|${extracted.model.toUpperCase()}|${extracted.year ?? 'N/A'}`;
+    
+    if (!productMap.has(key)) {
+      productMap.set(key, []);
+    }
+    productMap.get(key)!.push(product);
+  }
+  
+  // For each group, pick the best product
+  const deduplicated: PadelMarketFeedProduct[] = [];
+  
+  for (const [key, group] of productMap.entries()) {
+    if (group.length === 1) {
+      // No duplicates, keep as is
+      deduplicated.push(group[0]);
+    } else {
+      // Multiple products with same brand+model+year
+      // Pick the one with lowest price
+      // If prices are similar, prefer the one without "EXCLUSIVE", "EDITION", "SPECIAL" in name
+      const sorted = group.sort((a, b) => {
+        const priceA = parsePadelMarketPrice(a.store_price || a.search_price || "0");
+        const priceB = parsePadelMarketPrice(b.store_price || b.search_price || "0");
+        
+        // First sort by price (lowest first)
+        if (priceA !== priceB) {
+          return priceA - priceB;
+        }
+        
+        // If prices are equal, prefer non-special editions
+        const aIsSpecial = /(EXCLUSIVE|EDITION|SPECIAL|LIMITED)/i.test(a.product_name);
+        const bIsSpecial = /(EXCLUSIVE|EDITION|SPECIAL|LIMITED)/i.test(b.product_name);
+        
+        if (aIsSpecial && !bIsSpecial) return 1;
+        if (!aIsSpecial && bIsSpecial) return -1;
+        
+        // If both or neither are special, keep original order
+        return 0;
+      });
+      
+      deduplicated.push(sorted[0]);
+      
+      // Log the deduplication
+      if (group.length > 1) {
+        console.log(`[PadelMarket-Processor] Deduplicated ${group.length} products for ${key.split('|')[0]} ${key.split('|')[1]} ${key.split('|')[2]}`);
+        console.log(`  Selected: "${sorted[0].product_name}" (Price: ${sorted[0].store_price || sorted[0].search_price || 'N/A'})`);
+        if (group.length > 1) {
+          console.log(`  Skipped ${group.length - 1} duplicate(s)`);
+        }
+      }
+    }
+  }
+  
+  return deduplicated;
+}
+
+/**
  * Process Padel Market feed products and update rackets
  */
 export async function processPadelMarketFeed(
@@ -193,6 +360,7 @@ export async function processPadelMarketFeed(
     success: false,
     totalProcessed: 0,
     matched: 0,
+    created: 0,
     updated: 0,
     unchanged: 0,
     skipped: 0,
@@ -204,10 +372,18 @@ export async function processPadelMarketFeed(
   // Track all feed product IDs that were successfully processed
   const processedFeedProductIds: string[] = [];
 
-  console.log(`[PadelMarket-Processor] Starting to process ${products.length} products...`);
+  // Deduplicate products before processing
+  console.log(`[PadelMarket-Processor] Deduplicating ${products.length} products...`);
+  const deduplicatedProducts = deduplicateProducts(products);
+  const duplicatesRemoved = products.length - deduplicatedProducts.length;
+  if (duplicatesRemoved > 0) {
+    console.log(`[PadelMarket-Processor] Removed ${duplicatesRemoved} duplicate product(s)`);
+  }
+
+  console.log(`[PadelMarket-Processor] Starting to process ${deduplicatedProducts.length} products...`);
 
   // Process products
-  for (const product of products) {
+  for (const product of deduplicatedProducts) {
     try {
       const { action, error } = await processProduct(product);
       result.totalProcessed++;
@@ -218,7 +394,9 @@ export async function processPadelMarketFeed(
         processedFeedProductIds.push(feedProductId);
       }
       
-      if (action === "updated") {
+      if (action === "created") {
+        result.created++;
+      } else if (action === "updated") {
         result.matched++;
         result.updated++;
       } else if (action === "unchanged") {
@@ -270,7 +448,7 @@ export async function processPadelMarketFeed(
   result.success = result.errors.length === 0 || result.matched > 0;
 
   console.log(`[PadelMarket-Processor] Completed in ${(result.duration / 1000).toFixed(2)}s`);
-  console.log(`[PadelMarket-Processor] Results: Matched ${result.matched}, Updated ${result.updated}, Unchanged ${result.unchanged}, Skipped ${result.skipped}, Out of stock ${result.markedOutOfStock}, Errors ${result.errors.length}`);
+  console.log(`[PadelMarket-Processor] Results: Created ${result.created}, Matched ${result.matched}, Updated ${result.updated}, Unchanged ${result.unchanged}, Skipped ${result.skipped}, Out of stock ${result.markedOutOfStock}, Errors ${result.errors.length}`);
 
   return result;
 }
