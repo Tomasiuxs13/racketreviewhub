@@ -29,6 +29,7 @@ export interface IStorage {
   createRacket(racket: InsertRacket): Promise<Racket>;
   updateRacket(id: string, racket: Partial<InsertRacket>): Promise<Racket | undefined>;
   deleteRacket(id: string): Promise<boolean>;
+  markOutOfStockExcept(feedProductIds: string[]): Promise<number>; // Mark rackets not in feed as out of stock
   
   // Guides
   getAllGuides(): Promise<Guide[]>;
@@ -819,7 +820,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getPublishedRackets(): Promise<Racket[]> {
     return Array.from(this.rackets.values())
-      .filter(r => r.isPublished !== false)
+      .filter(r => r.isPublished !== false && r.inStock !== false)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
@@ -880,14 +881,14 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     if (!racket) return [];
 
     return Array.from(this.rackets.values())
-      .filter(r => r.id !== racketId && r.brand === racket.brand && r.isPublished !== false)
+      .filter(r => r.id !== racketId && r.brand === racket.brand && r.isPublished !== false && r.inStock !== false)
       .sort((a, b) => b.overallRating - a.overallRating)
       .slice(0, limit);
   }
 
   async getRacketsByBrand(brand: string): Promise<Racket[]> {
     return Array.from(this.rackets.values())
-      .filter(r => r.brand.toLowerCase() === brand.toLowerCase())
+      .filter(r => r.brand.toLowerCase() === brand.toLowerCase() && r.isPublished !== false && r.inStock !== false)
       .sort((a, b) => b.overallRating - a.overallRating);
   }
 
@@ -949,6 +950,23 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async deleteRacket(id: string): Promise<boolean> {
     return this.rackets.delete(id);
+  }
+
+  async markOutOfStockExcept(feedProductIds: string[]): Promise<number> {
+    // Mark all rackets with feedProductId that are NOT in the provided list as out of stock
+    const feedProductIdSet = new Set(feedProductIds);
+    let count = 0;
+    
+    for (const [id, racket] of this.rackets.entries()) {
+      // Only mark out of stock if racket has a feedProductId (came from CJ feed)
+      // and it's not in the current feed
+      if (racket.feedProductId && !feedProductIdSet.has(racket.feedProductId) && racket.inStock !== false) {
+        this.rackets.set(id, { ...racket, inStock: false, updatedAt: new Date() });
+        count++;
+      }
+    }
+    
+    return count;
   }
 
   // Guide methods

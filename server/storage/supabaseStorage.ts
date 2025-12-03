@@ -39,7 +39,7 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
-      .where(eq(rackets.isPublished, true))
+      .where(and(eq(rackets.isPublished, true), eq(rackets.inStock, true)))
       .orderBy(desc(rackets.createdAt));
     return result;
   }
@@ -78,12 +78,13 @@ export class SupabaseStorage implements IStorage {
         player: rackets.player,
         feedProductId: rackets.feedProductId,
         isPublished: rackets.isPublished,
+        inStock: rackets.inStock,
         feedLastUpdated: rackets.feedLastUpdated,
         createdAt: rackets.createdAt,
         updatedAt: rackets.updatedAt,
       })
       .from(rackets)
-      .where(eq(rackets.isPublished, true))
+      .where(and(eq(rackets.isPublished, true), eq(rackets.inStock, true)))
       .orderBy(desc(rackets.createdAt));
     return result;
   }
@@ -163,7 +164,7 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
-      .where(eq(rackets.isPublished, true))
+      .where(and(eq(rackets.isPublished, true), eq(rackets.inStock, true)))
       .orderBy(desc(rackets.createdAt))
       .limit(limit);
     return result;
@@ -174,14 +175,15 @@ export class SupabaseStorage implements IStorage {
     const racket = await this.getRacket(racketId);
     if (!racket) return [];
 
-    // Get other published rackets from the same brand, sorted by overall rating
+    // Get other published and in-stock rackets from the same brand, sorted by overall rating
     const result = await db
       .select()
       .from(rackets)
       .where(and(
         eq(rackets.brand, racket.brand), 
         ne(rackets.id, racketId),
-        eq(rackets.isPublished, true)
+        eq(rackets.isPublished, true),
+        eq(rackets.inStock, true)
       ))
       .orderBy(desc(rackets.overallRating))
       .limit(limit);
@@ -192,7 +194,11 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
-      .where(eq(rackets.brand, brand))
+      .where(and(
+        eq(rackets.brand, brand),
+        eq(rackets.isPublished, true),
+        eq(rackets.inStock, true)
+      ))
       .orderBy(desc(rackets.overallRating));
     return result;
   }
@@ -255,6 +261,34 @@ export class SupabaseStorage implements IStorage {
   async deleteRacket(id: string): Promise<boolean> {
     const result = await db.delete(rackets).where(eq(rackets.id, id)).returning();
     return result.length > 0;
+  }
+
+  async markOutOfStockExcept(feedProductIds: string[]): Promise<number> {
+    // Mark all rackets with feedProductId that are NOT in the provided list as out of stock
+    if (feedProductIds.length === 0) {
+      // If no products in feed, mark all feed-linked rackets as out of stock
+      const result = await db
+        .update(rackets)
+        .set({ inStock: false, updatedAt: new Date() })
+        .where(and(
+          sql`${rackets.feedProductId} IS NOT NULL`,
+          eq(rackets.inStock, true)
+        ))
+        .returning();
+      return result.length;
+    }
+    
+    // Mark rackets with feedProductId not in the list as out of stock
+    const result = await db
+      .update(rackets)
+      .set({ inStock: false, updatedAt: new Date() })
+      .where(and(
+        sql`${rackets.feedProductId} IS NOT NULL`,
+        sql`${rackets.feedProductId} NOT IN (${sql.join(feedProductIds.map(id => sql`${id}`), sql`, `)})`,
+        eq(rackets.inStock, true)
+      ))
+      .returning();
+    return result.length;
   }
 
   // Guide methods

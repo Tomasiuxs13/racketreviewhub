@@ -16,6 +16,7 @@ export interface ProcessingResult {
   updated: number;
   unchanged: number; // Products where data was identical, no DB write needed
   skipped: number; // Products skipped due to errors or missing data
+  markedOutOfStock: number; // Rackets marked out of stock (not in current feed)
   errors: string[];
   startTime: Date;
   endTime?: Date;
@@ -29,6 +30,7 @@ export interface RacketUpdateData {
   imageUrl?: string;
   feedProductId: string;
   feedLastUpdated: Date;
+  inStock?: boolean;
 }
 
 export interface RacketCreateData {
@@ -156,7 +158,7 @@ function hasChanged(oldValue: string | null | undefined, newValue: string | null
 async function processProduct(
   product: CjFeedProduct,
   options: { generateRatings?: boolean; generateReviews?: boolean } = {}
-): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; error?: string }> {
+): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; feedProductId?: string; error?: string }> {
   const { generateRatings = true, generateReviews = true } = options;
   
   try {
@@ -167,7 +169,7 @@ async function processProduct(
     const originalPrice = parseCjPrice(product.PRICE);
     
     if (!currentPrice) {
-      return { action: "skipped", error: `No valid price found for ${product.ID}` };
+      return { action: "skipped", feedProductId, error: `No valid price found for ${product.ID}` };
     }
 
     // Try to find existing racket
@@ -219,20 +221,28 @@ async function processProduct(
       
       // Only update image if we don't have one and feed provides one
       const shouldUpdateImage = !existingRacket.imageUrl && newImageUrl;
+      
+      // Check if racket was out of stock and is now back in stock
+      const wasOutOfStock = existingRacket.inStock === false;
 
-      // If nothing has changed, skip the update entirely
-      if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage) {
+      // If nothing has changed and already in stock, skip the update entirely
+      if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage && !wasOutOfStock) {
         console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - DB Price: €${normalizePrice(existingRacket.currentPrice)}, Feed Price: €${newCurrentPrice} (no update needed)`);
-        return { action: "unchanged" };
+        return { action: "unchanged", feedProductId };
       }
 
       // Build update data only with changed fields
       const updateData: Partial<RacketUpdateData> = {
         feedLastUpdated: now,
+        inStock: true, // Always mark as in stock when found in feed
       };
 
       // Log what's being updated
       const changes: string[] = [];
+      
+      if (wasOutOfStock) {
+        changes.push(`marked back in stock`);
+      }
 
       if (priceChanged) {
         updateData.currentPrice = newCurrentPrice;
@@ -261,7 +271,7 @@ async function processProduct(
 
       await storage.updateRacket(existingRacket.id, updateData);
       console.log(`[CJ-Processor] Updated: ${brand} ${model} - Changes: ${changes.join(", ")}`);
-      return { action: "updated" };
+      return { action: "updated", feedProductId };
     } else {
       // Create new racket
       const shape = estimateShape(product);
@@ -284,7 +294,7 @@ async function processProduct(
         }
       }
 
-      const createData: RacketCreateData = {
+      const createData: RacketCreateData & { inStock: boolean } = {
         brand,
         model,
         year: new Date().getFullYear(),
@@ -297,6 +307,7 @@ async function processProduct(
         feedProductId,
         feedLastUpdated: now,
         isPublished: false, // New rackets from feed need review
+        inStock: true, // Products from feed are in stock
         color: product.COLOR !== "Unknow" ? product.COLOR : undefined,
       };
 
@@ -317,12 +328,12 @@ async function processProduct(
       }
 
       console.log(`[CJ-Processor] Created: ${brand} ${model} - Price: €${currentPrice} (pending review)`);
-      return { action: "created" };
+      return { action: "created", feedProductId };
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error";
     console.error(`[CJ-Processor] Error processing ${product.ID}:`, error);
-    return { action: "skipped", error: errorMessage };
+    return { action: "skipped", feedProductId: product.ID, error: errorMessage };
   }
 }
 
@@ -352,9 +363,13 @@ export async function processCjFeed(
     updated: 0,
     unchanged: 0,
     skipped: 0,
+    markedOutOfStock: 0,
     errors: [],
     startTime: new Date(),
   };
+
+  // Track all feed product IDs that were successfully processed
+  const processedFeedProductIds: string[] = [];
 
   console.log(`[CJ-Processor] Starting to process ${products.length} products...`);
 
@@ -364,8 +379,13 @@ export async function processCjFeed(
     
     for (const product of batch) {
       try {
-        const { action, error } = await processProduct(product, { generateRatings, generateReviews });
+        const { action, feedProductId, error } = await processProduct(product, { generateRatings, generateReviews });
         result.totalProcessed++;
+        
+        // Track successfully processed feed product IDs
+        if (feedProductId && action !== "skipped") {
+          processedFeedProductIds.push(feedProductId);
+        }
         
         if (action === "created") {
           result.created++;
@@ -395,12 +415,26 @@ export async function processCjFeed(
     }
   }
 
+  // Mark rackets not in current feed as out of stock
+  if (processedFeedProductIds.length > 0) {
+    try {
+      const outOfStockCount = await storage.markOutOfStockExcept(processedFeedProductIds);
+      result.markedOutOfStock = outOfStockCount;
+      if (outOfStockCount > 0) {
+        console.log(`[CJ-Processor] Marked ${outOfStockCount} rackets as out of stock (not in current feed)`);
+      }
+    } catch (error) {
+      console.error(`[CJ-Processor] Error marking rackets out of stock:`, error);
+      result.errors.push(`Failed to mark out of stock: ${error instanceof Error ? error.message : "Unknown error"}`);
+    }
+  }
+
   result.endTime = new Date();
   result.duration = result.endTime.getTime() - result.startTime.getTime();
   result.success = result.errors.length === 0 || result.created > 0 || result.updated > 0 || result.unchanged > 0;
 
   console.log(`[CJ-Processor] Completed in ${(result.duration / 1000).toFixed(2)}s`);
-  console.log(`[CJ-Processor] Results: Created ${result.created}, Updated ${result.updated}, Unchanged ${result.unchanged}, Skipped ${result.skipped}, Errors ${result.errors.length}`);
+  console.log(`[CJ-Processor] Results: Created ${result.created}, Updated ${result.updated}, Unchanged ${result.unchanged}, Skipped ${result.skipped}, Out of stock ${result.markedOutOfStock}, Errors ${result.errors.length}`);
 
   return result;
 }

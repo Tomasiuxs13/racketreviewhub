@@ -57,6 +57,7 @@ export const rackets = pgTable("rackets", {
   // CJ Feed sync fields
   feedProductId: text("feed_product_id"), // CJ product ID for matching
   isPublished: boolean("is_published").default(true).notNull(), // false for new imports pending review
+  inStock: boolean("in_stock").default(true).notNull(), // false when product not in CJ feed (out of stock)
   feedLastUpdated: timestamp("feed_last_updated"), // timestamp of last CJ feed sync
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -170,21 +171,6 @@ export const excelRacketSchema = z.object({
 });
 
 export type ExcelRacket = z.infer<typeof excelRacketSchema>;
-
-// Excel upload schema for price-only updates (no brand/model/shape required)
-// Used when updating existing rackets by Title_URL
-export const excelPriceUpdateSchema = z.object({
-  titleUrl: z.string().min(1),
-  title: z.string().optional(),
-  currentPrice: z.number(),
-  originalPrice: z.number().optional(),
-  imageUrl: z.string().optional(),
-  affiliateLink: z.string().optional(),
-  label: z.string().optional(),
-  keywords: z.string().optional(),
-});
-
-export type ExcelPriceUpdate = z.infer<typeof excelPriceUpdateSchema>;
 
 // Content translations table
 export const contentTranslations = pgTable(
