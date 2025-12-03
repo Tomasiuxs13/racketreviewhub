@@ -224,9 +224,12 @@ async function processProduct(
       
       // Check if racket was out of stock and is now back in stock
       const wasOutOfStock = existingRacket.inStock === false;
+      
+      // Check if racket needs feed_product_id linked (important for stock tracking)
+      const needsFeedIdLink = !existingRacket.feedProductId && feedProductId;
 
-      // If nothing has changed and already in stock, skip the update entirely
-      if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage && !wasOutOfStock) {
+      // If nothing has changed and already in stock and has feed_product_id, skip the update entirely
+      if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage && !wasOutOfStock && !needsFeedIdLink) {
         console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - DB Price: €${normalizePrice(existingRacket.currentPrice)}, Feed Price: €${newCurrentPrice} (no update needed)`);
         return { action: "unchanged", feedProductId };
       }
@@ -242,6 +245,11 @@ async function processProduct(
       
       if (wasOutOfStock) {
         changes.push(`marked back in stock`);
+      }
+      
+      if (needsFeedIdLink) {
+        updateData.feedProductId = feedProductId;
+        changes.push(`feed product ID linked`);
       }
 
       if (priceChanged) {
