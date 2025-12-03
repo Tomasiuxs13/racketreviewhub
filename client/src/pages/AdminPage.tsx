@@ -81,6 +81,7 @@ export default function AdminPage() {
   const [postFormOpen, setPostFormOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPublished, setFilterPublished] = useState<boolean | null>(null);
+  const [filterInStock, setFilterInStock] = useState<boolean | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -746,6 +747,21 @@ export default function AdminPage() {
                 <Button variant="outline" onClick={() => setFilterPublished(filterPublished === null ? true : filterPublished === true ? false : null)}>
                   <Filter className="mr-2 h-4 w-4" />
                   {filterPublished === null ? "All" : filterPublished ? "Published" : "Unpublished"}
+                </Button>
+                <Button variant="outline" onClick={() => setFilterInStock(filterInStock === null ? true : filterInStock === true ? false : null)}>
+                  <Filter className="mr-2 h-4 w-4" />
+                  {filterInStock === null ? "All Stock" : filterInStock ? "In Stock" : "Out of Stock"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setFilterPublished(true);
+                    setFilterInStock(true);
+                  }}
+                  className={filterPublished === true && filterInStock === true ? "bg-primary text-primary-foreground" : ""}
+                >
+                  <Eye className="mr-2 h-4 w-4" />
+                  Public & In Stock
                 </Button>
                 <Button onClick={handleCreate}>
                   <Plus className="mr-2 h-4 w-4" />
