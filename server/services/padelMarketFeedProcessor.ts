@@ -181,6 +181,13 @@ async function processProduct(
     const feedProductId = product.aw_product_id || product.merchant_product_id || "";
     const price = parsePadelMarketPrice(product.store_price || product.search_price || "0");
     
+    // Helper function to parse current price from racket
+    const parseCurrentPrice = (priceStr: string | null | undefined): number => {
+      if (!priceStr) return 0;
+      const parsed = parseFloat(priceStr);
+      return isNaN(parsed) ? 0 : parsed;
+    };
+    
     if (existingRacket) {
       // UPDATE EXISTING RACKET: Only update affiliate link and price (never delete)
       // Preserve existing affiliate link if it was manually set
@@ -194,9 +201,15 @@ async function processProduct(
         padelMarketInStock: true,
         padelMarketFeedProductId: feedProductId || undefined,
         padelMarketFeedLastUpdated: now,
-        // Update price if available
-        currentPrice: price > 0 ? price.toFixed(2) : undefined,
       };
+      
+      // Only update price if:
+      // 1. Padel Market has a valid price (> 0), AND
+      // 2. Either the racket has no price (0 or null/undefined), OR Padel Market price is lower
+      const currentPriceValue = parseCurrentPrice(existingRacket.currentPrice);
+      if (price > 0 && (currentPriceValue === 0 || price < currentPriceValue)) {
+        updateData.currentPrice = price.toFixed(2);
+      }
       
       // Only update affiliate link if it doesn't already exist (preserve manual edits)
       if (!existingRacket.padelMarketAffiliateLink) {
@@ -221,10 +234,18 @@ async function processProduct(
       
       const changes = [];
       if (updateData.padelMarketAffiliateLink) changes.push("link added");
-      if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) changes.push(`price: €${price.toFixed(2)}`);
+      if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) {
+        const oldPrice = parseCurrentPrice(existingRacket.currentPrice);
+        changes.push(`price: €${oldPrice.toFixed(2)} → €${price.toFixed(2)} (lower price from Padel Market)`);
+      } else if (price > 0 && currentPriceValue > 0 && price >= currentPriceValue) {
+        // Log when price is skipped because it's higher
+        console.log(`[PadelMarket-Processor] Price skipped for ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year}: Padel Market price €${price.toFixed(2)} is higher than current price €${currentPriceValue.toFixed(2)}`);
+      }
       if (existingRacket.padelMarketInStock !== updateData.padelMarketInStock) changes.push("stock status updated");
       
-      console.log(`[PadelMarket-Processor] Updated: ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year} - ${changes.join(", ")}`);
+      if (changes.length > 0) {
+        console.log(`[PadelMarket-Processor] Updated: ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year} - ${changes.join(", ")}`);
+      }
       return { action: "updated" };
     } else {
       // CREATE NEW RACKET: Check for duplicates first
@@ -249,8 +270,15 @@ async function processProduct(
           padelMarketInStock: true,
           padelMarketFeedProductId: feedProductId || undefined,
           padelMarketFeedLastUpdated: now,
-          currentPrice: price > 0 ? price.toFixed(2) : undefined,
         };
+        
+        // Only update price if:
+        // 1. Padel Market has a valid price (> 0), AND
+        // 2. Either the racket has no price (0 or null/undefined), OR Padel Market price is lower
+        const currentPriceValue = parseCurrentPrice(potentialDuplicate.currentPrice);
+        if (price > 0 && (currentPriceValue === 0 || price < currentPriceValue)) {
+          updateData.currentPrice = price.toFixed(2);
+        }
         
         // Only update affiliate link if it doesn't already exist (preserve manual edits)
         if (!potentialDuplicate.padelMarketAffiliateLink) {
@@ -260,7 +288,21 @@ async function processProduct(
         }
         
         await storage.updateRacket(potentialDuplicate.id, updateData);
-        console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}`);
+        
+        const duplicateChanges = [];
+        if (updateData.padelMarketAffiliateLink) duplicateChanges.push("link added");
+        if (updateData.currentPrice && potentialDuplicate.currentPrice !== updateData.currentPrice) {
+          const oldPrice = parseCurrentPrice(potentialDuplicate.currentPrice);
+          duplicateChanges.push(`price: €${oldPrice.toFixed(2)} → €${price.toFixed(2)} (lower price from Padel Market)`);
+        } else if (price > 0 && currentPriceValue > 0 && price >= currentPriceValue) {
+          console.log(`[PadelMarket-Processor] Price skipped for ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}: Padel Market price €${price.toFixed(2)} is higher than current price €${currentPriceValue.toFixed(2)}`);
+        }
+        
+        if (duplicateChanges.length > 0) {
+          console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year} - ${duplicateChanges.join(", ")}`);
+        } else {
+          console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}`);
+        }
         return { action: "updated" };
       }
       
