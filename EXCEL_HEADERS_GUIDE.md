@@ -4,33 +4,10 @@ This document lists all supported column headers for uploading racket data via E
 
 ## Upload Behavior Summary
 
-### Price Update Only Mode (NEW!)
-
-Use this mode when you just want to update prices for existing rackets without providing brand/model/shape columns.
-
-**Required columns:**
-- `Title_URL` or `titleUrl` - The product URL to match existing rackets
-- `current_price` or `currentPrice` or `Price` - The new price
-
-**Optional columns:**
-- `original_price` or `originalPrice` or `Previous price` - Original/previous price
-- `Image` or `imageUrl` - Product image URL
-- `affiliateLink` or `Link` - Affiliate link
-
-**How it works:**
-1. The system detects rows with `Title_URL` but missing `brand`/`model`/`shape`
-2. It matches the row to an existing racket by `Title_URL`
-3. Only prices and provided fields are updated
-4. If no matching racket is found, an error is shown (new rackets cannot be created without brand/model/shape)
-
----
-
 ### For Existing Rackets (matched by Title_URL or Brand+Model)
 **Only these fields are updated:**
 - ✅ `currentPrice` - Always updated
-- ✅ `originalPrice` - Updated if provided in Excel
 - ✅ `affiliateLink` - Updated if provided in Excel
-- ✅ `imageUrl` - Updated if provided in Excel (price-update mode only)
 
 **All other fields are preserved** - ratings, reviews, specs, etc. remain unchanged so you can manually edit them in the Admin Panel without losing changes on re-upload.
 
@@ -52,14 +29,14 @@ For example: `"Current price"` → `"current_price"`, `"Price1"` → `"price1"`
 
 ---
 
-## Required Columns (for creating new rackets)
+## Required Columns
 
-These columns **must** be present when creating new rackets. For price-update-only mode, see above.
+These columns **must** be present in your Excel file:
 
 | Column Name (Examples) | Description | Notes |
 |------------------------|-------------|-------|
-| `brand` or `Brand` or `Brand Name` | Brand name | Required for new rackets |
-| `model` or `Model` or `Model Name` | Model name | Required for new rackets |
+| `brand` or `Brand` or `Brand Name` | Brand name | Required |
+| `model` or `Model` or `Model Name` | Model name | Required |
 | `shape` or `Shape` | Racket shape | Must be: `diamond`, `round`, or `teardrop` |
 | `currentPrice` or `Current price` or `Price` | Current selling price | Required, can include currency symbols (€, $, £) |
 
