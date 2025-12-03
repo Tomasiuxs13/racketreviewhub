@@ -238,6 +238,7 @@ async function processProduct(
       
       if (potentialDuplicate) {
         // Found a potential duplicate, update it instead
+        // Preserve existing affiliate link if it was manually set
         const updateData: {
           padelMarketAffiliateLink?: string;
           padelMarketInStock: boolean;
@@ -245,12 +246,18 @@ async function processProduct(
           padelMarketFeedLastUpdated: Date;
           currentPrice?: string;
         } = {
-          padelMarketAffiliateLink: product.aw_deep_link,
           padelMarketInStock: true,
           padelMarketFeedProductId: feedProductId || undefined,
           padelMarketFeedLastUpdated: now,
           currentPrice: price > 0 ? price.toFixed(2) : undefined,
         };
+        
+        // Only update affiliate link if it doesn't already exist (preserve manual edits)
+        if (!potentialDuplicate.padelMarketAffiliateLink) {
+          updateData.padelMarketAffiliateLink = product.aw_deep_link;
+        } else {
+          console.log(`[PadelMarket-Processor] Preserving existing Padel Market affiliate link for ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year} (manual edit detected)`);
+        }
         
         await storage.updateRacket(potentialDuplicate.id, updateData);
         console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}`);
