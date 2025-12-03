@@ -379,39 +379,40 @@ export default function RacketDetailPage() {
 
                     <div className="pt-2 border-t space-y-2">
                   {/* Padel Nuestro link (primary) */}
-                  {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
+                  {(racket.affiliateLink || racket.titleUrl) ? (
                     <Button
                       asChild
                       size="default"
-                      className="w-full font-semibold"
+                      variant={racket.inStock ? "default" : "outline"}
+                      className={`w-full ${racket.inStock ? "font-semibold" : ""}`}
                       data-testid="button-buy-now-pn"
                     >
                       <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
-                        Buy from Padel Nuestro
+                        Buy from Padel Nuestro {!racket.inStock && "(Check Availability)"}
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
                     </Button>
                   ) : null}
 
                   {/* Padel Market link (alternative or primary if PN is out of stock) */}
-                  {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+                  {racket.padelMarketAffiliateLink ? (
                     <Button
                       asChild
                       size="default"
-                      variant={racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "outline" : "default"}
-                      className={`w-full ${racket.inStock && (racket.affiliateLink || racket.titleUrl) ? "" : "font-semibold"}`}
+                      variant={(racket.affiliateLink || racket.titleUrl) && racket.inStock ? "outline" : racket.padelMarketInStock ? "default" : "outline"}
+                      className={`w-full ${!(racket.affiliateLink || racket.titleUrl) || !racket.inStock ? "font-semibold" : ""}`}
                       data-testid="button-buy-now-pm"
                     >
                       <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer">
-                        Buy from Padel Market
+                        Buy from Padel Market {!racket.padelMarketInStock && "(Check Availability)"}
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
                     </Button>
                   ) : null}
 
-                  {/* Show "Not Available" only if neither is available */}
-                  {!(racket.inStock && (racket.affiliateLink || racket.titleUrl)) && 
-                   !(racket.padelMarketInStock && racket.padelMarketAffiliateLink) ? (
+                  {/* Show "Not Available" only if neither link exists */}
+                  {!(racket.affiliateLink || racket.titleUrl) && 
+                   !racket.padelMarketAffiliateLink ? (
                     <Button size="default" className="w-full" disabled>
                       Not Available
                     </Button>
@@ -697,17 +698,17 @@ export default function RacketDetailPage() {
                   <span className="text-xs font-semibold text-destructive">Save {discountPercentage}%</span>
                 )}
               </div>
-              {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
+              {(racket.affiliateLink || racket.titleUrl) ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy">
                   <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
-                    Buy from Padel Nuestro
+                    Buy from Padel Nuestro {!racket.inStock && "(Check)"}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
-              ) : racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
+              ) : racket.padelMarketAffiliateLink ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy-pm">
                   <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer">
-                    Buy from Padel Market
+                    Buy from Padel Market {!racket.padelMarketInStock && "(Check)"}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>

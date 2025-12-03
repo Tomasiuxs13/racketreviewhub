@@ -144,18 +144,18 @@ export function RacketTable({ rackets, onEdit }: RacketTableProps) {
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col gap-1">
-                      {racket.inStock && (racket.affiliateLink || racket.titleUrl) ? (
-                        <Badge variant="default" className="w-fit text-xs">
-                          Padel Nuestro
+                      {(racket.affiliateLink || racket.titleUrl) ? (
+                        <Badge variant={racket.inStock ? "default" : "secondary"} className="w-fit text-xs">
+                          Padel Nuestro {!racket.inStock && "(OOS)"}
                         </Badge>
                       ) : null}
-                      {racket.padelMarketInStock && racket.padelMarketAffiliateLink ? (
-                        <Badge variant="outline" className="w-fit text-xs">
-                          Padel Market
+                      {racket.padelMarketAffiliateLink ? (
+                        <Badge variant={racket.padelMarketInStock ? "outline" : "secondary"} className="w-fit text-xs">
+                          Padel Market {!racket.padelMarketInStock && "(OOS)"}
                         </Badge>
                       ) : null}
-                      {!(racket.inStock && (racket.affiliateLink || racket.titleUrl)) && 
-                       !(racket.padelMarketInStock && racket.padelMarketAffiliateLink) ? (
+                      {!(racket.affiliateLink || racket.titleUrl) && 
+                       !racket.padelMarketAffiliateLink ? (
                         <Badge variant="secondary" className="w-fit text-xs">
                           None
                         </Badge>
