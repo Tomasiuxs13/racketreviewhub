@@ -86,6 +86,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     observer.observe(item);
   });
 
+  // Ensure a canonical tag exists (strip query/hash)
+  setCanonicalTag();
+
   // Handle product sidebar data attribute
   const sidebarPlaceholder = document.getElementById('sidebar-placeholder');
   if (sidebarPlaceholder) {
@@ -94,6 +97,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       // Wait a bit for templates to load
       setTimeout(() => {
         renderProductSidebar(productId);
+        renderSeoForProduct(productId);
       }, 100);
     }
   }
@@ -118,6 +122,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // Render buyers guide cards on homepage
   renderBuyersGuideCards();
+
+  // Lightweight perf: lazy-load non-hero images to reduce LCP/CLS risk
+  enableLazyImages();
 
   // Render guide cards on guides page
   renderGuidesPageCards();
@@ -187,6 +194,209 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 });
+
+/**
+ * Ensure a canonical link tag exists using the current path (no query/hash)
+ */
+function setCanonicalTag() {
+  const canonicalHref = `${window.location.origin}${window.location.pathname}`;
+  let canonical = document.querySelector('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement('link');
+    canonical.setAttribute('rel', 'canonical');
+    document.head.appendChild(canonical);
+  }
+  canonical.setAttribute('href', canonicalHref);
+
+  // Keep og:url in sync if present
+  const ogUrl = document.querySelector('meta[property="og:url"]');
+  if (ogUrl) {
+    ogUrl.setAttribute('content', canonicalHref);
+  }
+}
+
+/**
+ * Inject JSON-LD for Product + Review + Breadcrumb when product data exists
+ */
+function injectStructuredDataForProduct(product, canonicalUrl) {
+  if (!product || !canonicalUrl) return;
+
+  // Safely parse price (expects format like "€299.95")
+  let priceValue = null;
+  if (product.price) {
+    const numeric = product.price.toString().replace(/[^0-9.,]/g, '').replace(',', '.');
+    const parsed = parseFloat(numeric);
+    if (!Number.isNaN(parsed)) {
+      priceValue = parsed.toFixed(2);
+    }
+  }
+
+  const aggregateRating = product.ratings?.overall
+    ? {
+        "@type": "AggregateRating",
+        "ratingValue": product.ratings.overall,
+        "bestRating": 10,
+        "worstRating": 0,
+        "ratingCount": 1,
+      }
+    : undefined;
+
+  const productSchema = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "image": product.image ? [product.image] : undefined,
+    "brand": product.brand
+      ? { "@type": "Brand", "name": product.brand }
+      : undefined,
+    "description": product.verdict || product.name,
+    "sku": product.id,
+    "url": canonicalUrl,
+    "aggregateRating": aggregateRating,
+    "offers": priceValue
+      ? {
+          "@type": "Offer",
+          "price": priceValue,
+          "priceCurrency": "EUR",
+          "availability": "https://schema.org/InStock",
+          "url": (product.affiliateLinks && (product.affiliateLinks.padelNuestro || product.affiliateLinks.amazon)) || canonicalUrl,
+        }
+      : undefined,
+  };
+
+  const reviewSchema = {
+    "@context": "https://schema.org",
+    "@type": "Review",
+    "itemReviewed": {
+      "@type": "Product",
+      "name": product.name,
+    },
+    "reviewBody": (product.verdict || "").substring(0, 800),
+    "reviewRating": aggregateRating
+      ? {
+          "@type": "Rating",
+          "ratingValue": aggregateRating.ratingValue,
+          "bestRating": aggregateRating.bestRating,
+          "worstRating": aggregateRating.worstRating,
+        }
+      : undefined,
+    "author": {
+      "@type": "Organization",
+      "name": "Padel Racket Review Hub",
+    },
+    "url": canonicalUrl,
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "Home",
+        "item": `${window.location.origin}/`,
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Racket Reviews",
+        "item": `${window.location.origin}/articles/reviews/`,
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": product.name,
+        "item": canonicalUrl,
+      },
+    ],
+  };
+
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.textContent = JSON.stringify([productSchema, reviewSchema, breadcrumbSchema].filter(Boolean));
+
+  // Replace existing structured data we injected earlier, if any
+  const existing = document.querySelector('script[data-injected-schema="racket"]');
+  if (existing) {
+    existing.remove();
+  }
+  script.setAttribute('data-injected-schema', 'racket');
+  document.head.appendChild(script);
+}
+
+/**
+ * Render breadcrumbs + brand filter link for better internal linking
+ */
+function injectBreadcrumbNav(product, canonicalUrl) {
+  if (!product) return;
+  const contentMain = document.querySelector('.content-main');
+  if (!contentMain) return;
+
+  const existing = contentMain.querySelector('.seo-breadcrumb');
+  if (existing) return;
+
+  const brandSlug = (product.brand || "").toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const brandLink = `/articles/reviews/?brand=${encodeURIComponent(brandSlug)}`;
+
+  const nav = document.createElement('nav');
+  nav.className = 'seo-breadcrumb';
+  nav.setAttribute('aria-label', 'Breadcrumb');
+  nav.innerHTML = `
+    <a href="/">Home</a>
+    <span aria-hidden="true">›</span>
+    <a href="/articles/reviews/">Racket Reviews</a>
+    <span aria-hidden="true">›</span>
+    <a href="${brandLink}">${product.brand || 'Brand'}</a>
+    <span aria-hidden="true">›</span>
+    <span>${product.name}</span>
+  `;
+
+  // Insert before the article header if present
+  const articleHeader = contentMain.querySelector('.article-header');
+  if (articleHeader) {
+    contentMain.insertBefore(nav, articleHeader);
+  } else {
+    contentMain.prepend(nav);
+  }
+}
+
+/**
+ * Tie together page-level SEO helpers for a racket detail page
+ */
+function renderSeoForProduct(productId) {
+  if (!PRODUCTS || !productId || !PRODUCTS[productId]) return;
+  const product = PRODUCTS[productId];
+  const canonicalUrl = `${window.location.origin}${window.location.pathname}`;
+
+  // Standardize title and description using product data
+  const desiredTitle = `${product.name} Review | Padel Racket Review Hub`;
+  if (document.title !== desiredTitle) {
+    document.title = desiredTitle;
+  }
+  const metaDescription = document.querySelector('meta[name="description"]');
+  if (metaDescription && product.verdict) {
+    metaDescription.setAttribute('content', product.verdict.substring(0, 150));
+  }
+
+  injectStructuredDataForProduct(product, canonicalUrl);
+  injectBreadcrumbNav(product, canonicalUrl);
+}
+
+/**
+ * Add loading=lazy to non-hero images as a quick CWV win
+ */
+function enableLazyImages() {
+  document.querySelectorAll('img').forEach((img) => {
+    if (img.classList.contains('article-main-image')) return; // keep hero eager
+    if (!img.hasAttribute('loading')) {
+      img.setAttribute('loading', 'lazy');
+    }
+    if (!img.hasAttribute('decoding')) {
+      img.setAttribute('decoding', 'async');
+    }
+  });
+}
 
 /**
  * Render latest reviews grid on homepage
