@@ -126,6 +126,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Lightweight perf: lazy-load non-hero images to reduce LCP/CLS risk
   enableLazyImages();
 
+  // Hint hero/main images for faster LCP and lower CLS
+  setHeroImageHints();
+
   // Render guide cards on guides page
   renderGuidesPageCards();
 
@@ -394,6 +397,32 @@ function enableLazyImages() {
     }
     if (!img.hasAttribute('decoding')) {
       img.setAttribute('decoding', 'async');
+    }
+  });
+}
+
+/**
+ * Prioritize hero/racket main images and add dimensions to cut CLS
+ */
+function setHeroImageHints() {
+  const heroImages = document.querySelectorAll('.article-main-image, .hero-bg-image');
+  heroImages.forEach((img, idx) => {
+    // Keep first hero fetch priority high; others auto
+    if (!img.hasAttribute('fetchpriority')) {
+      img.setAttribute('fetchpriority', idx === 0 ? 'high' : 'auto');
+    }
+    if (!img.hasAttribute('loading')) {
+      img.setAttribute('loading', idx === 0 ? 'eager' : 'lazy');
+    }
+    if (!img.hasAttribute('decoding')) {
+      img.setAttribute('decoding', 'async');
+    }
+    // Populate width/height to reduce layout shifts when possible
+    if (!img.hasAttribute('width') && img.naturalWidth) {
+      img.setAttribute('width', img.naturalWidth);
+    }
+    if (!img.hasAttribute('height') && img.naturalHeight) {
+      img.setAttribute('height', img.naturalHeight);
     }
   });
 }
