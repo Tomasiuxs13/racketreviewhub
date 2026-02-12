@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink } from "lucide-react";
 import type { Racket } from "@shared/schema";
 import { getRacketSlug } from "@/lib/utils";
+import { openAffiliateLink } from "@/lib/analytics";
 
 interface MentionedRacketsProps {
   content: string;
@@ -185,11 +186,11 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                           className="text-xs h-7 w-full"
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(
-                              racket.affiliateLink || racket.titleUrl || "#",
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
+                            openAffiliateLink(racket.affiliateLink || racket.titleUrl || "#", {
+                              racketId: racket.id, brand: racket.brand, model: racket.model,
+                              partner: "padel_nuestro", source: "mentioned_rackets",
+                              price: Number(racket.currentPrice), inStock: racket.inStock,
+                            });
                           }}
                         >
                           Buy Now
@@ -264,11 +265,11 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                           className="text-xs h-7"
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(
-                              racket.affiliateLink || racket.titleUrl || "#",
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
+                            openAffiliateLink(racket.affiliateLink || racket.titleUrl || "#", {
+                              racketId: racket.id, brand: racket.brand, model: racket.model,
+                              partner: "padel_nuestro", source: "mentioned_rackets",
+                              price: Number(racket.currentPrice), inStock: racket.inStock,
+                            });
                           }}
                         >
                           Buy from Padel Nuestro
@@ -282,11 +283,11 @@ export function MentionedRackets({ content, variant = "default" }: MentionedRack
                           className="text-xs h-7"
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(
-                              racket.padelMarketAffiliateLink || "#",
-                              "_blank",
-                              "noopener,noreferrer"
-                            );
+                            openAffiliateLink(racket.padelMarketAffiliateLink || "#", {
+                              racketId: racket.id, brand: racket.brand, model: racket.model,
+                              partner: "padel_market", source: "mentioned_rackets",
+                              price: Number(racket.currentPrice), inStock: racket.padelMarketInStock,
+                            });
                           }}
                         >
                           Buy from Padel Market

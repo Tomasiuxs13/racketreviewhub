@@ -16,6 +16,7 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useMemo, useEffect } from "react";
 import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
+import { trackAffiliateClick } from "@/lib/analytics";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -125,18 +126,44 @@ export default function RacketDetailPage() {
       },
     };
 
-    // Add offers (affiliate links)
+    // Add offers (affiliate links) with correct availability
+    const offers: any[] = [];
     if (racket.affiliateLink || racket.titleUrl) {
-      productSchema.offers = {
+      offers.push({
         "@type": "Offer",
         "price": racket.currentPrice,
         "priceCurrency": "EUR",
-        "availability": "https://schema.org/InStock",
+        "availability": racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
         "url": racket.affiliateLink || racket.titleUrl,
         "seller": {
           "@type": "Organization",
-          "name": "External Retailer",
+          "name": "Padel Nuestro",
         },
+      });
+    }
+    if (racket.padelMarketAffiliateLink) {
+      offers.push({
+        "@type": "Offer",
+        "price": racket.currentPrice,
+        "priceCurrency": "EUR",
+        "availability": racket.padelMarketInStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        "url": racket.padelMarketAffiliateLink,
+        "seller": {
+          "@type": "Organization",
+          "name": "Padel Market",
+        },
+      });
+    }
+    if (offers.length === 1) {
+      productSchema.offers = offers[0];
+    } else if (offers.length > 1) {
+      productSchema.offers = {
+        "@type": "AggregateOffer",
+        "lowPrice": racket.currentPrice,
+        "highPrice": racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? racket.originalPrice : racket.currentPrice,
+        "priceCurrency": "EUR",
+        "offerCount": offers.length,
+        "offers": offers,
       };
     }
 
@@ -387,7 +414,7 @@ export default function RacketDetailPage() {
                       className={`w-full ${racket.inStock ? "font-semibold" : ""}`}
                       data-testid="button-buy-now-pn"
                     >
-                      <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
+                      <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail", price: Number(racket.currentPrice), inStock: racket.inStock })}>
                         Buy from Padel Nuestro {!racket.inStock && "(Check Availability)"}
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -403,7 +430,7 @@ export default function RacketDetailPage() {
                       className={`w-full ${!(racket.affiliateLink || racket.titleUrl) || !racket.inStock ? "font-semibold" : ""}`}
                       data-testid="button-buy-now-pm"
                     >
-                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer">
+                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
                         Buy from Padel Market {!racket.padelMarketInStock && "(Check Availability)"}
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -411,7 +438,7 @@ export default function RacketDetailPage() {
                   ) : null}
 
                   {/* Show "Not Available" only if neither link exists */}
-                  {!(racket.affiliateLink || racket.titleUrl) && 
+                  {!(racket.affiliateLink || racket.titleUrl) &&
                    !racket.padelMarketAffiliateLink ? (
                     <Button size="default" className="w-full" disabled>
                       Not Available
@@ -525,7 +552,7 @@ export default function RacketDetailPage() {
                       className={`w-full ${racket.inStock ? "font-semibold" : ""}`}
                       data-testid="button-buy-now-sidebar"
                     >
-                      <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
+                      <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.inStock })}>
                         Buy from Padel Nuestro {!racket.inStock && "(Check Availability)"}
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -541,7 +568,7 @@ export default function RacketDetailPage() {
                       className={`w-full ${!(racket.affiliateLink || racket.titleUrl) || !racket.inStock ? "font-semibold" : ""}`}
                       data-testid="button-buy-now-sidebar-pm"
                     >
-                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer">
+                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
                         Buy from Padel Market {!racket.padelMarketInStock && "(Check Availability)"}
                         <ExternalLink className="ml-2 h-4 w-4" />
                       </a>
@@ -701,14 +728,14 @@ export default function RacketDetailPage() {
               </div>
               {(racket.affiliateLink || racket.titleUrl) ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy">
-                  <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer">
+                  <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.inStock })}>
                     Buy from Padel Nuestro {!racket.inStock && "(Check)"}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
               ) : racket.padelMarketAffiliateLink ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy-pm">
-                  <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer">
+                  <a href={racket.padelMarketAffiliateLink} target="_blank" rel="noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
                     Buy from Padel Market {!racket.padelMarketInStock && "(Check)"}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>

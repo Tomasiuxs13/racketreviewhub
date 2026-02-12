@@ -6,6 +6,13 @@ if (!process.env.OPENAI_API_KEY) {
   console.warn("Warning: OPENAI_API_KEY not set. Review generation will be disabled.");
 }
 
+// Configurable model - use gpt-4o as default for high-quality content generation
+// Can be overridden with OPENAI_MODEL environment variable
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
+
+// Use gpt-4o-mini for translations (cost-effective, better quality than gpt-3.5-turbo)
+export const OPENAI_TRANSLATION_MODEL = process.env.OPENAI_TRANSLATION_MODEL || "gpt-4o-mini";
+
 const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 6;
 const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 1800;
 
@@ -434,7 +441,7 @@ The overallRating should be a comprehensive assessment considering all factors, 
 - Innovation and technology level`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "user",
@@ -566,7 +573,7 @@ Example of correct formatting:
 </ul>`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "system",
@@ -578,7 +585,7 @@ Example of correct formatting:
         },
       ],
       temperature: 0.7,
-      max_tokens: 3000,
+      max_tokens: 4096,
     });
 
     let reviewContent = completion.choices[0]?.message?.content || "";
@@ -798,7 +805,7 @@ export async function translateTextBatch(
   };
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
+    model: OPENAI_TRANSLATION_MODEL,
     temperature: 0.2,
     messages: [
       { role: "system", content: systemPrompt },

@@ -4,8 +4,9 @@ Allow: /
 # Sitemap
 Sitemap: https://racketreviewhub.com/sitemap.xml
 
-# Disallow admin and login pages
+# Disallow admin, login pages and API routes
 Disallow: /admin
 Disallow: /login
 Disallow: /signup
+Disallow: /api/
 

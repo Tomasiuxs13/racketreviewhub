@@ -3,9 +3,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RatingMetrics } from "./RatingBar";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, CheckCircle } from "lucide-react";
 import type { Racket } from "@shared/schema";
 import { getRacketSlug } from "@/lib/utils";
+import { openAffiliateLink } from "@/lib/analytics";
 
 interface RacketCardProps {
   racket: Racket;
@@ -16,6 +17,8 @@ export function RacketCard({ racket }: RacketCardProps) {
     ? Math.round(((Number(racket.originalPrice) - Number(racket.currentPrice)) / Number(racket.originalPrice)) * 100)
     : 0;
 
+  const isAvailable = racket.inStock || racket.padelMarketInStock;
+
   const getRatingColor = (rating: number) => {
     if (rating >= 85) return "text-primary";
     if (rating >= 75) return "text-chart-2";
@@ -24,10 +27,10 @@ export function RacketCard({ racket }: RacketCardProps) {
 
   return (
     <Link href={`/rackets/${getRacketSlug(racket)}`} data-testid={`link-racket-${racket.id}`}>
-      <Card className="group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full cursor-pointer" data-testid={`card-racket-${racket.id}`}>
+      <Card className={`group overflow-hidden hover-elevate active-elevate-2 transition-all duration-300 h-full cursor-pointer ${!isAvailable ? "opacity-70" : ""}`} data-testid={`card-racket-${racket.id}`}>
         <CardContent className="p-0">
           {/* Image Container */}
-          <div className="relative aspect-square bg-card overflow-hidden">
+          <div className={`relative aspect-square bg-card overflow-hidden ${!isAvailable ? "grayscale-[30%]" : ""}`}>
             <div className="absolute inset-0 flex items-center justify-center p-4">
               {racket.imageUrl ? (
                 <img
@@ -52,6 +55,22 @@ export function RacketCard({ racket }: RacketCardProps) {
                 </span>
               </div>
             </div>
+
+            {/* Stock Status Badge */}
+            {isAvailable ? (
+              <div className="absolute bottom-3 right-3">
+                <Badge variant="default" className="text-xs bg-green-600 hover:bg-green-600">
+                  <CheckCircle className="mr-1 h-3 w-3" />
+                  In Stock
+                </Badge>
+              </div>
+            ) : (
+              <div className="absolute bottom-3 right-3">
+                <Badge variant="secondary" className="text-xs">
+                  Out of Stock
+                </Badge>
+              </div>
+            )}
 
             {/* Year Ribbon */}
             {racket.year >= new Date().getFullYear() && (
@@ -108,7 +127,11 @@ export function RacketCard({ racket }: RacketCardProps) {
                           className="w-full sm:w-auto px-4"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
+                            openAffiliateLink(racket.affiliateLink || racket.titleUrl || "#", {
+                              racketId: racket.id, brand: racket.brand, model: racket.model,
+                              partner: "padel_nuestro", source: "racket_card",
+                              price: Number(racket.currentPrice), inStock: racket.inStock,
+                            });
                           }}
                           data-testid={`button-buy-now-pn-${racket.id}`}
                         >
@@ -123,7 +146,11 @@ export function RacketCard({ racket }: RacketCardProps) {
                           className="w-full sm:w-auto px-4"
                           onClick={(e) => {
                             e.stopPropagation();
-                            window.open(racket.padelMarketAffiliateLink || "#", "_blank", "noopener,noreferrer");
+                            openAffiliateLink(racket.padelMarketAffiliateLink || "#", {
+                              racketId: racket.id, brand: racket.brand, model: racket.model,
+                              partner: "padel_market", source: "racket_card",
+                              price: Number(racket.currentPrice), inStock: racket.padelMarketInStock,
+                            });
                           }}
                           data-testid={`button-buy-now-pm-${racket.id}`}
                         >
@@ -146,7 +173,11 @@ export function RacketCard({ racket }: RacketCardProps) {
                         className="w-full sm:w-auto"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(racket.affiliateLink || racket.titleUrl || "#", "_blank", "noopener,noreferrer");
+                          openAffiliateLink(racket.affiliateLink || racket.titleUrl || "#", {
+                            racketId: racket.id, brand: racket.brand, model: racket.model,
+                            partner: "padel_nuestro", source: "racket_card",
+                            price: Number(racket.currentPrice), inStock: racket.inStock,
+                          });
                         }}
                         data-testid={`button-buy-now-pn-${racket.id}`}
                       >
@@ -161,7 +192,11 @@ export function RacketCard({ racket }: RacketCardProps) {
                         className="w-full sm:w-auto"
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.open(racket.padelMarketAffiliateLink || "#", "_blank", "noopener,noreferrer");
+                          openAffiliateLink(racket.padelMarketAffiliateLink || "#", {
+                            racketId: racket.id, brand: racket.brand, model: racket.model,
+                            partner: "padel_market", source: "racket_card",
+                            price: Number(racket.currentPrice), inStock: racket.padelMarketInStock,
+                          });
                         }}
                         data-testid={`button-buy-now-pm-${racket.id}`}
                       >
