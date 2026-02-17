@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import type { Racket } from "@shared/schema";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/jwtAuth.js";
 import { validateAdminCredentials, generateToken, verifyToken, isAdminEmail } from "./lib/jwt.js";
-import { generateRacketReview, estimateRacketRatings } from "./lib/openai.js";
+import { generateRacketReview, estimateRacketRatings, generateBrandArticle } from "./lib/openai.js";
 import {
   applyTranslationsToEntity,
   applyTranslationsToEntities,
@@ -124,6 +124,27 @@ const RACKET_REVIEW_TRANSLATABLE_FIELDS = [
 ] as const;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Normalize legacy racket slugs that duplicated the brand prefix
+  const normalizeRacketSlug = (slug: string): string => {
+    const lower = slug.toLowerCase().replace(/^-+|-+$/g, "");
+    const match = lower.match(/^([a-z0-9]+)-\1-(.+)$/);
+    if (match) {
+      return `${match[1]}-${match[2]}`.replace(/--+/g, "-");
+    }
+    return lower.replace(/--+/g, "-");
+  };
+
+  // Redirect legacy duplicated-brand racket URLs to the canonical slug
+  app.use((req, res, next) => {
+    if (req.method !== "GET") return next();
+    const match = req.path.match(/^\/rackets\/([a-z0-9]+)-\1-(.+)$/i);
+    if (!match) return next();
+
+    const normalizedSlug = normalizeRacketSlug(`${match[1]}-${match[2]}`);
+    const query = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
+    return res.redirect(301, `/rackets/${normalizedSlug}${query}`);
+  });
+
   // Authentication endpoints (JWT-based)
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -321,7 +342,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/rackets/slug/:slug", async (req, res) => {
     try {
-      const racket = await storage.getRacketBySlug(req.params.slug);
+      const requestedSlug = (req.params.slug || "").toLowerCase();
+      const normalizedSlug = normalizeRacketSlug(requestedSlug);
+
+      let racket = await storage.getRacketBySlug(normalizedSlug);
+      if (!racket && normalizedSlug !== requestedSlug) {
+        // Fallback to the raw slug in case other legacy variants exist
+        racket = await storage.getRacketBySlug(requestedSlug);
+      }
+
       if (!racket) {
         return res.status(404).json({ error: "Racket not found" });
       }
@@ -342,6 +371,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Cache individual rackets for 5 minutes (prices update frequently)
       setCacheHeaders(res, CACHE_RACKET, result);
+
+      // Hint canonical if the requested slug differs from the computed one
+      const canonicalSlug = getRacketSlug(racket);
+      if (canonicalSlug !== requestedSlug) {
+        const query = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
+        res.set("Link", `<${req.protocol}://${req.get("host")}/rackets/${canonicalSlug}${query}>; rel="canonical"`);
+      }
+
       res.json(result);
     } catch (error) {
       console.error("Error in GET /api/rackets/slug/:slug:", error);
@@ -401,6 +438,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch related rackets" });
+    }
+  });
+
+  // Price history endpoint
+  app.get("/api/rackets/:id/price-history", async (req, res) => {
+    try {
+      const history = await storage.getPriceHistory(req.params.id);
+      setCacheHeaders(res, CACHE_RACKET, history);
+      res.json(history);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch price history" });
     }
   });
 
@@ -749,131 +797,151 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function getRacketSlug(racket: { brand: string; model: string }): string {
     const brandSlug = racket.brand.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const modelSlug = racket.model.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-    return `${brandSlug}-${modelSlug}`;
+    const modelStartsWithBrand = modelSlug.startsWith(brandSlug);
+    const base = modelStartsWithBrand ? modelSlug : `${brandSlug}-${modelSlug}`;
+    return base.replace(/--+/g, "-").replace(/^-|-$/g, "");
   }
 
-  // Sitemap endpoint with hreflang support for multilingual SEO
+  // Sitemap with hreflang support, split into sub-sitemaps with 6-hour caching
   const SITEMAP_LOCALES = ['en', 'es', 'pt', 'it', 'fr'];
-  
+  const SITEMAP_CACHE_SECONDS = 6 * 60 * 60; // 6 hours
+  const sitemapCache = new Map<string, { xml: string; timestamp: number }>();
+
   function buildHrefLangLinks(baseUrl: string, path: string): string {
     let links = '';
     for (const locale of SITEMAP_LOCALES) {
       const href = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
       links += `    <xhtml:link rel="alternate" hreflang="${locale}" href="${href}" />\n`;
     }
-    // Add x-default pointing to English version
     links += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}${path}" />\n`;
     return links;
   }
 
+  function urlsetHeader(): string {
+    return '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
+  }
+
+  function buildUrlEntry(baseUrl: string, path: string, changefreq: string, priority: string, lastmod?: string): string {
+    let entries = '';
+    for (const locale of SITEMAP_LOCALES) {
+      const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+      entries += `  <url>\n    <loc>${loc}</loc>\n`;
+      if (lastmod) entries += `    <lastmod>${lastmod}</lastmod>\n`;
+      entries += `    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n`;
+      entries += buildHrefLangLinks(baseUrl, path);
+      entries += `  </url>\n`;
+    }
+    return entries;
+  }
+
+  function sendCachedSitemap(res: Response, cacheKey: string, generator: () => Promise<string>) {
+    const cached = sitemapCache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < SITEMAP_CACHE_SECONDS * 1000) {
+      res.set('Content-Type', 'application/xml');
+      res.set('Cache-Control', `public, max-age=${SITEMAP_CACHE_SECONDS}`);
+      return res.send(cached.xml);
+    }
+    return generator().then(xml => {
+      sitemapCache.set(cacheKey, { xml, timestamp: Date.now() });
+      res.set('Content-Type', 'application/xml');
+      res.set('Cache-Control', `public, max-age=${SITEMAP_CACHE_SECONDS}`);
+      res.send(xml);
+    });
+  }
+
+  // Sitemap index - points to sub-sitemaps
   app.get("/sitemap.xml", async (req, res) => {
     try {
       const baseUrl = req.protocol + "://" + req.get("host");
-      const rackets = await storage.getAllRackets();
-      const brands = await storage.getAllBrands();
-      const guides = await storage.getAllGuides();
-      const blogPosts = await storage.getAllBlogPosts();
-
-      // Build sitemap XML with xhtml namespace for hreflang
-      let sitemap = '<?xml version="1.0" encoding="UTF-8"?>\n';
-      sitemap += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">\n';
-
-      // Homepage (with all language variants)
-      for (const locale of SITEMAP_LOCALES) {
-        const loc = locale === 'en' ? `${baseUrl}/` : `${baseUrl}/?lang=${locale}`;
-        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>1.0</priority>\n`;
-        sitemap += buildHrefLangLinks(baseUrl, '/');
-        sitemap += `  </url>\n`;
+      const now = new Date().toISOString().split('T')[0];
+      let index = '<?xml version="1.0" encoding="UTF-8"?>\n';
+      index += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
+      for (const type of ['pages', 'rackets', 'brands', 'guides', 'blog']) {
+        index += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${type}.xml</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>\n`;
       }
-
-      // Rackets listing page (with all language variants)
-      for (const locale of SITEMAP_LOCALES) {
-        const loc = locale === 'en' ? `${baseUrl}/rackets` : `${baseUrl}/rackets?lang=${locale}`;
-        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.9</priority>\n`;
-        sitemap += buildHrefLangLinks(baseUrl, '/rackets');
-        sitemap += `  </url>\n`;
-      }
-
-      // Individual racket pages (with all language variants)
-      for (const racket of rackets) {
-        const slug = getRacketSlug(racket);
-        const path = `/rackets/${slug}`;
-        const lastmod = racket.updatedAt ? new Date(racket.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        for (const locale of SITEMAP_LOCALES) {
-          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
-          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
-          sitemap += buildHrefLangLinks(baseUrl, path);
-          sitemap += `  </url>\n`;
-        }
-      }
-
-      // Brands listing page (with all language variants)
-      for (const locale of SITEMAP_LOCALES) {
-        const loc = locale === 'en' ? `${baseUrl}/brands` : `${baseUrl}/brands?lang=${locale}`;
-        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
-        sitemap += buildHrefLangLinks(baseUrl, '/brands');
-        sitemap += `  </url>\n`;
-      }
-
-      // Individual brand pages (with all language variants)
-      for (const brand of brands) {
-        const path = `/brands/${brand.slug}`;
-        const lastmod = brand.createdAt ? new Date(brand.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        for (const locale of SITEMAP_LOCALES) {
-          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
-          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.7</priority>\n`;
-          sitemap += buildHrefLangLinks(baseUrl, path);
-          sitemap += `  </url>\n`;
-        }
-      }
-
-      // Guides listing page (with all language variants)
-      for (const locale of SITEMAP_LOCALES) {
-        const loc = locale === 'en' ? `${baseUrl}/guides` : `${baseUrl}/guides?lang=${locale}`;
-        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>weekly</changefreq>\n    <priority>0.8</priority>\n`;
-        sitemap += buildHrefLangLinks(baseUrl, '/guides');
-        sitemap += `  </url>\n`;
-      }
-
-      // Individual guide pages (with all language variants)
-      for (const guide of guides) {
-        const path = `/guides/${guide.slug}`;
-        const lastmod = guide.updatedAt ? new Date(guide.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        for (const locale of SITEMAP_LOCALES) {
-          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
-          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n`;
-          sitemap += buildHrefLangLinks(baseUrl, path);
-          sitemap += `  </url>\n`;
-        }
-      }
-
-      // Blog listing page (with all language variants)
-      for (const locale of SITEMAP_LOCALES) {
-        const loc = locale === 'en' ? `${baseUrl}/blog` : `${baseUrl}/blog?lang=${locale}`;
-        sitemap += `  <url>\n    <loc>${loc}</loc>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n`;
-        sitemap += buildHrefLangLinks(baseUrl, '/blog');
-        sitemap += `  </url>\n`;
-      }
-
-      // Individual blog post pages (with all language variants)
-      for (const post of blogPosts) {
-        const path = `/blog/${post.slug}`;
-        const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-        for (const locale of SITEMAP_LOCALES) {
-          const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
-          sitemap += `  <url>\n    <loc>${loc}</loc>\n    <lastmod>${lastmod}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.7</priority>\n`;
-          sitemap += buildHrefLangLinks(baseUrl, path);
-          sitemap += `  </url>\n`;
-        }
-      }
-
-      sitemap += '</urlset>';
-
+      index += '</sitemapindex>';
       res.set('Content-Type', 'application/xml');
-      res.send(sitemap);
+      res.set('Cache-Control', `public, max-age=${SITEMAP_CACHE_SECONDS}`);
+      res.send(index);
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate sitemap" });
+      res.status(500).json({ error: "Failed to generate sitemap index" });
     }
+  });
+
+  // Sub-sitemap: static pages
+  app.get("/sitemap-pages.xml", async (req, res) => {
+    sendCachedSitemap(res, 'pages', async () => {
+      const baseUrl = req.protocol + "://" + req.get("host");
+      let xml = urlsetHeader();
+      xml += buildUrlEntry(baseUrl, '/', 'daily', '1.0');
+      xml += buildUrlEntry(baseUrl, '/rackets', 'daily', '0.9');
+      xml += buildUrlEntry(baseUrl, '/brands', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/guides', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/blog', 'daily', '0.8');
+      xml += '</urlset>';
+      return xml;
+    });
+  });
+
+  // Sub-sitemap: rackets
+  app.get("/sitemap-rackets.xml", async (req, res) => {
+    sendCachedSitemap(res, 'rackets', async () => {
+      const baseUrl = req.protocol + "://" + req.get("host");
+      const allRackets = await storage.getAllRackets();
+      let xml = urlsetHeader();
+      for (const racket of allRackets) {
+        const slug = getRacketSlug(racket);
+        const lastmod = racket.updatedAt ? new Date(racket.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        xml += buildUrlEntry(baseUrl, `/rackets/${slug}`, 'weekly', '0.8', lastmod);
+      }
+      xml += '</urlset>';
+      return xml;
+    });
+  });
+
+  // Sub-sitemap: brands
+  app.get("/sitemap-brands.xml", async (req, res) => {
+    sendCachedSitemap(res, 'brands', async () => {
+      const baseUrl = req.protocol + "://" + req.get("host");
+      const allBrands = await storage.getAllBrands();
+      let xml = urlsetHeader();
+      for (const brand of allBrands) {
+        const lastmod = brand.createdAt ? new Date(brand.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        xml += buildUrlEntry(baseUrl, `/brands/${brand.slug}`, 'weekly', '0.7', lastmod);
+      }
+      xml += '</urlset>';
+      return xml;
+    });
+  });
+
+  // Sub-sitemap: guides
+  app.get("/sitemap-guides.xml", async (req, res) => {
+    sendCachedSitemap(res, 'guides', async () => {
+      const baseUrl = req.protocol + "://" + req.get("host");
+      const allGuides = await storage.getAllGuides();
+      let xml = urlsetHeader();
+      for (const guide of allGuides) {
+        const lastmod = guide.updatedAt ? new Date(guide.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        xml += buildUrlEntry(baseUrl, `/guides/${guide.slug}`, 'monthly', '0.7', lastmod);
+      }
+      xml += '</urlset>';
+      return xml;
+    });
+  });
+
+  // Sub-sitemap: blog posts
+  app.get("/sitemap-blog.xml", async (req, res) => {
+    sendCachedSitemap(res, 'blog', async () => {
+      const baseUrl = req.protocol + "://" + req.get("host");
+      const allPosts = await storage.getAllBlogPosts();
+      let xml = urlsetHeader();
+      for (const post of allPosts) {
+        const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+        xml += buildUrlEntry(baseUrl, `/blog/${post.slug}`, 'monthly', '0.7', lastmod);
+      }
+      xml += '</urlset>';
+      return xml;
+    });
   });
 
   // Admin CRUD endpoints for rackets
@@ -1032,6 +1100,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(brand);
     } catch (error) {
       res.status(500).json({ error: "Failed to update brand" });
+    }
+  });
+
+  // Generate brand article with AI
+  app.post("/api/admin/brands/:id/generate-article", requireAdmin, async (req, res) => {
+    try {
+      const brand = await storage.getBrandById(req.params.id);
+      if (!brand) {
+        return res.status(404).json({ error: "Brand not found" });
+      }
+
+      const brandRackets = await storage.getRacketsByBrand(brand.name);
+      const article = await generateBrandArticle(brand, brandRackets);
+      if (!article) {
+        return res.status(500).json({ error: "Failed to generate article" });
+      }
+
+      const updated = await storage.updateBrand(brand.id, { articleContent: article });
+      res.json({ success: true, brand: updated });
+    } catch (error) {
+      console.error("Error generating brand article:", error);
+      res.status(500).json({ error: "Failed to generate brand article" });
     }
   });
 
@@ -1504,6 +1594,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error bulk publishing rackets:", error);
       res.status(500).json({ error: "Failed to publish rackets" });
+    }
+  });
+
+  // Newsletter subscribe endpoint
+  app.post("/api/subscribe", async (req, res) => {
+    try {
+      const { email, source } = req.body;
+
+      if (!email || typeof email !== "string") {
+        return res.status(400).json({ error: "Email is required" });
+      }
+
+      // Basic email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        return res.status(400).json({ error: "Invalid email address" });
+      }
+
+      const validSources = ["homepage", "review_page", "footer"];
+      const subscriberSource = validSources.includes(source) ? source : "homepage";
+
+      // Check if already subscribed
+      const existing = await storage.getEmailSubscriberByEmail(email.trim().toLowerCase());
+      if (existing) {
+        return res.json({ success: true, message: "Already subscribed" });
+      }
+
+      await storage.createEmailSubscriber({
+        email: email.trim().toLowerCase(),
+        source: subscriberSource,
+      });
+
+      res.json({ success: true, message: "Successfully subscribed" });
+    } catch (error) {
+      console.error("Error subscribing:", error);
+      res.status(500).json({ error: "Failed to subscribe" });
     }
   });
 

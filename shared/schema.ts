@@ -3,6 +3,14 @@ import { pgTable, text, varchar, integer, decimal, timestamp, jsonb, uniqueIndex
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Canonical enum values for category fields
+export const GAME_LEVELS = ["Beginner", "Intermediate", "Advanced", "Professional"] as const;
+export const GAME_TYPES = ["Power", "Control", "Balance", "All-around"] as const;
+export const BALANCE_VALUES = ["Low", "Mid", "Mid-High", "High"] as const;
+export const HARDNESS_VALUES = ["Soft", "Medium", "Hard"] as const;
+export const PLAYER_VALUES = ["Man", "Woman", "Both"] as const;
+export const SHAPE_VALUES = ["diamond", "round", "teardrop", "hybrid"] as const;
+
 // Authors table
 export const authors = pgTable("authors", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -147,7 +155,7 @@ export const excelRacketSchema = z.object({
   brand: z.string().min(1),
   model: z.string().min(1),
   year: z.number().int().min(2000).max(2030),
-  shape: z.enum(["diamond", "round", "teardrop"]),
+  shape: z.enum(SHAPE_VALUES),
   // Ratings are optional with default value of 50 (neutral)
   powerRating: z.number().int().min(0).max(100).default(50),
   controlRating: z.number().int().min(0).max(100).default(50),
@@ -160,19 +168,19 @@ export const excelRacketSchema = z.object({
   affiliateLink: z.string().optional(),
   titleUrl: z.string().optional(),
   reviewContent: z.string().optional(),
-  // Specification fields (all optional)
+  // Specification fields (all optional, validated enums where applicable)
   color: z.string().optional(),
-  balance: z.string().optional(),
+  balance: z.enum(BALANCE_VALUES).optional(),
   surface: z.string().optional(),
-  hardness: z.string().optional(),
+  hardness: z.enum(HARDNESS_VALUES).optional(),
   finish: z.string().optional(),
   playersCollection: z.string().optional(),
   product: z.string().optional(),
   core: z.string().optional(),
   format: z.string().optional(),
-  gameLevel: z.string().optional(),
-  gameType: z.string().optional(),
-  player: z.enum(["man", "woman", "both"]).optional(),
+  gameLevel: z.enum(GAME_LEVELS).optional(),
+  gameType: z.enum(GAME_TYPES).optional(),
+  player: z.enum(PLAYER_VALUES).optional(),
 });
 
 export type ExcelRacket = z.infer<typeof excelRacketSchema>;
@@ -239,3 +247,38 @@ export const cjSyncSettings = pgTable("cj_sync_settings", {
 });
 
 export type CjSyncSettings = typeof cjSyncSettings.$inferSelect;
+
+// Email subscribers table
+export const emailSubscribers = pgTable("email_subscribers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  source: text("source").notNull(), // homepage, review_page, footer
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+  unsubscribedAt: timestamp("unsubscribed_at"),
+});
+
+export const insertEmailSubscriberSchema = createInsertSchema(emailSubscribers).omit({
+  id: true,
+  subscribedAt: true,
+  unsubscribedAt: true,
+});
+
+export type InsertEmailSubscriber = z.infer<typeof insertEmailSubscriberSchema>;
+export type EmailSubscriber = typeof emailSubscribers.$inferSelect;
+
+// Price history table
+export const priceHistory = pgTable("price_history", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  racketId: varchar("racket_id").notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+  source: text("source").notNull(), // cj_feed, padel_market_feed, manual
+  recordedAt: timestamp("recorded_at").defaultNow().notNull(),
+});
+
+export const insertPriceHistorySchema = createInsertSchema(priceHistory).omit({
+  id: true,
+  recordedAt: true,
+});
+
+export type InsertPriceHistory = z.infer<typeof insertPriceHistorySchema>;
+export type PriceHistory = typeof priceHistory.$inferSelect;

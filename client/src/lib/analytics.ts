@@ -5,7 +5,7 @@ declare global {
 }
 
 type AffiliatePartner = "padel_nuestro" | "padel_market";
-type ClickSource = "racket_card" | "racket_detail" | "racket_detail_sidebar" | "racket_detail_sticky" | "mentioned_rackets";
+type ClickSource = "racket_card" | "racket_detail" | "racket_detail_sidebar" | "racket_detail_sticky" | "mentioned_rackets" | "comparison";
 
 interface AffiliateClickParams {
   racketId: string;

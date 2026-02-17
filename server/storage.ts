@@ -9,6 +9,10 @@ import {
   type InsertBrand,
   type Author,
   type InsertAuthor,
+  type EmailSubscriber,
+  type InsertEmailSubscriber,
+  type PriceHistory,
+  type InsertPriceHistory,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -62,6 +66,14 @@ export interface IStorage {
   getRacketsByAuthor(authorId: string): Promise<Racket[]>;
   getBlogPostsByAuthor(authorId: string): Promise<BlogPost[]>;
   createAuthor(author: InsertAuthor): Promise<Author>;
+
+  // Email Subscribers
+  createEmailSubscriber(subscriber: InsertEmailSubscriber): Promise<EmailSubscriber>;
+  getEmailSubscriberByEmail(email: string): Promise<EmailSubscriber | undefined>;
+
+  // Price History
+  createPriceHistoryEntry(entry: InsertPriceHistory): Promise<PriceHistory>;
+  getPriceHistory(racketId: string, limit?: number): Promise<PriceHistory[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -70,6 +82,8 @@ export class MemStorage implements IStorage {
   private blogPosts: Map<string, BlogPost>;
   private brands: Map<string, Brand>;
   private authors: Map<string, Author>;
+  private emailSubscribers: Map<string, EmailSubscriber>;
+  private priceHistoryEntries: Map<string, PriceHistory>;
 
   constructor() {
     this.rackets = new Map();
@@ -77,6 +91,8 @@ export class MemStorage implements IStorage {
     this.blogPosts = new Map();
     this.brands = new Map();
     this.authors = new Map();
+    this.emailSubscribers = new Map();
+    this.priceHistoryEntries = new Map();
     
     // Initialize with some sample data
     this.seedData();
@@ -1166,6 +1182,44 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
     this.authors.set(id, author);
     return author;
+  }
+
+  // Email Subscriber methods
+  async createEmailSubscriber(insertSubscriber: InsertEmailSubscriber): Promise<EmailSubscriber> {
+    const id = randomUUID();
+    const subscriber: EmailSubscriber = {
+      ...insertSubscriber,
+      id,
+      subscribedAt: new Date(),
+      unsubscribedAt: null,
+    };
+    this.emailSubscribers.set(id, subscriber);
+    return subscriber;
+  }
+
+  async getEmailSubscriberByEmail(email: string): Promise<EmailSubscriber | undefined> {
+    return Array.from(this.emailSubscribers.values()).find(
+      s => s.email.toLowerCase() === email.toLowerCase()
+    );
+  }
+
+  // Price History methods
+  async createPriceHistoryEntry(entry: InsertPriceHistory): Promise<PriceHistory> {
+    const id = randomUUID();
+    const record: PriceHistory = {
+      ...entry,
+      id,
+      recordedAt: new Date(),
+    };
+    this.priceHistoryEntries.set(id, record);
+    return record;
+  }
+
+  async getPriceHistory(racketId: string, limit: number = 90): Promise<PriceHistory[]> {
+    return Array.from(this.priceHistoryEntries.values())
+      .filter(e => e.racketId === racketId)
+      .sort((a, b) => new Date(a.recordedAt).getTime() - new Date(b.recordedAt).getTime())
+      .slice(-limit);
   }
 }
 

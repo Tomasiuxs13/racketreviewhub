@@ -3,16 +3,21 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RatingMetrics } from "./RatingBar";
-import { ExternalLink, CheckCircle } from "lucide-react";
+import { ExternalLink, CheckCircle, GitCompareArrows } from "lucide-react";
 import type { Racket } from "@shared/schema";
 import { getRacketSlug } from "@/lib/utils";
 import { openAffiliateLink } from "@/lib/analytics";
+import { useCompare } from "@/hooks/useCompare";
 
 interface RacketCardProps {
   racket: Racket;
 }
 
 export function RacketCard({ racket }: RacketCardProps) {
+  const { addToCompare, removeFromCompare, isInCompare } = useCompare();
+  const racketSlug = getRacketSlug(racket);
+  const inCompare = isInCompare(racketSlug);
+
   const discountPercentage = racket.originalPrice
     ? Math.round(((Number(racket.originalPrice) - Number(racket.currentPrice)) / Number(racket.originalPrice)) * 100)
     : 0;
@@ -46,6 +51,28 @@ export function RacketCard({ racket }: RacketCardProps) {
                 </div>
               )}
             </div>
+
+            {/* Compare Toggle */}
+            <button
+              className={`absolute top-3 left-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                inCompare
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-background/80 backdrop-blur-sm text-muted-foreground hover:bg-background hover:text-foreground"
+              }`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (inCompare) {
+                  removeFromCompare(racketSlug);
+                } else {
+                  addToCompare(racketSlug);
+                }
+              }}
+              aria-label={inCompare ? "Remove from comparison" : "Add to comparison"}
+              title={inCompare ? "Remove from comparison" : "Compare"}
+            >
+              <GitCompareArrows className="h-4 w-4" />
+            </button>
 
             {/* Overall Rating Badge */}
             <div className="absolute top-3 right-3">

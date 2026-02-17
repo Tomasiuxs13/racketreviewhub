@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RatingMetrics } from "@/components/RatingBar";
 import { ArrowLeft, ExternalLink, User } from "lucide-react";
 import { cleanReviewContent, getRacketSlug } from "@/lib/utils";
-import type { Racket, Author } from "@shared/schema";
+import type { Racket, Author, Guide } from "@shared/schema";
 import SEO from "@/components/SEO";
 import { StructuredData } from "@/components/StructuredData";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
@@ -17,6 +17,8 @@ import { useMemo, useEffect } from "react";
 import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 import { trackAffiliateClick } from "@/lib/analytics";
+import { PriceHistoryChart } from "@/components/PriceHistoryChart";
+import { ShareButtons } from "@/components/ShareButtons";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -68,6 +70,12 @@ export default function RacketDetailPage() {
   const author = racket?.authorId
     ? authors?.find((a) => a.id === racket.authorId)
     : null;
+
+  // Fetch recent guides for internal linking
+  const { data: recentGuides } = useLocalizedQuery<Guide[]>({
+    queryKey: ["/api/guides/recent"],
+    enabled: !!racket,
+  });
 
   const { locale, t } = useI18n();
 
@@ -458,7 +466,9 @@ export default function RacketDetailPage() {
             {/* Title & Brand */}
             <div>
               <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge data-testid="badge-brand">{racket.brand}</Badge>
+                <Link href={`/brands/${racket.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
+                  <Badge className="cursor-pointer hover:bg-primary/80" data-testid="badge-brand">{racket.brand}</Badge>
+                </Link>
                 <Badge variant="secondary">{racket.year}</Badge>
                 {racket.year >= new Date().getFullYear() && (
                   <Badge variant="outline">New</Badge>
@@ -491,6 +501,11 @@ export default function RacketDetailPage() {
                   </Link>
                 )}
               </div>
+              {/* Share Buttons */}
+              <ShareButtons
+                title={`${racket.brand} ${racket.model} Review`}
+                url={`/rackets/${getRacketSlug(racket)}`}
+              />
             </div>
 
             {/* Overall Rating */}
@@ -668,8 +683,31 @@ export default function RacketDetailPage() {
                 </dl>
               </CardContent>
             </Card>
+
+            {/* Price History Chart */}
+            <PriceHistoryChart racketId={racket.id} currentPrice={racket.currentPrice} />
           </div>
         </div>
+
+        {/* Related Guides */}
+        {recentGuides && recentGuides.length > 0 && (
+          <div className="mb-12">
+            <h2 className="font-heading font-semibold text-2xl mb-4">Helpful Guides</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentGuides.slice(0, 3).map((guide) => (
+                <Link key={guide.id} href={`/guides/${guide.slug}`}>
+                  <Card className="h-full hover-elevate active-elevate-2 transition-all cursor-pointer">
+                    <CardContent className="p-4">
+                      <Badge variant="secondary" className="mb-2 text-xs">{guide.category}</Badge>
+                      <h3 className="font-semibold line-clamp-2 mb-1">{guide.title}</h3>
+                      <p className="text-sm text-muted-foreground line-clamp-2">{guide.excerpt}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Related Rackets */}
               {relatedRackets && relatedRackets.length > 0 && (

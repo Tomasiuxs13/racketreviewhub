@@ -6,8 +6,11 @@
 
 import { storage } from "../storage.js";
 import { estimateRacketRatings, generateRacketReview } from "../lib/openai.js";
-import { type CjFeedProduct } from "@shared/schema";
+import { checkPublishQualityGates } from "../lib/qualityGates.js";
+import { type CjFeedProduct, SHAPE_VALUES } from "@shared/schema";
 import { parseCjPrice, extractModelFromTitle } from "./cjFeedSync.js";
+
+type ShapeValue = typeof SHAPE_VALUES[number];
 
 export interface ProcessingResult {
   success: boolean;
@@ -69,22 +72,25 @@ function normalizeModel(model: string): string {
 }
 
 /**
- * Estimate racket shape based on description and title
+ * Estimate racket shape based on description and title.
+ * Returns a valid SHAPE_VALUES enum value.
  */
-function estimateShape(product: CjFeedProduct): "diamond" | "round" | "teardrop" {
+function estimateShape(product: CjFeedProduct): ShapeValue {
   const text = `${product.TITLE} ${product.DESCRIPTION || ""}`.toLowerCase();
-  
-  // Check for shape keywords
+
   if (text.includes("diamond") || text.includes("diamante")) {
     return "diamond";
   }
   if (text.includes("round") || text.includes("redonda") || text.includes("control")) {
     return "round";
   }
-  if (text.includes("teardrop") || text.includes("lágrima") || text.includes("hybrid") || text.includes("versatile")) {
+  if (text.includes("hybrid") || text.includes("híbrida")) {
+    return "hybrid";
+  }
+  if (text.includes("teardrop") || text.includes("lágrima") || text.includes("versatile")) {
     return "teardrop";
   }
-  
+
   // Default to teardrop for balanced performance
   return "teardrop";
 }
@@ -282,6 +288,20 @@ async function processProduct(
       }
 
       await storage.updateRacket(existingRacket.id, updateData);
+
+      // Record price history when price changes
+      if (priceChanged && updateData.currentPrice) {
+        try {
+          await storage.createPriceHistoryEntry({
+            racketId: existingRacket.id,
+            price: updateData.currentPrice,
+            source: "cj_feed",
+          });
+        } catch (e) {
+          console.warn(`[CJ-Processor] Failed to record price history for ${brand} ${model}`);
+        }
+      }
+
       console.log(`[CJ-Processor] Updated: ${brand} ${model} - Changes: ${changes.join(", ")}`);
       return { action: "updated", feedProductId };
     } else {
@@ -325,6 +345,17 @@ async function processProduct(
 
       const newRacket = await storage.createRacket(createData);
 
+      // Record initial price in history
+      try {
+        await storage.createPriceHistoryEntry({
+          racketId: newRacket.id,
+          price: currentPrice.toFixed(2),
+          source: "cj_feed",
+        });
+      } catch (e) {
+        console.warn(`[CJ-Processor] Failed to record initial price for ${brand} ${model}`);
+      }
+
       // Generate review with ChatGPT
       if (generateReviews && newRacket) {
         try {
@@ -333,6 +364,18 @@ async function processProduct(
             await storage.updateRacket(newRacket.id, {
               reviewContent: reviewResult.reviewContent,
             });
+
+            // Auto-publish if quality gates pass
+            const updatedRacket = await storage.getRacket(newRacket.id);
+            if (updatedRacket) {
+              const qualityResult = checkPublishQualityGates(updatedRacket);
+              if (qualityResult.passes) {
+                await storage.updateRacket(newRacket.id, { isPublished: true });
+                console.log(`[CJ-Processor] Auto-published: ${brand} ${model} (passed quality gates)`);
+              } else {
+                console.log(`[CJ-Processor] Quality gate failed for ${brand} ${model}: ${qualityResult.failures.join(", ")}`);
+              }
+            }
           }
         } catch (reviewError) {
           console.warn(`[CJ-Processor] Review generation failed for ${brand} ${model}`);

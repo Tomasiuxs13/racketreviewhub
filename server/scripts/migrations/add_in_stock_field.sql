@@ -12,3 +12,5 @@ CREATE INDEX IF NOT EXISTS idx_rackets_in_stock ON rackets(in_stock);
 -- Optionally, create a composite index for common query patterns
 CREATE INDEX IF NOT EXISTS idx_rackets_published_in_stock ON rackets(is_published, in_stock);
 
+
+

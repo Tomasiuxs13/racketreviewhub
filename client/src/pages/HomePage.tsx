@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Star, TrendingUp, Shield } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Racket, Guide } from "@shared/schema";
 import heroImage from "@assets/generated_images/Padel_court_hero_background_fd7eb556.png";
@@ -207,17 +208,36 @@ export default function HomePage() {
           <p className="text-lg sm:text-xl text-primary-foreground/90 mb-8">
             {t("home.cta.subtitle")}
           </p>
-          <Link href="/guides/best-padel-rackets-for-beginners-2025">
-            <Button
-              size="lg"
-              variant="secondary"
-              className="bg-white text-primary hover:bg-white/90"
-              data-testid="button-cta-beginner-guide"
-            >
-              {t("home.cta.button")}
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link href="/guides/best-padel-rackets-for-beginners-2025">
+              <Button
+                size="lg"
+                variant="secondary"
+                className="bg-white text-primary hover:bg-white/90"
+                data-testid="button-cta-beginner-guide"
+              >
+                {t("home.cta.button")}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <Link href="/quiz">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-white text-white hover:bg-white/10"
+              >
+                Take the Quiz
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-12 bg-muted/50">
+        <div className="max-w-xl mx-auto px-4 sm:px-6">
+          <NewsletterSignup source="homepage" />
         </div>
       </section>
 

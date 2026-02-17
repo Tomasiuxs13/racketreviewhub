@@ -5,12 +5,15 @@
  */
 
 import { storage } from "../storage.js";
-import { 
+import { SHAPE_VALUES } from "@shared/schema";
+import {
   type PadelMarketFeedProduct,
   extractBrandModelYear,
   normalizeYear,
   parsePadelMarketPrice,
 } from "./padelMarketFeedSync.js";
+
+type ShapeValue = typeof SHAPE_VALUES[number];
 
 export interface ProcessingResult {
   success: boolean;
@@ -67,22 +70,25 @@ function isSimilar(str1: string, str2: string, threshold: number = 0.8): boolean
 }
 
 /**
- * Estimate racket shape from product name/description
+ * Estimate racket shape from product name/description.
+ * Returns a valid SHAPE_VALUES enum value.
  */
-function estimateShape(product: PadelMarketFeedProduct): "diamond" | "round" | "teardrop" {
+function estimateShape(product: PadelMarketFeedProduct): ShapeValue {
   const text = `${product.product_name} ${product.description || ""} ${product.product_short_description || ""}`.toLowerCase();
-  
-  // Check for shape keywords
+
   if (text.includes("diamond") || text.includes("diamante")) {
     return "diamond";
   }
   if (text.includes("round") || text.includes("redondo") || text.includes("control")) {
     return "round";
   }
+  if (text.includes("hybrid") || text.includes("híbrida")) {
+    return "hybrid";
+  }
   if (text.includes("teardrop") || text.includes("lágrima") || text.includes("drop")) {
     return "teardrop";
   }
-  
+
   // Default to teardrop (most common)
   return "teardrop";
 }
@@ -290,7 +296,20 @@ async function processProduct(
       
       // Update the racket (only Padel Market fields and price - never delete or modify other fields)
       await storage.updateRacket(existingRacket.id, updateData);
-      
+
+      // Record price history when price changes
+      if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) {
+        try {
+          await storage.createPriceHistoryEntry({
+            racketId: existingRacket.id,
+            price: updateData.currentPrice,
+            source: "padel_market_feed",
+          });
+        } catch (e) {
+          console.warn(`[PadelMarket-Processor] Failed to record price history for ${existingRacket.brand} ${existingRacket.model}`);
+        }
+      }
+
       const changes = [];
       if (updateData.padelMarketAffiliateLink) changes.push("link added");
       if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) {
@@ -347,7 +366,20 @@ async function processProduct(
         }
         
         await storage.updateRacket(potentialDuplicate.id, updateData);
-        
+
+        // Record price history when price changes
+        if (updateData.currentPrice && potentialDuplicate.currentPrice !== updateData.currentPrice) {
+          try {
+            await storage.createPriceHistoryEntry({
+              racketId: potentialDuplicate.id,
+              price: updateData.currentPrice,
+              source: "padel_market_feed",
+            });
+          } catch (e) {
+            console.warn(`[PadelMarket-Processor] Failed to record price history for ${potentialDuplicate.brand} ${potentialDuplicate.model}`);
+          }
+        }
+
         const duplicateChanges = [];
         if (updateData.padelMarketAffiliateLink) duplicateChanges.push("link added");
         if (updateData.currentPrice && potentialDuplicate.currentPrice !== updateData.currentPrice) {
@@ -388,7 +420,20 @@ async function processProduct(
       };
       
       const newRacket = await storage.createRacket(createData);
-      
+
+      // Record initial price in history
+      if (price > 0) {
+        try {
+          await storage.createPriceHistoryEntry({
+            racketId: newRacket.id,
+            price: price.toFixed(2),
+            source: "padel_market_feed",
+          });
+        } catch (e) {
+          console.warn(`[PadelMarket-Processor] Failed to record initial price for ${extracted.brand} ${extracted.model}`);
+        }
+      }
+
       console.log(`[PadelMarket-Processor] Created: ${extracted.brand} ${extracted.model} ${year} - Price: €${price.toFixed(2)} (pending review, isPublished=false)`);
       return { action: "created" };
     }

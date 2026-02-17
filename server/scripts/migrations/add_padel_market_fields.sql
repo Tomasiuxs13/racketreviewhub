@@ -26,3 +26,5 @@ ON rackets(padel_market_in_stock);
 CREATE INDEX IF NOT EXISTS idx_rackets_published_pm_stock 
 ON rackets(is_published, in_stock, padel_market_in_stock);
 
+
+

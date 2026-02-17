@@ -27,12 +27,13 @@
 
 import "dotenv/config";
 import { storage } from "../storage.js";
-import { 
-  generateRacketReview, 
+import {
+  generateRacketReview,
   estimateRacketRatings,
-  translateReviewLocales, 
-  REVIEW_TRANSLATION_LOCALES 
+  translateReviewLocales,
+  REVIEW_TRANSLATION_LOCALES
 } from "../lib/openai.js";
+import { checkPublishQualityGates } from "../lib/qualityGates.js";
 import type { Racket } from "@shared/schema";
 import OpenAI from "openai";
 
@@ -107,19 +108,21 @@ Return ONLY a JSON object with these exact keys (use null for fields that cannot
 ${missingFields.map(field => `  "${field}": <string value or null>`).join(",\n")}
 }
 
-Common values:
-- Balance: "Low", "Mid", "Top", "High"
+IMPORTANT: You MUST use ONLY these exact values for the following fields:
+- Balance: "Low", "Mid", "Mid-High", "High" (pick exactly one)
+- Hardness: "Soft", "Medium", "Hard" (pick exactly one)
+- Game Level: "Beginner", "Intermediate", "Advanced", "Professional" (pick exactly one)
+- Game Type: "Power", "Control", "Balance", "All-around" (pick exactly one)
+- Player: "Man", "Woman", "Both" (pick exactly one)
+
+Other fields with suggested values:
 - Surface: "Smooth", "Rough", "Rough (Topspin)", "Rough (3D Grain)"
-- Hardness: "Soft", "Medium", "Hard"
 - Finish: "Glossy", "Matte", "Rough", "Smooth"
 - Core: "EVA Soft", "EVA Medium", "MultiEVA", "Power Foam", "Control Foam", "High Memory"
-- Game Level: "Beginner", "Intermediate", "Advanced", "Professional", "Normal", "Medium"
-- Game Type: "Power", "Control", "Balance", "All-around"
-- Player: "Man", "Woman", "Both"
 - Color: Describe the main color(s)`;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
+      model: process.env.OPENAI_MODEL || "gpt-4o",
       messages: [
         {
           role: "user",
@@ -168,6 +171,7 @@ const options = {
   skipSpecs: args.includes("--skip-specs"),
   skipReviews: args.includes("--skip-reviews"),
   skipTranslations: args.includes("--skip-translations"),
+  skipQualityCheck: args.includes("--skip-quality-check"),
   limit: args.includes("--limit") ? parseInt(args[args.indexOf("--limit") + 1], 10) : undefined,
   startFrom: args.includes("--start-from") ? parseInt(args[args.indexOf("--start-from") + 1], 10) : undefined,
 };
@@ -221,6 +225,7 @@ async function publishAllPendingRackets() {
   let reviewGeneratedCount = 0;
   let translationGeneratedCount = 0;
   let skippedCount = 0;
+  let qualityGateFailedCount = 0;
   let errorCount = 0;
 
   for (let i = 0; i < racketsToProcess.length; i++) {
@@ -364,7 +369,25 @@ async function publishAllPendingRackets() {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      // 5. Publish the racket
+      // 5. Quality gate check before publishing
+      if (!options.skipQualityCheck) {
+        // Build a merged view of the racket with pending updates for quality check
+        const racketForCheck = { ...updatedRacket, ...updateData, reviewContent: reviewContent || updatedRacket.reviewContent } as Racket;
+        const qualityResult = checkPublishQualityGates(racketForCheck);
+        if (!qualityResult.passes) {
+          console.warn(`${progress} ⚠️  Quality gate FAILED for ${racket.brand} ${racket.model} ${racket.year}:`);
+          qualityResult.failures.forEach(f => console.warn(`     - ${f}`));
+          console.warn(`     Skipping publish. Use --skip-quality-check to override.`);
+          // Still save generated content (ratings, specs, review) but don't publish
+          if (Object.keys(updateData).length > 0) {
+            await storage.updateRacket(racket.id, updateData);
+          }
+          qualityGateFailedCount++;
+          continue;
+        }
+      }
+
+      // 6. Publish the racket
       updateData.isPublished = true;
 
       const finalRacket = await storage.updateRacket(racket.id, updateData);
@@ -406,6 +429,7 @@ async function publishAllPendingRackets() {
   console.log(`  📋 Specifications filled: ${specsFilledCount}`);
   console.log(`  📝 Reviews generated: ${reviewGeneratedCount}`);
   console.log(`  🌐 Translations generated: ${translationGeneratedCount}`);
+  console.log(`  ⚠️  Quality gate failed: ${qualityGateFailedCount}`);
   console.log(`  ❌ Errors: ${errorCount}`);
   console.log(`  Total processed: ${racketsToProcess.length}`);
   console.log("=".repeat(60));

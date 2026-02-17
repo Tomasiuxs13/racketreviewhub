@@ -5,6 +5,7 @@ import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
+import { resolveSeoMeta, injectSeoMeta } from "./lib/seoInjector.js";
 
 const viteLogger = createLogger();
 
@@ -58,6 +59,14 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
+
+      // Inject server-side SEO meta tags for crawlers
+      const urlPath = url.split("?")[0];
+      const seoMeta = await resolveSeoMeta(urlPath);
+      if (seoMeta) {
+        template = injectSeoMeta(template, seoMeta);
+      }
+
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
@@ -80,8 +89,21 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // fall through to index.html with injected SEO meta tags
+  const indexHtml = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
+
+  app.use("*", async (req, res) => {
+    try {
+      const urlPath = req.originalUrl.split("?")[0];
+      const seoMeta = await resolveSeoMeta(urlPath);
+      if (seoMeta) {
+        const html = injectSeoMeta(indexHtml, seoMeta);
+        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+      } else {
+        res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+      }
+    } catch {
+      res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+    }
   });
 }

@@ -13,8 +13,8 @@ export const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o";
 // Use gpt-4o-mini for translations (cost-effective, better quality than gpt-3.5-turbo)
 export const OPENAI_TRANSLATION_MODEL = process.env.OPENAI_TRANSLATION_MODEL || "gpt-4o-mini";
 
-const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 6;
-const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 1800;
+const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 10;
+const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 4000;
 
 interface ReviewSection {
   id: string;
@@ -152,7 +152,18 @@ async function translateReviewHtml(content: string, locale: string): Promise<str
   }
 
   return sections
-    .map((section) => translations[section.id]?.trim() || section.text)
+    .map((section) => {
+      const translated = translations[section.id]?.trim();
+      if (!translated) return section.text;
+      // Validate HTML structure wasn't corrupted: check key tags are preserved
+      const originalH2Count = (section.text.match(/<h2>/gi) || []).length;
+      const translatedH2Count = (translated.match(/<h2>/gi) || []).length;
+      if (originalH2Count !== translatedH2Count) {
+        console.warn(`Translation HTML mismatch for ${section.id} in ${locale}: expected ${originalH2Count} <h2> tags, got ${translatedH2Count}. Using original.`);
+        return section.text;
+      }
+      return translated;
+    })
     .join("\n");
 }
 
@@ -218,149 +229,108 @@ const configuredReviewLocales = (process.env.REVIEW_TRANSLATION_LOCALES ?? DEFAU
 
 export const REVIEW_TRANSLATION_LOCALES = configuredReviewLocales;
 
-const REVIEW_TEMPLATE = `You are a professional padel racket reviewer. Write a comprehensive review article for a padel racket following this EXACT HTML structure. You MUST use HTML tags and maintain this structure consistently:
+// Dynamic review template builder - generates different templates based on racket characteristics
+// to avoid duplicate content across 1000+ rackets
+function buildReviewTemplate(racket: Partial<Racket>): string {
+  const price = Number(racket.currentPrice) || 0;
+  const shape = racket.shape?.toLowerCase() || "teardrop";
+  const gameLevel = racket.gameLevel?.toLowerCase() || "intermediate";
+  const gameType = racket.gameType?.toLowerCase() || "balance";
 
-<h2>Introduction</h2>
-<p>Start with an engaging introduction about the racket, mentioning the brand and model. Explain who this racket is best suited for based on its characteristics.</p>
+  // Determine racket tier for template variation
+  const tier = price >= 300 ? "premium" : price >= 150 ? "midrange" : "budget";
+  const isAdvanced = gameLevel === "advanced" || gameLevel === "professional";
+  const isPower = gameType === "power";
+  const isControl = gameType === "control";
 
-<h2>Understanding Padel Racket Shapes</h2>
-<p>Explain the shape of this racket (round, teardrop, or diamond) and what that means for performance:</p>
-<ul>
-<li><strong>Round Shape:</strong> Best for beginners and control-focused players. Maximum control and precision, larger sweet spot, lower balance point, less power but more consistent shots.</li>
-<li><strong>Teardrop Shape:</strong> Best for intermediate to advanced players seeking balance. Good mix of power and control, medium-sized sweet spot, versatile for all playing styles, medium balance point.</li>
-<li><strong>Diamond Shape:</strong> Best for advanced players seeking maximum power. Maximum power generation, smaller sweet spot requires precision, high balance point for aggressive play, demanding on technique.</li>
-</ul>
+  // Core sections that always appear (but with varied instructions)
+  const introSection = `<h2>Introduction</h2>
+<p>Write an engaging, unique introduction for this specific racket. Mention the brand heritage, what makes this model stand out in the ${racket.year || "current"} lineup, and who it's designed for. Be specific - reference actual specs like its ${shape} shape${racket.balance ? ` and ${racket.balance} balance` : ""}. Avoid generic padel introductions.</p>`;
 
-<h2>Pros and Cons</h2>
-<p>Based on the racket's specifications and characteristics, analyze and list the key advantages and disadvantages:</p>
+  const prosConsSection = `<h2>Pros and Cons</h2>
+<p>Analyze this specific racket's strengths and weaknesses based on its actual specifications. Be honest and specific.</p>
 <h3>Pros</h3>
 <ul>
-<li>Analyze the racket's strengths based on its shape, balance point, materials, and performance ratings</li>
-<li>Identify what player types will benefit most from these features</li>
-<li>Highlight any standout features like power rating, control rating, or unique specifications</li>
-<li>Mention value proposition if price is competitive</li>
-<li>Note any technical advantages or innovative features</li>
+<li>List 4-5 specific advantages derived from THIS racket's actual specs (shape, balance, core, surface, ratings)</li>
+<li>Explain WHY each feature is an advantage for the target player</li>
+<li>Reference specific performance ratings where relevant</li>
 </ul>
 <h3>Cons</h3>
 <ul>
-<li>Identify weaknesses or limitations based on the racket's characteristics</li>
-<li>Note who should avoid this racket (e.g., beginners for advanced rackets, or advanced players for beginner rackets)</li>
-<li>Mention any compromises in design (e.g., power vs control trade-offs)</li>
-<li>Consider physical demands or skill requirements</li>
-<li>Note any missing features or areas where competitors might excel</li>
-</ul>
+<li>List 3-4 honest limitations or trade-offs</li>
+<li>Explain which player types might find these problematic</li>
+<li>Be specific about compromises inherent in this racket's design choices</li>
+</ul>`;
 
-<h2>Weight Considerations</h2>
-<p>Discuss the weight characteristics of this racket and how it affects performance:</p>
-<ul>
-<li><strong>Light Rackets (350-360g):</strong> Easier to maneuver, less arm fatigue, good for beginners, generally less powerful.</li>
-<li><strong>Medium Weight (360-370g):</strong> Balance between power and maneuverability, most versatile option, suitable for most players.</li>
-<li><strong>Heavy Rackets (370-380g):</strong> More power on shots, better stability, requires more strength to control, best for advanced players.</li>
-</ul>
+  // Shape-specific deep dive (only about THIS racket's shape, not all shapes)
+  const shapeSection = `<h2>${shape.charAt(0).toUpperCase() + shape.slice(1)} Shape: What It Means for Your Game</h2>
+<p>Explain specifically how the ${shape} shape of this racket affects on-court performance. Discuss sweet spot size, power generation, and control characteristics. Compare to what players switching from other shapes should expect. Do NOT list all three shapes - focus only on the ${shape} shape and what it means for this particular racket.</p>`;
 
-<h2>Balance Point</h2>
-<p>Explain the balance point of this racket:</p>
-<ul>
-<li><strong>Low Balance:</strong> Weight concentrated in handle. Better control and precision, easier maneuverability, less power, ideal for beginners and control players.</li>
-<li><strong>Medium Balance:</strong> Weight distributed evenly. Balance between power and control, versatile performance, good for intermediate players.</li>
-<li><strong>High Balance:</strong> Weight concentrated in head. Maximum power, more demanding to control, best for advanced players.</li>
-</ul>
+  // Dynamic sections based on racket tier
+  const technologySection = tier === "premium"
+    ? `<h2>Technology and Innovation</h2>
+<p>Detail the specific technologies used in this ${racket.brand} racket. Discuss the ${racket.surface || "surface"} face, ${racket.core || "core"} technology, and frame construction. Explain how these technologies work together to deliver the racket's performance characteristics. Reference any proprietary technologies from ${racket.brand}.</p>`
+    : `<h2>Construction and Materials</h2>
+<p>Describe the materials and build quality of this racket. Discuss the ${racket.core || "core"} and ${racket.surface || "surface material"}, and how they contribute to the racket's performance at this price point. Be honest about material quality relative to the price.</p>`;
 
-<h2>Materials and Construction</h2>
-<p>Describe the materials and construction:</p>
-<ul>
-<li><strong>Frame Materials:</strong> Carbon Fiber (most common, excellent stiffness, responsiveness, durability), Fiberglass (less expensive, less responsive, entry-level).</li>
-<li><strong>Core Types:</strong> EVA Soft (softer core, excellent comfort and control, great for beginners), EVA Medium (balanced core, mix of power and control), MultiEVA (advanced core system with different densities, power while maintaining control), Foam (softer than EVA, maximum comfort but less power).</li>
-</ul>
+  // Playing style section (varies by game type)
+  const playStyleSection = isPower
+    ? `<h2>Maximizing Power: Playing Style Guide</h2>
+<p>This is a power-oriented racket. Explain the ideal playing style to get the most out of it. Discuss shot types that work best (smashes, bandejas, viboras), court positioning, and grip techniques. Offer specific advice for players transitioning to a power racket.</p>`
+    : isControl
+    ? `<h2>Control and Precision: Playing Style Guide</h2>
+<p>This is a control-focused racket. Explain how to leverage its precision for defensive and tactical play. Discuss shot placement, defensive lobs, and net play. Explain why control players will appreciate this racket's characteristics.</p>`
+    : `<h2>Versatile Performance: Playing Style Guide</h2>
+<p>This is an all-around racket. Explain how it adapts to different playing situations - from defensive rallies to attacking volleys. Discuss which play styles benefit most and how to adapt your game to this racket's balanced characteristics.</p>`;
 
-<h2>Skill Level Recommendations</h2>
-<p>Provide recommendations based on skill level:</p>
-<ul>
-<li><strong>Beginner Players:</strong> Round or teardrop shape, 350-365g weight, low to medium balance, EVA Soft core.</li>
-<li><strong>Intermediate Players:</strong> Teardrop shape, 360-370g weight, medium balance, EVA Soft or Medium core.</li>
-<li><strong>Advanced Players:</strong> Diamond or teardrop shape (depending on style), 365-380g weight, medium to high balance, MultiEVA or EVA Medium core.</li>
-</ul>
+  // Level-specific section
+  const levelSection = isAdvanced
+    ? `<h2>Advanced Player Perspective</h2>
+<p>Analyze this racket from an experienced player's viewpoint. Discuss how it handles at high-level play: spin generation, volley response, smash power, and consistency during intense rallies. Compare the feel to what advanced players typically expect from a ${shape}-shaped racket.</p>`
+    : `<h2>Who Should Buy This Racket?</h2>
+<p>Provide an honest assessment of the ideal player profile for this racket. Consider skill level, physical attributes, playing frequency, and style preferences. Be specific about who will love it and who should look elsewhere. Mention what players should already have in their game before choosing this racket.</p>`;
 
-<h2>Price Ranges</h2>
-<p>Discuss the price point:</p>
-<ul>
-<li><strong>Budget (€100-€200):</strong> Entry-level rackets suitable for beginners.</li>
-<li><strong>Mid-Range (€200-€300):</strong> Best value for most players. Carbon fiber frames, quality cores, good performance.</li>
-<li><strong>Premium (€300+):</strong> Top-tier rackets with advanced materials and technologies. Best for serious players.</li>
-</ul>
+  // Competitor context (always unique per racket)
+  const comparisonSection = `<h2>How It Compares</h2>
+<p>Without naming specific competitor models, discuss where this racket sits in the ${racket.brand} lineup and the broader ${tier} market segment. What does it offer that similar ${shape}-shaped, ${gameType || "all-around"}-oriented rackets in the €${price > 0 ? Math.floor(price / 50) * 50 + "-" + (Math.floor(price / 50) * 50 + 50) : "100-300"} range typically don't? What might competing options do better?</p>`;
 
-<h2>Key Factors to Consider</h2>
-<p>List important factors:</p>
-<ul>
-<li><strong>Your Skill Level:</strong> Match the racket to your current ability</li>
-<li><strong>Playing Style:</strong> Aggressive players may prefer power rackets, while control players should choose round or teardrop shapes</li>
-<li><strong>Physical Condition:</strong> Players with arm issues should prioritize lighter, softer rackets</li>
-<li><strong>Budget:</strong> Set a realistic budget and find the best racket within that range</li>
-<li><strong>Try Before You Buy:</strong> If possible, test rackets before purchasing</li>
-</ul>
+  const conclusionSection = `<h2>Final Verdict</h2>
+<p>Give a decisive, opinionated conclusion. State clearly whether you recommend this racket and for whom. Summarize the 2-3 most important things a buyer should know. End with a clear recommendation statement.</p>`;
 
-<h2>Common Mistakes to Avoid</h2>
-<p>List common mistakes:</p>
-<ul>
-<li><strong>Choosing a racket that's too advanced:</strong> Beginners should avoid diamond-shaped, high-balance rackets</li>
-<li><strong>Focusing only on price:</strong> The cheapest option isn't always the best value</li>
-<li><strong>Ignoring weight:</strong> A racket that's too heavy can cause arm fatigue and injury</li>
-<li><strong>Not considering your playing style:</strong> Match the racket to how you actually play</li>
-</ul>
+  return `You are an expert padel racket reviewer writing for an enthusiast audience. Write a unique, insightful review article using HTML formatting.
 
-<h2>Where to Buy</h2>
-<p>Mention where to purchase this racket:</p>
-<ul>
-<li>Specialized padel retailers (online and physical stores)</li>
-<li>Sports equipment stores</li>
-<li>Online marketplaces (Amazon, etc.)</li>
-<li>Brand websites</li>
-</ul>
-<p>Always check return policies and warranty information before purchasing.</p>
+IMPORTANT: Every review must be genuinely different. Do NOT use generic padel education content. Focus entirely on THIS specific racket's characteristics and how they translate to real-world performance.
 
-<h2>Maintenance Tips</h2>
-<p>Provide maintenance advice:</p>
-<ul>
-<li>Store your racket in a protective cover when not in use</li>
-<li>Avoid extreme temperatures</li>
-<li>Clean the racket surface regularly</li>
-<li>Replace the grip when it becomes worn</li>
-<li>Check for cracks or damage regularly</li>
-</ul>
+Required sections (use this exact HTML structure):
 
-<h2>Conclusion</h2>
-<p>End with a strong conclusion summarizing the racket's strengths and who should consider it. Provide a clear recommendation based on the racket's characteristics.</p>
+${introSection}
 
-CRITICAL HTML FORMATTING REQUIREMENTS - YOU MUST FOLLOW THESE EXACTLY:
-- Use <h2> tags for ALL section headings (Introduction, Understanding Padel Racket Shapes, Pros and Cons, Weight Considerations, etc.)
+${shapeSection}
+
+${prosConsSection}
+
+${technologySection}
+
+${playStyleSection}
+
+${levelSection}
+
+${comparisonSection}
+
+${conclusionSection}
+
+CRITICAL HTML FORMATTING REQUIREMENTS:
+- Use <h2> tags for ALL section headings
 - Use <h3> tags for Pros and Cons subsections
-- Use <p> tags for ALL paragraph text - wrap every paragraph in <p></p>
-- Use <ul> and <li> tags for ALL bullet point lists - never use plain text with dashes
-- Use <strong> tags to emphasize key terms within list items
-- Maintain this EXACT structure and order for every review
-- DO NOT use markdown formatting (##, -, *, etc.) - ONLY HTML tags
-- DO NOT output plain text - every element must be wrapped in HTML tags
-- Ensure consistent formatting across all sections
-
-EXAMPLE OF CORRECT OUTPUT FORMAT:
-<h2>Introduction</h2>
-<p>Start with an engaging introduction about the racket, mentioning the brand and model.</p>
-<h2>Pros and Cons</h2>
-<h3>Pros</h3>
-<ul>
-<li><strong>Advantage 1:</strong> Description of advantage</li>
-<li><strong>Advantage 2:</strong> Description of advantage</li>
-</ul>
-<h3>Cons</h3>
-<ul>
-<li><strong>Disadvantage 1:</strong> Description of disadvantage</li>
-</ul>
-
-REMEMBER: 
-- Output ONLY HTML-formatted text, never plain text or markdown
-- DO NOT wrap the output in markdown code blocks (three backticks with html or three backticks)
-- Output the HTML directly without any code block markers
-- The output should start with <h2> and end with </p> or </ul> tags`;
+- Use <p> tags for ALL paragraph text
+- Use <ul> and <li> tags for ALL bullet lists
+- Use <strong> tags to emphasize key terms
+- DO NOT use markdown formatting - ONLY HTML tags
+- DO NOT wrap output in code blocks
+- Output should start with <h2> and end with </p> or </ul>
+- Write at least 2-3 paragraphs per section, not just one sentence
+- Be specific and opinionated - avoid wishy-washy generic statements`;
+}
 
 export interface RacketRatings {
   powerRating: number;
@@ -542,35 +512,18 @@ ${racket.format ? `- Format: ${racket.format}` : ""}
 ${racket.playersCollection ? `- Players Collection: ${racket.playersCollection}` : ""}
 `;
 
-    const systemPrompt = REVIEW_TEMPLATE;
+    const systemPrompt = buildReviewTemplate(racket);
 
-    const userPrompt = `Write a comprehensive review article for the following padel racket following the EXACT HTML structure provided in the system prompt. Use the racket information below to create a detailed, informative review:
+    const userPrompt = `Write a unique, in-depth review for the following padel racket. Follow the HTML structure from the system prompt exactly. Base your review on the actual specifications below - do NOT invent specs or use generic filler content.
 
 ${racketInfo}
 
-CRITICAL: You MUST format the entire review using HTML tags:
-- Use <h2> tags for section headings (Introduction, Understanding Padel Racket Shapes, Pros and Cons, etc.)
-- Use <h3> tags for Pros and Cons subsections
-- Use <p> tags for all paragraph text
-- Use <ul> and <li> tags for ALL bullet point lists
-- Use <strong> tags to emphasize key terms
-- DO NOT use markdown (##, -, etc.) - ONLY HTML tags
-- DO NOT wrap your output in markdown code blocks (three backticks with html or three backticks) - output the HTML directly
-- The review should be specific to this racket model and include relevant details about its performance characteristics, target audience, and value proposition.
-
-Example of correct formatting:
-<h2>Introduction</h2>
-<p>Your introduction paragraph here.</p>
-<h2>Pros and Cons</h2>
-<h3>Pros</h3>
-<ul>
-<li><strong>Advantage 1:</strong> Description</li>
-<li><strong>Advantage 2:</strong> Description</li>
-</ul>
-<h3>Cons</h3>
-<ul>
-<li><strong>Disadvantage 1:</strong> Description</li>
-</ul>`;
+CRITICAL FORMATTING:
+- Use ONLY HTML tags (<h2>, <h3>, <p>, <ul>, <li>, <strong>) - NO markdown
+- DO NOT wrap output in code blocks
+- Write 2-3 substantial paragraphs per section minimum
+- Be specific to THIS racket - reference its actual specs, ratings, and characteristics
+- Offer genuine opinions and recommendations, not generic padel advice`;
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,
@@ -769,6 +722,67 @@ Example of correct formatting:
   }
 }
 
+/**
+ * Generate a unique brand article based on the brand's rackets and characteristics.
+ */
+export async function generateBrandArticle(
+  brand: { name: string; description?: string | null },
+  rackets: Array<{ model: string; year: number; shape: string; overallRating: number; currentPrice: string; powerRating: number; controlRating: number; gameLevel?: string | null; gameType?: string | null }>,
+): Promise<string | null> {
+  if (!openai) {
+    console.warn("OpenAI not available, skipping brand article generation");
+    return null;
+  }
+
+  const racketSummaries = rackets.slice(0, 10).map((r) =>
+    `- ${brand.name} ${r.model} (${r.year}): ${r.shape} shape, overall ${r.overallRating}/100, power ${r.powerRating}, control ${r.controlRating}, €${Number(r.currentPrice).toFixed(2)}${r.gameLevel ? `, ${r.gameLevel} level` : ""}${r.gameType ? `, ${r.gameType} style` : ""}`
+  ).join("\n");
+
+  const systemPrompt = `You are a padel equipment journalist writing a brand profile article for a racket review website. Write in a knowledgeable, engaging style. Use HTML formatting with h2 and h3 headings, p tags for paragraphs, and ul/li for lists. Do NOT use h1 tags. The article should be 600-900 words.`;
+
+  const userPrompt = `Write a unique brand article about ${brand.name} padel rackets.
+
+${brand.description ? `Brand description: ${brand.description}` : ""}
+
+Current ${brand.name} rackets in our database:
+${racketSummaries || "No rackets available yet."}
+
+Article structure:
+1. Opening paragraph about ${brand.name}'s position in the padel world
+2. "Technology & Innovation" - what makes their rackets distinctive (materials, construction, unique features)
+3. "Product Line Overview" - analyze their range based on the actual rackets listed above (shapes, price range, who each targets)
+4. "Who Should Choose ${brand.name}?" - specific player profiles that benefit from this brand
+5. Brief conclusion with a recommendation
+
+Important:
+- Base your analysis on the actual racket data provided
+- Reference specific models by name when discussing the product line
+- Avoid generic filler content - be specific about this brand
+- Do NOT include any links or URLs
+- Output clean HTML only`;
+
+  try {
+    const response = await openai.chat.completions.create({
+      model: OPENAI_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      temperature: 0.7,
+      max_tokens: 2500,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (!content) return null;
+
+    // Clean up any markdown code fences
+    return content.replace(/```html\n?/g, "").replace(/```\n?/g, "").trim();
+  } catch (error) {
+    console.error(`Error generating brand article for ${brand.name}:`, error);
+    return null;
+  }
+}
+
 export async function translateTextBatch(
   items: TranslationBatchItem[],
   targetLocale: string,
@@ -784,7 +798,16 @@ export async function translateTextBatch(
 
   const sourceLocale = options.sourceLocale ?? "en";
 
-  const systemPrompt = `You are a professional localization specialist for marketing sites and product interfaces. Translate content from ${sourceLocale.toUpperCase()} to ${targetLocale.toUpperCase()} while preserving meaning, tone, HTML tags, and placeholders such as {{variable}} or {variable}. Respond ONLY with valid JSON.`;
+  const localeGuidance: Record<string, string> = {
+    es: "Use European Spanish (Spain). Use informal 'tú' form. Padel terminology: use 'pala' for racket, 'pista' for court. Keep brand/model names untranslated.",
+    pt: "Use European Portuguese (Portugal). Use formal 'você' form. Padel terminology: use 'raquete' for racket. Keep brand/model names untranslated.",
+    it: "Use standard Italian. Use informal 'tu' form. Padel terminology: use 'racchetta' for racket, 'campo' for court. Keep brand/model names untranslated.",
+    fr: "Use standard French. Use informal 'tu' form. Padel terminology: use 'raquette' for racket, 'terrain' for court. Keep brand/model names untranslated.",
+  };
+
+  const localeHint = localeGuidance[targetLocale] || "";
+
+  const systemPrompt = `You are a professional localization specialist for a padel racket review website. Translate content from ${sourceLocale.toUpperCase()} to ${targetLocale.toUpperCase()} while preserving meaning, tone, HTML tags, and placeholders such as {{variable}} or {variable}. Respond ONLY with valid JSON.${localeHint ? `\n\nLocale-specific guidance: ${localeHint}` : ""}`;
 
   const payload = {
     instructions: [
@@ -794,6 +817,8 @@ export async function translateTextBatch(
       "If HTML tags are present, keep them unchanged and in the same order.",
       "Use the provided context notes to keep nuance (e.g., headlines vs paragraphs).",
       "Use sentence casing consistent with native speakers.",
+      "Ensure the translation reads naturally to a native speaker - avoid overly literal translations.",
+      "Keep padel-specific technical terms accurate for the target locale.",
     ],
     sourceLocale,
     targetLocale,

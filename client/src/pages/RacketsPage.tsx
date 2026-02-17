@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { X, SlidersHorizontal, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, SlidersHorizontal, ChevronLeft, ChevronRight, PackageCheck } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
 import type { Racket } from "@shared/schema";
 import {
@@ -39,6 +39,7 @@ export default function RacketsPage() {
   const [selectedShapes, setSelectedShapes] = useState<string[]>([]);
   const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
   const [minRating, setMinRating] = useState<number>(0);
+  const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>("rating");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -77,9 +78,15 @@ export default function RacketsPage() {
         }
       }
       if (racket.overallRating < minRating) return false;
+      if (inStockOnly && !(racket.inStock || racket.padelMarketInStock)) return false;
       return true;
     })
     .sort((a, b) => {
+      // Always sort in-stock items first
+      const aInStock = a.inStock || a.padelMarketInStock ? 1 : 0;
+      const bInStock = b.inStock || b.padelMarketInStock ? 1 : 0;
+      if (bInStock !== aInStock) return bInStock - aInStock;
+
       switch (sortBy) {
         case "price-low":
           return Number(a.currentPrice) - Number(b.currentPrice);
@@ -103,7 +110,7 @@ export default function RacketsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedBrands, selectedShapes, selectedGenders, minRating, sortBy]);
+  }, [selectedBrands, selectedShapes, selectedGenders, minRating, inStockOnly, sortBy]);
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands((prev) =>
@@ -128,9 +135,10 @@ export default function RacketsPage() {
     setSelectedShapes([]);
     setSelectedGenders([]);
     setMinRating(0);
+    setInStockOnly(false);
   };
 
-  const hasActiveFilters = selectedBrands.length > 0 || selectedShapes.length > 0 || selectedGenders.length > 0 || minRating > 0;
+  const hasActiveFilters = selectedBrands.length > 0 || selectedShapes.length > 0 || selectedGenders.length > 0 || minRating > 0 || inStockOnly;
 
   const seoData = {
     title: "Padel Racket Reviews - Compare Expert Ratings & Find Best Prices",
@@ -213,8 +221,27 @@ export default function RacketsPage() {
     return schemas;
   }, [filteredRackets, seoData.canonical, seoData.description]);
 
+  // Count in-stock rackets for display
+  const inStockCount = rackets?.filter(r => r.inStock || r.padelMarketInStock).length || 0;
+
   const FilterContent = () => (
     <div className="space-y-6">
+      {/* In Stock Filter */}
+      <div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="in-stock-only"
+            checked={inStockOnly}
+            onCheckedChange={(checked) => setInStockOnly(checked === true)}
+          />
+          <Label htmlFor="in-stock-only" className="cursor-pointer flex items-center gap-1.5">
+            <PackageCheck className="h-4 w-4 text-green-600" />
+            In Stock Only
+            <span className="text-xs text-muted-foreground">({inStockCount})</span>
+          </Label>
+        </div>
+      </div>
+
       {/* Gender Filter */}
       <div>
         <h3 className="font-semibold mb-3">Gender</h3>
@@ -349,7 +376,7 @@ export default function RacketsPage() {
                       Filters
                       {hasActiveFilters && (
                         <Badge variant="secondary" className="ml-2">
-                          {selectedBrands.length + selectedShapes.length + selectedGenders.length + (minRating > 0 ? 1 : 0)}
+                          {selectedBrands.length + selectedShapes.length + selectedGenders.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0)}
                         </Badge>
                       )}
                     </Button>
@@ -393,6 +420,14 @@ export default function RacketsPage() {
                   <Badge variant="secondary" className="gap-1" data-testid="badge-filter-rating">
                     Rating {minRating}+
                     <button onClick={() => setMinRating(0)} className="ml-1 hover:text-foreground">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                )}
+                {inStockOnly && (
+                  <Badge variant="secondary" className="gap-1">
+                    In Stock Only
+                    <button onClick={() => setInStockOnly(false)} className="ml-1 hover:text-foreground">
                       <X className="h-3 w-3" />
                     </button>
                   </Badge>

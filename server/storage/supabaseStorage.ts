@@ -11,11 +11,17 @@ import {
   type InsertBrand,
   type Author,
   type InsertAuthor,
+  type EmailSubscriber,
+  type InsertEmailSubscriber,
+  type PriceHistory,
+  type InsertPriceHistory,
   rackets,
   guides,
   blogPosts,
   brands,
   authors,
+  emailSubscribers,
+  priceHistory,
 } from "@shared/schema";
 import { eq, desc, and, ne, or, sql } from "drizzle-orm";
 import type { IStorage } from "../storage.js";
@@ -493,6 +499,33 @@ export class SupabaseStorage implements IStorage {
   async createAuthor(insertAuthor: InsertAuthor): Promise<Author> {
     const result = await db.insert(authors).values(insertAuthor).returning();
     return result[0];
+  }
+
+  // Email Subscriber methods
+  async createEmailSubscriber(insertSubscriber: InsertEmailSubscriber): Promise<EmailSubscriber> {
+    const result = await db.insert(emailSubscribers).values(insertSubscriber).returning();
+    return result[0];
+  }
+
+  async getEmailSubscriberByEmail(email: string): Promise<EmailSubscriber | undefined> {
+    const result = await db.select().from(emailSubscribers).where(eq(emailSubscribers.email, email));
+    return result[0];
+  }
+
+  // Price History methods
+  async createPriceHistoryEntry(entry: InsertPriceHistory): Promise<PriceHistory> {
+    const result = await db.insert(priceHistory).values(entry).returning();
+    return result[0];
+  }
+
+  async getPriceHistory(racketId: string, limit: number = 90): Promise<PriceHistory[]> {
+    const result = await db
+      .select()
+      .from(priceHistory)
+      .where(eq(priceHistory.racketId, racketId))
+      .orderBy(priceHistory.recordedAt)
+      .limit(limit);
+    return result;
   }
 }
 

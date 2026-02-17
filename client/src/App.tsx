@@ -20,8 +20,11 @@ import AuthorPage from "@/pages/AuthorPage";
 import AdminPage from "@/pages/AdminPage";
 import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
+import ComparisonPage from "@/pages/ComparisonPage";
+import QuizPage from "@/pages/QuizPage";
 import NotFound from "@/pages/not-found";
 import { AuthGuard } from "@/components/AuthGuard";
+import { CompareBar } from "@/components/CompareBar";
 
 function Router() {
   return (
@@ -35,6 +38,8 @@ function Router() {
       <Route path="/brands/:slug" component={BrandDetailPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />
+      <Route path="/compare/:ids" component={ComparisonPage} />
+      <Route path="/quiz" component={QuizPage} />
       <Route path="/authors/:slug" component={AuthorPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/signup" component={SignupPage} />
@@ -58,6 +63,7 @@ function App() {
             <Router />
           </main>
           <Footer />
+          <CompareBar />
         </div>
         <Toaster />
       </TooltipProvider>
