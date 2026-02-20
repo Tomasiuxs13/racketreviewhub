@@ -385,38 +385,30 @@ export default function RacketDetailPage() {
               <Card className="border-border/40 premium-shadow">
                 <CardContent className="p-6 sm:p-10">
                   {racket.reviewContent ? (
-                    <div className="flex flex-col-reverse xl:flex-row gap-8">
-                      {/* Main article content */}
-                      <div className="prose prose-sm xl:prose lg:prose-lg max-w-none flex-1">
-                        {author && (
-                          <div className="flex items-center gap-3 text-sm text-muted-foreground mb-6 pb-6 border-b border-border/50">
-                            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                              <User className="h-5 w-5" />
-                            </div>
-                            <div>
-                              <span className="block text-xs uppercase tracking-wider font-semibold">Review by</span>
-                              <Link
-                                href={`/authors/${author.slug}`}
-                                className="text-foreground hover:text-primary transition-colors font-bold text-base"
-                              >
-                                {author.name}
-                              </Link>
-                            </div>
+                    <div className="prose prose-sm lg:prose max-w-none">
+                      {author && (
+                        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-6 pb-6 border-b border-border/50 not-prose">
+                          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <User className="h-5 w-5" />
                           </div>
-                        )}
-                        <div
-                          dangerouslySetInnerHTML={{
-                            __html: cleanReviewContent(racket.reviewContent)
-                          }}
-                          data-testid="text-review-content"
-                          className="prose-headings:font-heading prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80"
-                        />
-                      </div>
-
-                      {/* Side Table of Contents only visible on large screens */}
-                      <div className="w-full xl:w-72 hidden xl:block shrink-0 sticky top-24 self-start">
-                        <TableOfContents contentHtml={racket.reviewContent} />
-                      </div>
+                          <div>
+                            <span className="block text-xs uppercase tracking-wider font-semibold">Review by</span>
+                            <Link
+                              href={`/authors/${author.slug}`}
+                              className="text-foreground hover:text-primary transition-colors font-bold text-base"
+                            >
+                              {author.name}
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: cleanReviewContent(racket.reviewContent)
+                        }}
+                        data-testid="text-review-content"
+                        className="prose-headings:font-heading prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80"
+                      />
                     </div>
                   ) : (
                     <div className="text-center py-10">
@@ -731,6 +723,13 @@ export default function RacketDetailPage() {
                   </dl>
                 </CardContent>
               </Card>
+
+              {/* Table of Contents - sticky below Specifications */}
+              {racket.reviewContent && (
+                <div className="sticky top-24">
+                  <TableOfContents contentHtml={racket.reviewContent} />
+                </div>
+              )}
 
               {/* Price History Chart */}
               <PriceHistoryChart racketId={racket.id} currentPrice={racket.currentPrice} />
