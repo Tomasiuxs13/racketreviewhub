@@ -1,4 +1,5 @@
 import { storage } from "../storage.js";
+import { extractProsCons } from "@shared/utils";
 
 const SITE_URL = process.env.SITE_URL || "https://racketreviewhub.com";
 
@@ -75,6 +76,43 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
       if (racket) {
         const title = `${racket.brand} ${racket.model} ${racket.year || ""} Review - Expert Analysis & Best Price`.trim();
         const description = `Expert review of the ${racket.brand} ${racket.model} ${racket.year || ""} padel racket. Overall rating: ${racket.overallRating}/100. Power: ${racket.powerRating}, Control: ${racket.controlRating}.`;
+
+        const extracted = extractProsCons(racket.reviewContent);
+        const reviewSchema: any = {
+          "@type": "Review",
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": racket.overallRating,
+            "bestRating": 100,
+            "worstRating": 0,
+          },
+          "author": {
+            "@type": "Organization",
+            "name": "Padel Racket Reviews",
+          },
+        };
+
+        if (extracted.pros.length > 0) {
+          reviewSchema.positiveNotes = {
+            "@type": "ItemList",
+            "itemListElement": extracted.pros.map((p, i) => ({
+              "@type": "ListItem",
+              "position": i + 1,
+              "name": p
+            }))
+          };
+        }
+        if (extracted.cons.length > 0) {
+          reviewSchema.negativeNotes = {
+            "@type": "ItemList",
+            "itemListElement": extracted.cons.map((c, i) => ({
+              "@type": "ListItem",
+              "position": i + 1,
+              "name": c
+            }))
+          };
+        }
+
         return {
           title,
           description,
@@ -89,20 +127,41 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
               "description": description,
               "image": racket.imageUrl ? [racket.imageUrl] : undefined,
               "brand": { "@type": "Brand", "name": racket.brand },
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": racket.overallRating,
-                "bestRating": 100,
-                "worstRating": 0,
-                "ratingCount": 1,
-              },
-              "offers": racket.affiliateLink || racket.titleUrl ? {
-                "@type": "Offer",
-                "price": racket.currentPrice,
-                "priceCurrency": "EUR",
-                "availability": racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-                "url": racket.affiliateLink || racket.titleUrl,
-              } : undefined,
+              "review": reviewSchema,
+              "url": `${SITE_URL}/rackets/${buildRacketSlug(racket.brand, racket.model)}`,
+              "offers": (() => {
+                const offers: any[] = [];
+                if (racket.affiliateLink || racket.titleUrl) {
+                  offers.push({
+                    "@type": "Offer",
+                    "price": racket.currentPrice,
+                    "priceCurrency": "EUR",
+                    "availability": racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                    "url": racket.affiliateLink || racket.titleUrl,
+                    "seller": { "@type": "Organization", "name": "Padel Nuestro" },
+                  });
+                }
+                if (racket.padelMarketAffiliateLink) {
+                  offers.push({
+                    "@type": "Offer",
+                    "price": racket.currentPrice,
+                    "priceCurrency": "EUR",
+                    "availability": racket.padelMarketInStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                    "url": racket.padelMarketAffiliateLink,
+                    "seller": { "@type": "Organization", "name": "Padel Market" },
+                  });
+                }
+                if (offers.length === 0) return undefined;
+                if (offers.length === 1) return offers[0];
+                return {
+                  "@type": "AggregateOffer",
+                  "lowPrice": racket.currentPrice,
+                  "highPrice": racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? racket.originalPrice : racket.currentPrice,
+                  "priceCurrency": "EUR",
+                  "offerCount": offers.length,
+                  "offers": offers,
+                };
+              })(),
             },
           ],
         };

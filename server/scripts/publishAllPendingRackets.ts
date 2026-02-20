@@ -39,8 +39,8 @@ import OpenAI from "openai";
 
 const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    })
+    apiKey: process.env.OPENAI_API_KEY,
+  })
   : null;
 
 /**
@@ -262,7 +262,7 @@ async function publishAllPendingRackets() {
           updateData.maneuverabilityRating = estimatedRatings.maneuverabilityRating;
           updateData.sweetSpotRating = estimatedRatings.sweetSpotRating;
           updateData.overallRating = estimatedRatings.overallRating; // Use generated overallRating from ChatGPT
-          
+
           ratingsGeneratedCount++;
           console.log(`  ✓ Ratings generated:`);
           console.log(`     Power: ${estimatedRatings.powerRating}`);
@@ -281,14 +281,14 @@ async function publishAllPendingRackets() {
 
       // 2. Fill specification fields if missing
       if (!options.skipSpecs) {
-        const missingSpecs = !racket.color || !racket.balance || !racket.surface || 
-                            !racket.hardness || !racket.finish || !racket.core ||
-                            !racket.gameLevel || !racket.gameType || !racket.player;
+        const missingSpecs = !racket.color || !racket.balance || !racket.surface ||
+          !racket.hardness || !racket.finish || !racket.core ||
+          !racket.gameLevel || !racket.gameType || !racket.player;
 
         if (missingSpecs) {
           console.log(`  📋 Filling specification fields...`);
           const specData = await fillSpecificationFields(racket);
-          
+
           if (Object.keys(specData).length > 0) {
             Object.assign(updateData, specData);
             specsFilledCount++;
@@ -314,9 +314,9 @@ async function publishAllPendingRackets() {
         // Keep ratings in updateData for final publish (don't clear them)
         // Only clear non-rating, non-spec fields that we'll regenerate
         const ratingsAndSpecs = [
-          'powerRating', 'controlRating', 'reboundRating', 
+          'powerRating', 'controlRating', 'reboundRating',
           'maneuverabilityRating', 'sweetSpotRating', 'overallRating',
-          'color', 'balance', 'surface', 'hardness', 'finish', 
+          'color', 'balance', 'surface', 'hardness', 'finish',
           'core', 'gameLevel', 'gameType', 'player'
         ];
         // Remove only fields that are not ratings or specs

@@ -5,7 +5,7 @@
  */
 
 import { storage } from "../storage.js";
-import { estimateRacketRatings, generateRacketReview } from "../lib/openai.js";
+import { estimateRacketRatings, generateRacketReview, performRacketResearch } from "../lib/openai.js";
 import { checkPublishQualityGates } from "../lib/qualityGates.js";
 import { type CjFeedProduct, SHAPE_VALUES } from "@shared/schema";
 import { parseCjPrice, extractModelFromTitle } from "./cjFeedSync.js";
@@ -106,7 +106,7 @@ function getDefaultRatings(brand: string): {
   sweetSpotRating: number;
 } {
   const brandLower = normalizeBrand(brand);
-  
+
   // High-end brands
   if (["nox", "bullpadel", "head"].includes(brandLower)) {
     return {
@@ -117,7 +117,7 @@ function getDefaultRatings(brand: string): {
       sweetSpotRating: 80,
     };
   }
-  
+
   // Premium brands
   if (["babolat", "adidas", "wilson"].includes(brandLower)) {
     return {
@@ -128,7 +128,7 @@ function getDefaultRatings(brand: string): {
       sweetSpotRating: 79,
     };
   }
-  
+
   // Default
   return {
     powerRating: 75,
@@ -166,37 +166,37 @@ async function processProduct(
   options: { generateRatings?: boolean; generateReviews?: boolean } = {}
 ): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; feedProductId?: string; error?: string }> {
   const { generateRatings = true, generateReviews = true } = options;
-  
+
   try {
     const feedProductId = product.ID;
     const brand = product.BRAND;
     const model = extractModelFromTitle(product.TITLE, brand);
     const currentPrice = parseCjPrice(product.SALE_PRICE) || parseCjPrice(product.PRICE);
     const originalPrice = parseCjPrice(product.PRICE);
-    
+
     if (!currentPrice) {
       return { action: "skipped", feedProductId, error: `No valid price found for ${product.ID}` };
     }
 
     // Try to find existing racket
     let existingRacket = await storage.getRacketByFeedProductId(feedProductId);
-    
+
     if (!existingRacket) {
       // Try matching by brand and model (multiple variations)
       // Variation 1: Direct match (brand + extracted model)
       existingRacket = await storage.getRacketByBrandAndModel(brand, model);
-      
+
       // Variation 2: Model might include brand prefix in database
       if (!existingRacket) {
         const modelWithBrand = `${brand} ${model}`;
         existingRacket = await storage.getRacketByBrandAndModel(brand, modelWithBrand);
       }
-      
+
       // Variation 3: Try using full TITLE as model (some databases store it this way)
       if (!existingRacket) {
         existingRacket = await storage.getRacketByBrandAndModel(brand, product.TITLE);
       }
-      
+
       if (existingRacket) {
         console.log(`[CJ-Processor] Matched existing racket: ${existingRacket.brand} ${existingRacket.model}`);
       }
@@ -207,15 +207,15 @@ async function processProduct(
     if (existingRacket) {
       // Prepare new values for comparison
       const newCurrentPrice = currentPrice.toFixed(2);
-      const newOriginalPrice = originalPrice && originalPrice !== currentPrice 
-        ? originalPrice.toFixed(2) 
+      const newOriginalPrice = originalPrice && originalPrice !== currentPrice
+        ? originalPrice.toFixed(2)
         : null;
       const newAffiliateLink = product.LINK;
       const newImageUrl = product.IMAGE_LINK || null;
 
       // Check what has actually changed
       const priceChanged = hasChanged(
-        normalizePrice(existingRacket.currentPrice), 
+        normalizePrice(existingRacket.currentPrice),
         newCurrentPrice
       );
       const originalPriceChanged = hasChanged(
@@ -224,13 +224,13 @@ async function processProduct(
       );
       const linkChanged = hasChanged(existingRacket.affiliateLink, newAffiliateLink);
       const feedProductIdChanged = hasChanged(existingRacket.feedProductId, feedProductId);
-      
+
       // Only update image if we don't have one and feed provides one
       const shouldUpdateImage = !existingRacket.imageUrl && newImageUrl;
-      
+
       // Check if racket was out of stock and is now back in stock
       const wasOutOfStock = existingRacket.inStock === false;
-      
+
       // Check if racket needs feed_product_id linked (important for stock tracking)
       const needsFeedIdLink = !existingRacket.feedProductId && feedProductId;
 
@@ -248,11 +248,11 @@ async function processProduct(
 
       // Log what's being updated
       const changes: string[] = [];
-      
+
       if (wasOutOfStock) {
         changes.push(`marked back in stock`);
       }
-      
+
       if (needsFeedIdLink) {
         updateData.feedProductId = feedProductId;
         changes.push(`feed product ID linked`);
@@ -310,8 +310,28 @@ async function processProduct(
       // Create new racket
       const shape = estimateShape(product);
       let ratings = getDefaultRatings(brand);
+      let researchBriefText: string | undefined = undefined;
 
-      // Try to estimate ratings using ChatGPT
+      // New Multi-Step Pipeline
+      // Step 1: Research
+      if (generateRatings || generateReviews) {
+        try {
+          const research = await performRacketResearch({
+            brand,
+            model,
+            year: new Date().getFullYear(),
+          });
+          if (research?.sentiment) {
+            researchBriefText = research.sentiment;
+          }
+          // We could hypothetically update Specs here from research.specs
+          // but keeping it simple for the initial feed import.
+        } catch (researchError) {
+          console.warn(`[CJ-Processor] Research failed for ${brand} ${model}`);
+        }
+      }
+
+      // Step 2: Try to estimate ratings using ChatGPT + Research
       if (generateRatings) {
         try {
           const estimatedRatings = await estimateRacketRatings({
@@ -319,6 +339,7 @@ async function processProduct(
             model,
             shape,
             year: new Date().getFullYear(),
+            researchBrief: researchBriefText
           });
           if (estimatedRatings) {
             ratings = estimatedRatings;
@@ -328,7 +349,7 @@ async function processProduct(
         }
       }
 
-      const createData: RacketCreateData & { inStock: boolean } = {
+      const createData: RacketCreateData & { inStock: boolean; researchBrief?: string } = {
         brand,
         model,
         year: new Date().getFullYear(),
@@ -343,6 +364,7 @@ async function processProduct(
         isPublished: false, // New rackets from feed need review
         inStock: true, // Products from feed are in stock
         color: product.COLOR !== "Unknow" ? product.COLOR : undefined,
+        researchBrief: researchBriefText,
       };
 
       const newRacket = await storage.createRacket(createData);
@@ -358,7 +380,7 @@ async function processProduct(
         console.warn(`[CJ-Processor] Failed to record initial price for ${brand} ${model}`);
       }
 
-      // Generate review with ChatGPT
+      // Step 3: Generate review with ChatGPT + Research
       if (generateReviews && newRacket) {
         try {
           const reviewResult = await generateRacketReview(newRacket);
@@ -399,15 +421,15 @@ async function processProduct(
  */
 export async function processCjFeed(
   products: CjFeedProduct[],
-  options: { 
-    generateRatings?: boolean; 
+  options: {
+    generateRatings?: boolean;
     generateReviews?: boolean;
     batchSize?: number;
     delayBetweenBatches?: number;
   } = {}
 ): Promise<ProcessingResult> {
-  const { 
-    generateRatings = true, 
+  const {
+    generateRatings = true,
     generateReviews = true,
     batchSize = 5,
     delayBetweenBatches = 1000,
@@ -433,17 +455,17 @@ export async function processCjFeed(
   // Process in batches to avoid overwhelming the API
   for (let i = 0; i < products.length; i += batchSize) {
     const batch = products.slice(i, i + batchSize);
-    
+
     for (const product of batch) {
       try {
         const { action, feedProductId, error } = await processProduct(product, { generateRatings, generateReviews });
         result.totalProcessed++;
-        
+
         // Track successfully processed feed product IDs
         if (feedProductId && action !== "skipped") {
           processedFeedProductIds.push(feedProductId);
         }
-        
+
         if (action === "created") {
           result.created++;
         } else if (action === "updated") {

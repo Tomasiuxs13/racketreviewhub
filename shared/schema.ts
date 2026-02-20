@@ -72,6 +72,8 @@ export const rackets = pgTable("rackets", {
   padelMarketInStock: boolean("padel_market_in_stock").default(false).notNull(), // Padel Market stock status
   padelMarketFeedProductId: text("padel_market_feed_product_id"), // Padel Market product ID for matching
   padelMarketFeedLastUpdated: timestamp("padel_market_feed_last_updated"), // timestamp of last Padel Market feed sync
+  // AI Pipeline Storage
+  researchBrief: text("research_brief"), // stores Perplexity/web search analysis
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

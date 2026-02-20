@@ -147,7 +147,7 @@ export default function ComparisonPage() {
                       <a
                         href={racket.affiliateLink || racket.titleUrl || racket.padelMarketAffiliateLink || "#"}
                         target="_blank"
-                        rel="noopener noreferrer"
+                        rel="sponsored noopener noreferrer"
                         onClick={() =>
                           trackAffiliateClick({
                             racketId: racket.id,

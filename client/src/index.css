@@ -4,11 +4,11 @@
 
 /* LIGHT MODE */
 :root {
-  --button-outline: rgba(0,0,0, .10);
-  --badge-outline: rgba(0,0,0, .05);
+  --button-outline: rgba(0, 0, 0, .10);
+  --badge-outline: rgba(0, 0, 0, .05);
   --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0, .03);
-  --elevate-2: rgba(0,0,0, .08);
+  --elevate-1: rgba(0, 0, 0, .03);
+  --elevate-2: rgba(0, 0, 0, .08);
   --background: 0 0% 100%;
   --foreground: 0 0% 9%;
   --border: 0 0% 91%;
@@ -46,7 +46,7 @@
   --font-sans: Inter, system-ui, -apple-system, sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
-  --font-heading: 'Space Grotesk', system-ui, sans-serif;
+  --font-heading: 'Outfit', system-ui, sans-serif;
   --radius: .5rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
@@ -59,7 +59,7 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-/* Fallback for older browsers */
+  /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
@@ -89,11 +89,11 @@
 }
 
 .dark {
-  --button-outline: rgba(255,255,255, .10);
-  --badge-outline: rgba(255,255,255, .05);
+  --button-outline: rgba(255, 255, 255, .10);
+  --badge-outline: rgba(255, 255, 255, .05);
   --opaque-button-border-intensity: 9;
-  --elevate-1: rgba(255,255,255, .04);
-  --elevate-2: rgba(255,255,255, .09);
+  --elevate-1: rgba(255, 255, 255, .04);
+  --elevate-2: rgba(255, 255, 255, .09);
   --background: 0 0% 7%;
   --foreground: 0 0% 98%;
   --border: 0 0% 15%;
@@ -137,7 +137,7 @@
   --shadow-xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00), 0px 8px 10px -1px hsl(0 0% 0% / 0.00);
   --shadow-2xl: 0px 2px 0px 0px hsl(0 0% 0% / 0.00);
 
-/* Fallback for older browsers */
+  /* Fallback for older browsers */
   --sidebar-primary-border: hsl(var(--sidebar-primary));
   --sidebar-primary-border: hsl(from hsl(var(--sidebar-primary)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
 
@@ -286,4 +286,96 @@
   .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
     inset: -1px;
   }
+
+  /* Premium Utilities */
+  .glass {
+    @apply bg-white/70 backdrop-blur-lg border border-white/20 dark:bg-black/50 dark:border-white/10;
+  }
+
+  .glass-card {
+    @apply bg-white/80 backdrop-blur-xl border border-white/40 shadow-xl dark:bg-black/60 dark:border-white/20;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-emerald-600 dark:from-primary dark:to-emerald-400;
+  }
+
+  .premium-shadow {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  }
+
+  .dark .premium-shadow {
+    box-shadow: 0 8px 30px rgba(255, 255, 255, 0.02);
+  }
+
+  .premium-shadow-hover {
+    transition: all 0.3s ease;
+  }
+
+  .premium-shadow-hover:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+  }
+
+  .dark .premium-shadow-hover:hover {
+    box-shadow: 0 20px 40px rgba(255, 255, 255, 0.04);
+  }
+}
+
+/* Custom Review Section Styling for Pros and Cons */
+.pro-card,
+.con-card {
+  @apply rounded-xl border p-6 shadow-sm h-full flex flex-col;
+}
+
+.pro-card {
+  @apply border-green-200 bg-green-50/30 dark:border-green-900/30 dark:bg-green-900/10;
+}
+
+.con-card {
+  @apply border-red-200 bg-red-50/30 dark:border-red-900/30 dark:bg-red-900/10;
+}
+
+.pro-con-card h3 {
+  @apply font-heading text-xl font-bold !mt-0 !mb-5 flex items-center gap-2;
+}
+
+.pro-con-card ul {
+  @apply !mt-0 !mb-0 list-none;
+  padding-left: 0 !important;
+}
+
+.pro-card ul li {
+  @apply relative !pl-5 text-sm md:text-base;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.pro-card ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background-color: rgb(34, 197, 94);
+  /* green-500 */
+}
+
+.con-card ul li {
+  @apply relative !pl-5 text-sm md:text-base;
+  margin-top: 0.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.con-card ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  width: 0.375rem;
+  height: 0.375rem;
+  border-radius: 9999px;
+  background-color: rgb(239, 68, 68);
+  /* red-500 */
 }

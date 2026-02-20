@@ -55,11 +55,21 @@ export function Footer() {
               {t("footer.popularBrands.title")}
             </h3>
             <div className="flex flex-col gap-2">
-              <span className="text-sm text-muted-foreground">Babolat</span>
-              <span className="text-sm text-muted-foreground">Bullpadel</span>
-              <span className="text-sm text-muted-foreground">Head</span>
-              <span className="text-sm text-muted-foreground">Adidas</span>
-              <span className="text-sm text-muted-foreground">Nox</span>
+              <Link href="/brands/babolat">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Babolat</span>
+              </Link>
+              <Link href="/brands/bullpadel">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Bullpadel</span>
+              </Link>
+              <Link href="/brands/head">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Head</span>
+              </Link>
+              <Link href="/brands/adidas">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Adidas</span>
+              </Link>
+              <Link href="/brands/nox">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Nox</span>
+              </Link>
             </div>
           </div>
 

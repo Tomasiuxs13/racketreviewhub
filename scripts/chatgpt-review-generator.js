@@ -14,7 +14,7 @@ function getApiKey() {
   if (process.env.OPENAI_API_KEY) {
     return process.env.OPENAI_API_KEY;
   }
-  
+
   // Try config file
   try {
     const config = require('../config.json');
@@ -24,7 +24,7 @@ function getApiKey() {
   } catch (error) {
     // Config file doesn't exist, that's okay
   }
-  
+
   return null;
 }
 
@@ -33,7 +33,7 @@ function getApiKey() {
  */
 async function generateReviewWithChatGPT(product, ratings) {
   const apiKey = getApiKey();
-  
+
   if (!apiKey) {
     throw new Error('OpenAI API key not found. Set OPENAI_API_KEY environment variable or create config.json with openai.apiKey');
   }
@@ -174,7 +174,7 @@ IMPORTANT:
 - Do NOT include any markdown formatting, only HTML tags as shown`;
 
   const requestData = JSON.stringify({
-    model: 'gpt-4o-mini', // Using gpt-4o-mini for cost efficiency, can be changed to gpt-4 or gpt-3.5-turbo
+    model: 'meta-llama/llama-3.1-70b-instruct', // Using OpenRouter Llama 3 for best review writing
     messages: [
       {
         role: 'system',
@@ -191,13 +191,15 @@ IMPORTANT:
 
   return new Promise((resolve, reject) => {
     const options = {
-      hostname: 'api.openai.com',
+      hostname: 'openrouter.ai',
       port: 443,
-      path: '/v1/chat/completions',
+      path: '/api/v1/chat/completions',
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'http://localhost:5000',
+        'X-Title': 'Racket Review Hub',
         'Content-Length': requestData.length
       }
     };
@@ -212,7 +214,7 @@ IMPORTANT:
       res.on('end', () => {
         try {
           const response = JSON.parse(data);
-          
+
           if (res.statusCode !== 200) {
             reject(new Error(`OpenAI API error: ${response.error?.message || JSON.stringify(response)}`));
             return;
@@ -246,7 +248,7 @@ IMPORTANT:
 function parseReviewContent(chatGPTResponse) {
   // The response should already be in HTML format matching our structure
   // We just need to extract it and ensure it's properly formatted
-  
+
   // Remove any markdown code blocks if present
   let content = chatGPTResponse.trim();
   if (content.startsWith('```html')) {
@@ -254,7 +256,7 @@ function parseReviewContent(chatGPTResponse) {
   } else if (content.startsWith('```')) {
     content = content.replace(/```\n?/, '').replace(/```\n?$/, '');
   }
-  
+
   return content.trim();
 }
 

@@ -28,22 +28,27 @@ async function testOpenAIKey() {
   const apiKey = process.env.OPENAI_API_KEY;
   const keyPrefix = apiKey.substring(0, 7);
   const keySuffix = apiKey.substring(apiKey.length - 4);
-  
+
   console.log(`✓ API Key found: ${keyPrefix}...${keySuffix}`);
   console.log(`  Key length: ${apiKey.length} characters`);
   const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
   console.log(`  Model: ${model} (set OPENAI_MODEL env var to override)`);
   console.log("");
 
-  // Initialize OpenAI client
+  // Initialize OpenAI client pointing to OpenRouter
   const openai = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
     apiKey: apiKey,
+    defaultHeaders: {
+      "HTTP-Referer": "http://localhost:5000",
+      "X-Title": "Racket Review Hub Test"
+    }
   });
 
   // Test 1: Simple API call
-  console.log("🧪 Test 1: Making a simple API call...");
+  console.log("🧪 Test 1: Making a simple API call to OpenRouter...");
   try {
-    const model = process.env.OPENAI_MODEL || "gpt-3.5-turbo";
+    const model = process.env.OPENAI_MODEL || "meta-llama/llama-3.1-8b-instruct";
     const response = await openai.chat.completions.create({
       model: model,
       messages: [
@@ -69,7 +74,7 @@ async function testOpenAIKey() {
     console.error(`  Code: ${error?.code || "unknown"}`);
     console.error(`  Type: ${error?.type || "unknown"}`);
     console.error(`  Message: ${error?.message || String(error)}`);
-    
+
     if (error?.error) {
       console.error("");
       console.error("Error object:");
@@ -102,7 +107,7 @@ async function testOpenAIKey() {
       console.error("  Your API key may be invalid or expired");
       console.error("  Please check your API key in .env file");
     }
-    
+
     console.error("");
     process.exit(1);
   }

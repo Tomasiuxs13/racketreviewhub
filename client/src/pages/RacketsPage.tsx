@@ -51,7 +51,7 @@ export default function RacketsPage() {
 
   // Get unique brands
   const brands = Array.from(new Set((rackets || []).map((r) => r.brand).filter(isValidBrandName))).sort();
-  
+
   // Get top 5 most common shapes dynamically
   const shapeCounts = rackets?.reduce((acc, racket) => {
     const shape = racket.shape?.toLowerCase();
@@ -60,7 +60,7 @@ export default function RacketsPage() {
     }
     return acc;
   }, {} as Record<string, number>) || {};
-  
+
   const topShapes = Object.entries(shapeCounts)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
@@ -72,7 +72,12 @@ export default function RacketsPage() {
       if (selectedBrands.length > 0 && !selectedBrands.includes(racket.brand)) return false;
       if (selectedShapes.length > 0 && !selectedShapes.includes(racket.shape?.toLowerCase())) return false;
       if (selectedGenders.length > 0) {
-        const racketGender = racket.player?.toLowerCase();
+        let racketGender = racket.player?.toLowerCase() || "";
+
+        if (["both", "man and woman", "men and women"].includes(racketGender)) {
+          racketGender = "unisex";
+        }
+
         if (!racketGender || !selectedGenders.includes(racketGender)) {
           return false;
         }
@@ -246,7 +251,7 @@ export default function RacketsPage() {
       <div>
         <h3 className="font-semibold mb-3">Gender</h3>
         <div className="space-y-2">
-          {["man", "woman"].map((gender) => (
+          {["man", "woman", "unisex"].map((gender) => (
             <div key={gender} className="flex items-center gap-2">
               <Checkbox
                 id={`gender-${gender}`}
@@ -332,241 +337,241 @@ export default function RacketsPage() {
 
           {/* Header */}
           <div className="mb-8">
-          <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
-            Padel Racket Reviews
-          </h1>
-          <p className="text-muted-foreground text-base sm:text-lg">
-            Discover padel rackets from renowned brands with detailed ratings and expert reviews
-          </p>
-        </div>
+            <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
+              Padel Racket Reviews
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg">
+              Discover padel rackets from renowned brands with detailed ratings and expert reviews
+            </p>
+          </div>
 
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Desktop Sidebar Filters */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <Card className="sticky top-24">
-              <CardContent className="p-5 sm:p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-semibold text-lg">Filters</h2>
-                  {hasActiveFilters && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={clearFilters}
-                      data-testid="button-clear-filters"
-                    >
-                      Clear All
-                    </Button>
-                  )}
-                </div>
-                <FilterContent />
-              </CardContent>
-            </Card>
-          </aside>
-
-          {/* Main Content */}
-          <div className="flex-1">
-            {/* Toolbar */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-              <div className="flex items-center gap-3 flex-wrap">
-                {/* Mobile Filter Button */}
-                <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" className="lg:hidden" data-testid="button-mobile-filters">
-                      <SlidersHorizontal className="h-4 w-4 mr-2" />
-                      Filters
-                      {hasActiveFilters && (
-                        <Badge variant="secondary" className="ml-2">
-                          {selectedBrands.length + selectedShapes.length + selectedGenders.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0)}
-                        </Badge>
-                      )}
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm">
-                    <SheetHeader>
-                      <SheetTitle>Filters</SheetTitle>
-                    </SheetHeader>
-                    <div className="mt-6 pb-6 overflow-y-auto">
-                      <FilterContent />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-
-                {/* Active Filters */}
-                {selectedBrands.map((brand) => (
-                  <Badge key={brand} variant="secondary" className="gap-1" data-testid={`badge-filter-${brand}`}>
-                    {brand}
-                    <button onClick={() => toggleBrand(brand)} className="ml-1 hover:text-foreground">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                {selectedShapes.map((shape) => (
-                  <Badge key={shape} variant="secondary" className="gap-1 capitalize" data-testid={`badge-filter-${shape}`}>
-                    {shape}
-                    <button onClick={() => toggleShape(shape)} className="ml-1 hover:text-foreground">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                {selectedGenders.map((gender) => (
-                  <Badge key={gender} variant="secondary" className="gap-1 capitalize" data-testid={`badge-filter-gender-${gender}`}>
-                    {gender}
-                    <button onClick={() => toggleGender(gender)} className="ml-1 hover:text-foreground">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-                {minRating > 0 && (
-                  <Badge variant="secondary" className="gap-1" data-testid="badge-filter-rating">
-                    Rating {minRating}+
-                    <button onClick={() => setMinRating(0)} className="ml-1 hover:text-foreground">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
-                {inStockOnly && (
-                  <Badge variant="secondary" className="gap-1">
-                    In Stock Only
-                    <button onClick={() => setInStockOnly(false)} className="ml-1 hover:text-foreground">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                )}
-              </div>
-
-              {/* Sort */}
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Sort by:</span>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="w-40" data-testid="select-sort">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest" data-testid="select-sort-newest">Newest</SelectItem>
-                    <SelectItem value="rating" data-testid="select-sort-rating">Highest Rated</SelectItem>
-                    <SelectItem value="price-low" data-testid="select-sort-price-low">Price: Low to High</SelectItem>
-                    <SelectItem value="price-high" data-testid="select-sort-price-high">Price: High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Results Count */}
-            {!isLoading && (
-              <p className="text-sm text-muted-foreground mb-6" data-testid="text-results-count">
-                Showing {startIndex + 1}-{Math.min(endIndex, totalRackets)} of {totalRackets} racket{totalRackets !== 1 ? "s" : ""}
-              </p>
-            )}
-
-            {/* Rackets Grid */}
-            {isLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-0">
-                      <Skeleton className="aspect-[3/4] w-full" />
-                      <div className="p-6 space-y-3">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-20 w-full" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : filteredRackets && filteredRackets.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {paginatedRackets.map((racket) => (
-                    <RacketCard key={racket.id} racket={racket} />
-                  ))}
-                </div>
-                
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="mt-8">
-                    <Pagination>
-                      <PaginationContent>
-                        <PaginationItem>
-                          <Button
-                            variant="ghost"
-                            size="default"
-                            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                            disabled={currentPage === 1}
-                            className="gap-1 pl-2.5"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                            <span>Previous</span>
-                          </Button>
-                        </PaginationItem>
-                        
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                          // Show first page, last page, current page, and pages around current
-                          const showPage = 
-                            page === 1 ||
-                            page === totalPages ||
-                            (page >= currentPage - 1 && page <= currentPage + 1);
-                          
-                          if (!showPage) {
-                            // Show ellipsis
-                            if (page === currentPage - 2 || page === currentPage + 2) {
-                              return (
-                                <PaginationItem key={page}>
-                                  <PaginationEllipsis />
-                                </PaginationItem>
-                              );
-                            }
-                            return null;
-                          }
-                          
-                          return (
-                            <PaginationItem key={page}>
-                              <Button
-                                variant={currentPage === page ? "outline" : "ghost"}
-                                size="icon"
-                                onClick={() => setCurrentPage(page)}
-                                className="h-9 w-9"
-                              >
-                                {page}
-                              </Button>
-                            </PaginationItem>
-                          );
-                        })}
-                        
-                        <PaginationItem>
-                          <Button
-                            variant="ghost"
-                            size="default"
-                            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                            disabled={currentPage === totalPages}
-                            className="gap-1 pr-2.5"
-                          >
-                            <span>Next</span>
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </PaginationItem>
-                      </PaginationContent>
-                    </Pagination>
+          <div className="flex flex-col lg:flex-row gap-8">
+            {/* Desktop Sidebar Filters */}
+            <aside className="hidden lg:block w-64 flex-shrink-0">
+              <Card className="sticky top-24">
+                <CardContent className="p-5 sm:p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-semibold text-lg">Filters</h2>
+                    {hasActiveFilters && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        data-testid="button-clear-filters"
+                      >
+                        Clear All
+                      </Button>
+                    )}
                   </div>
-                )}
-              </>
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <p className="text-muted-foreground text-center mb-4">
-                    No rackets found matching your filters
-                  </p>
-                  {hasActiveFilters && (
-                    <Button onClick={clearFilters} data-testid="button-clear-filters-empty">
-                      Clear Filters
-                    </Button>
-                  )}
+                  <FilterContent />
                 </CardContent>
               </Card>
-            )}
+            </aside>
+
+            {/* Main Content */}
+            <div className="flex-1">
+              {/* Toolbar */}
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Mobile Filter Button */}
+                  <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="lg:hidden" data-testid="button-mobile-filters">
+                        <SlidersHorizontal className="h-4 w-4 mr-2" />
+                        Filters
+                        {hasActiveFilters && (
+                          <Badge variant="secondary" className="ml-2">
+                            {selectedBrands.length + selectedShapes.length + selectedGenders.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0)}
+                          </Badge>
+                        )}
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm">
+                      <SheetHeader>
+                        <SheetTitle>Filters</SheetTitle>
+                      </SheetHeader>
+                      <div className="mt-6 pb-6 overflow-y-auto">
+                        <FilterContent />
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+
+                  {/* Active Filters */}
+                  {selectedBrands.map((brand) => (
+                    <Badge key={brand} variant="secondary" className="gap-1" data-testid={`badge-filter-${brand}`}>
+                      {brand}
+                      <button onClick={() => toggleBrand(brand)} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {selectedShapes.map((shape) => (
+                    <Badge key={shape} variant="secondary" className="gap-1 capitalize" data-testid={`badge-filter-${shape}`}>
+                      {shape}
+                      <button onClick={() => toggleShape(shape)} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {selectedGenders.map((gender) => (
+                    <Badge key={gender} variant="secondary" className="gap-1 capitalize" data-testid={`badge-filter-gender-${gender}`}>
+                      {gender}
+                      <button onClick={() => toggleGender(gender)} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {minRating > 0 && (
+                    <Badge variant="secondary" className="gap-1" data-testid="badge-filter-rating">
+                      Rating {minRating}+
+                      <button onClick={() => setMinRating(0)} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
+                  {inStockOnly && (
+                    <Badge variant="secondary" className="gap-1">
+                      In Stock Only
+                      <button onClick={() => setInStockOnly(false)} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Sort */}
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Sort by:</span>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40" data-testid="select-sort">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="newest" data-testid="select-sort-newest">Newest</SelectItem>
+                      <SelectItem value="rating" data-testid="select-sort-rating">Highest Rated</SelectItem>
+                      <SelectItem value="price-low" data-testid="select-sort-price-low">Price: Low to High</SelectItem>
+                      <SelectItem value="price-high" data-testid="select-sort-price-high">Price: High to Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Results Count */}
+              {!isLoading && (
+                <p className="text-sm text-muted-foreground mb-6" data-testid="text-results-count">
+                  Showing {startIndex + 1}-{Math.min(endIndex, totalRackets)} of {totalRackets} racket{totalRackets !== 1 ? "s" : ""}
+                </p>
+              )}
+
+              {/* Rackets Grid */}
+              {isLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-0">
+                        <Skeleton className="aspect-[3/4] w-full" />
+                        <div className="p-6 space-y-3">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-6 w-full" />
+                          <Skeleton className="h-20 w-full" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : filteredRackets && filteredRackets.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {paginatedRackets.map((racket) => (
+                      <RacketCard key={racket.id} racket={racket} />
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="mt-8">
+                      <Pagination>
+                        <PaginationContent>
+                          <PaginationItem>
+                            <Button
+                              variant="ghost"
+                              size="default"
+                              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                              disabled={currentPage === 1}
+                              className="gap-1 pl-2.5"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                              <span>Previous</span>
+                            </Button>
+                          </PaginationItem>
+
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                            // Show first page, last page, current page, and pages around current
+                            const showPage =
+                              page === 1 ||
+                              page === totalPages ||
+                              (page >= currentPage - 1 && page <= currentPage + 1);
+
+                            if (!showPage) {
+                              // Show ellipsis
+                              if (page === currentPage - 2 || page === currentPage + 2) {
+                                return (
+                                  <PaginationItem key={page}>
+                                    <PaginationEllipsis />
+                                  </PaginationItem>
+                                );
+                              }
+                              return null;
+                            }
+
+                            return (
+                              <PaginationItem key={page}>
+                                <Button
+                                  variant={currentPage === page ? "outline" : "ghost"}
+                                  size="icon"
+                                  onClick={() => setCurrentPage(page)}
+                                  className="h-9 w-9"
+                                >
+                                  {page}
+                                </Button>
+                              </PaginationItem>
+                            );
+                          })}
+
+                          <PaginationItem>
+                            <Button
+                              variant="ghost"
+                              size="default"
+                              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                              disabled={currentPage === totalPages}
+                              className="gap-1 pr-2.5"
+                            >
+                              <span>Next</span>
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <p className="text-muted-foreground text-center mb-4">
+                      No rackets found matching your filters
+                    </p>
+                    {hasActiveFilters && (
+                      <Button onClick={clearFilters} data-testid="button-clear-filters-empty">
+                        Clear Filters
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
         </div>
-      </div>
       </div>
     </>
   );
