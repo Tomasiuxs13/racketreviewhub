@@ -262,29 +262,36 @@ async function processProduct(
         padelMarketFeedProductId?: string;
         padelMarketFeedLastUpdated: Date;
         currentPrice?: string;
+        originalPrice?: string;
       } = {
         padelMarketInStock: true,
         padelMarketFeedProductId: feedProductId || undefined,
         padelMarketFeedLastUpdated: now,
       };
-      
+
       // Only update price if:
       // 1. Padel Market has a valid price (> 0), AND
       // 2. Either the racket has no price (0 or null/undefined), OR Padel Market price is lower
       const currentPriceValue = parseCurrentPrice(existingRacket.currentPrice);
       if (price > 0 && (currentPriceValue === 0 || price < currentPriceValue)) {
         updateData.currentPrice = price.toFixed(2);
+
+        // Also set originalPrice from Padel Market feed (rrp_price or product_price_old) if available
+        const rrpPrice = parsePadelMarketPrice(product.rrp_price);
+        const oldPrice = parsePadelMarketPrice(product.product_price_old);
+        const originalPriceFromFeed = rrpPrice && rrpPrice > price ? rrpPrice
+          : oldPrice && oldPrice > price ? oldPrice
+          : undefined;
+        if (originalPriceFromFeed) {
+          updateData.originalPrice = originalPriceFromFeed.toFixed(2);
+        }
       }
       
-      // Only update affiliate link if it doesn't already exist (preserve manual edits)
-      if (!existingRacket.padelMarketAffiliateLink) {
-        updateData.padelMarketAffiliateLink = product.aw_deep_link;
-      } else {
-        console.log(`[PadelMarket-Processor] Preserving existing Padel Market affiliate link for ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year} (manual edit detected)`);
-      }
-      
+      // Always update affiliate link from feed to keep it fresh (Awin deep links change regularly)
+      updateData.padelMarketAffiliateLink = product.aw_deep_link;
+
       // Check if anything actually changed
-      const hasChanged = 
+      const hasChanged =
         (updateData.padelMarketAffiliateLink && existingRacket.padelMarketAffiliateLink !== updateData.padelMarketAffiliateLink) ||
         existingRacket.padelMarketInStock !== updateData.padelMarketInStock ||
         existingRacket.padelMarketFeedProductId !== updateData.padelMarketFeedProductId ||
@@ -344,26 +351,33 @@ async function processProduct(
           padelMarketFeedProductId?: string;
           padelMarketFeedLastUpdated: Date;
           currentPrice?: string;
+          originalPrice?: string;
         } = {
           padelMarketInStock: true,
           padelMarketFeedProductId: feedProductId || undefined,
           padelMarketFeedLastUpdated: now,
         };
-        
+
         // Only update price if:
         // 1. Padel Market has a valid price (> 0), AND
         // 2. Either the racket has no price (0 or null/undefined), OR Padel Market price is lower
         const currentPriceValue = parseCurrentPrice(potentialDuplicate.currentPrice);
         if (price > 0 && (currentPriceValue === 0 || price < currentPriceValue)) {
           updateData.currentPrice = price.toFixed(2);
+
+          // Also set originalPrice from Padel Market feed if available
+          const rrpPrice = parsePadelMarketPrice(product.rrp_price);
+          const oldPrice = parsePadelMarketPrice(product.product_price_old);
+          const originalPriceFromFeed = rrpPrice && rrpPrice > price ? rrpPrice
+            : oldPrice && oldPrice > price ? oldPrice
+            : undefined;
+          if (originalPriceFromFeed) {
+            updateData.originalPrice = originalPriceFromFeed.toFixed(2);
+          }
         }
-        
-        // Only update affiliate link if it doesn't already exist (preserve manual edits)
-        if (!potentialDuplicate.padelMarketAffiliateLink) {
-          updateData.padelMarketAffiliateLink = product.aw_deep_link;
-        } else {
-          console.log(`[PadelMarket-Processor] Preserving existing Padel Market affiliate link for ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year} (manual edit detected)`);
-        }
+
+        // Always update affiliate link from feed to keep it fresh
+        updateData.padelMarketAffiliateLink = product.aw_deep_link;
         
         await storage.updateRacket(potentialDuplicate.id, updateData);
 

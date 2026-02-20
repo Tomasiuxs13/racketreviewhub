@@ -258,9 +258,14 @@ async function processProduct(
         changes.push(`feed product ID linked`);
       }
 
-      if (priceChanged) {
+      // Only update price if CJ price is lower than or equal to existing (respect "lowest price wins")
+      const newPriceNum = parseFloat(newCurrentPrice);
+      const existingPriceNum = parseFloat(normalizePrice(existingRacket.currentPrice)) || 0;
+      if (priceChanged && (existingPriceNum === 0 || newPriceNum <= existingPriceNum)) {
         updateData.currentPrice = newCurrentPrice;
         changes.push(`price: €${normalizePrice(existingRacket.currentPrice)} → €${newCurrentPrice}`);
+      } else if (priceChanged && newPriceNum > existingPriceNum) {
+        console.log(`[CJ-Processor] Price skipped for ${brand} ${model}: CJ price €${newCurrentPrice} is higher than current price €${normalizePrice(existingRacket.currentPrice)}`);
       }
 
       if (originalPriceChanged && newOriginalPrice) {
@@ -268,13 +273,10 @@ async function processProduct(
         changes.push(`original price updated`);
       }
 
-      // Only update affiliate link if it doesn't already exist (preserve manual edits)
-      if (linkChanged && !existingRacket.affiliateLink && !existingRacket.titleUrl) {
+      // Always update affiliate link from feed to keep it fresh (links change over time)
+      if (linkChanged) {
         updateData.affiliateLink = newAffiliateLink;
-        changes.push(`affiliate link added`);
-      } else if (linkChanged && (existingRacket.affiliateLink || existingRacket.titleUrl)) {
-        // Link exists, skip update to preserve manual edits
-        console.log(`[CJ-Processor] Preserving existing affiliate link for ${brand} ${model} (manual edit detected)`);
+        changes.push(`affiliate link updated`);
       }
 
       if (feedProductIdChanged) {

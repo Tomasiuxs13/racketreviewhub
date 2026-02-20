@@ -25,11 +25,11 @@ function markdownToHtml(markdown: string): string {
   // Convert italic
   html = html.replace(/\*(.*?)\*/g, "<em>$1</em>");
 
-  // Convert links [text](url)
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-  
-  // Convert images ![alt](url)
+  // Convert images ![alt](url) — MUST run before links to avoid mangling
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />');
+
+  // Convert links [text](url) — negative lookbehind prevents matching image syntax remnants
+  html = html.replace(/(?<!!)\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
   // Convert bullet lists
   html = html.replace(/^\- (.*$)/gim, "<li>$1</li>");
@@ -54,7 +54,7 @@ function markdownToHtml(markdown: string): string {
       continue;
     }
 
-    // If it's already HTML (header, list item, etc.), add it directly
+    // If it's already HTML (header, list item, image, etc.), add it directly
     if (
       trimmed.startsWith("<h") ||
       trimmed.startsWith("<ul") ||
@@ -62,7 +62,8 @@ function markdownToHtml(markdown: string): string {
       trimmed.startsWith("<li") ||
       trimmed.startsWith("</li") ||
       trimmed.startsWith("<p") ||
-      trimmed.startsWith("</p")
+      trimmed.startsWith("</p") ||
+      trimmed.startsWith("<img")
     ) {
       if (currentParagraph.length > 0) {
         processedLines.push(`<p>${currentParagraph.join(" ")}</p>`);
@@ -199,7 +200,11 @@ async function loadGuides() {
           const { guides } = await import("@shared/schema");
           const { eq } = await import("drizzle-orm");
           
-          const client = postgres(process.env.DATABASE_URL);
+          const dbUrl = process.env.DATABASE_URL!;
+          const isRenderDb = dbUrl.includes("render.com") || dbUrl.includes("dpg-");
+          const client = postgres(dbUrl, {
+            ssl: isRenderDb ? { rejectUnauthorized: false } : undefined,
+          });
           const db = drizzle(client);
           
           await db
