@@ -6,6 +6,7 @@
 
 import { storage } from "../storage.js";
 import { SHAPE_VALUES } from "@shared/schema";
+import { upscaleProductserveUrl } from "@shared/utils";
 import {
   type PadelMarketFeedProduct,
   extractBrandModelYear,
@@ -423,7 +424,7 @@ async function processProduct(
         shape: shape,
         ...ratings,
         currentPrice: price > 0 ? price.toFixed(2) : "0.00",
-        imageUrl: product.aw_image_url || product.merchant_image_url || undefined,
+        imageUrl: upscaleProductserveUrl(product.aw_image_url || product.merchant_image_url) || undefined,
         padelMarketAffiliateLink: product.aw_deep_link,
         padelMarketInStock: true,
         padelMarketFeedProductId: feedProductId || undefined,

@@ -21,7 +21,7 @@ import { trackAffiliateClick } from "@/lib/analytics";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { ShareButtons } from "@/components/ShareButtons";
 import { TableOfContents } from "@/components/TableOfContents";
-import { extractProsCons } from "@shared/utils";
+import { extractProsCons, upscaleProductserveUrl } from "@shared/utils";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -147,6 +147,14 @@ export default function RacketDetailPage() {
             "name": "Padel Racket Reviews",
           },
       },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": racket.overallRating,
+        "bestRating": 100,
+        "worstRating": 0,
+        "reviewCount": 1,
+      },
+      "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
     };
 
     // Add offers (affiliate links) with correct availability
@@ -224,6 +232,7 @@ export default function RacketDetailPage() {
           },
         "reviewBody": cleanReviewContent(racket.reviewContent).replace(/<[^>]*>/g, "").substring(0, 500),
         "datePublished": racket.createdAt ? new Date(racket.createdAt).toISOString() : new Date().toISOString(),
+        "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString() : undefined,
       };
 
       const extracted = extractProsCons(racket.reviewContent);
@@ -365,7 +374,7 @@ export default function RacketDetailPage() {
                   <div className="aspect-square flex items-center justify-center mix-blend-multiply dark:mix-blend-normal">
                     {racket.imageUrl ? (
                       <img
-                        src={racket.imageUrl}
+                        src={upscaleProductserveUrl(racket.imageUrl) ?? racket.imageUrl}
                         alt={`${racket.brand} ${racket.model} ${racket.year || ""} ${racket.shape || "padel"} padel racket`}
                         className="max-w-full max-h-full object-contain drop-shadow-2xl"
                         loading="lazy"

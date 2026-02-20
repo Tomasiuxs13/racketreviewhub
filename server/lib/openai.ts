@@ -642,8 +642,8 @@ CRITICAL FORMATTING:
         },
       ],
       temperature: 0.7,
-      max_tokens: 4096,
-    }, { timeout: 120000 }); // 2 minute hard timeout for large review generation
+      max_tokens: 6000,
+    }, { timeout: 180000 }); // 3 minute hard timeout for large review generation
 
     let reviewContent = completion.choices[0]?.message?.content || "";
 

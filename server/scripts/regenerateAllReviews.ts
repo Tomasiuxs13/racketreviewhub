@@ -34,7 +34,16 @@ async function run() {
 
     // Get all rackets that exist
     const allRackets = await storage.getAllRackets();
-    const rackets = allRackets.slice(0, 1); // Only run 1 for testing
+
+    // Target specific racket by model name
+    const TARGET_MODEL = "HEAD GRAVITY PRO 2024";
+    const TARGET_BRAND = "Head";
+    const targetRacket = await storage.getRacketByBrandAndModel(TARGET_BRAND, TARGET_MODEL);
+    if (!targetRacket) {
+        console.error(`Racket "${TARGET_BRAND} ${TARGET_MODEL}" not found.`);
+        process.exit(1);
+    }
+    const rackets = [targetRacket];
 
     console.log(`Found ${rackets.length} total rackets to process for this test run.`);
 
@@ -162,9 +171,11 @@ async function run() {
                 }));
 
                 if (reviewResult?.reviewContent) {
-                    await storage.updateRacket(racket.id, {
+                    console.log(`   Review length: ${reviewResult.reviewContent.length} chars`);
+                    const savedRacket = await storage.updateRacket(racket.id, {
                         reviewContent: reviewResult.reviewContent,
                     });
+                    console.log(`   Save result - isPublished: ${savedRacket?.isPublished}, reviewContent length: ${savedRacket?.reviewContent?.length ?? 0}`);
                     console.log("   Review generated & saved!");
 
                     // Check if it passes gates to publish

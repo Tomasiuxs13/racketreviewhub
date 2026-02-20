@@ -17,9 +17,9 @@ export interface QualityCheckResult {
 export function checkPublishQualityGates(racket: Racket): QualityCheckResult {
   const failures: string[] = [];
 
-  // 1. Review content must exist and be substantial (1500 chars ≈ 300+ words)
-  if (!racket.reviewContent || racket.reviewContent.trim().length < 1500) {
-    failures.push(`Review too short (${racket.reviewContent?.trim().length || 0} chars, need 1500+)`);
+  // 1. Review content must exist and be substantial (6000 chars ≈ 1000+ words, competitive for SEO)
+  if (!racket.reviewContent || racket.reviewContent.trim().length < 6000) {
+    failures.push(`Review too short (${racket.reviewContent?.trim().length || 0} chars, need 6000+)`);
   }
 
   // 2. All 5 ratings must be non-default (not all identical at 75)

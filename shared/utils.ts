@@ -39,3 +39,16 @@ export function extractProsCons(htmlContent: string | null | undefined): { pros:
 
     return { pros, cons };
 }
+
+/**
+ * Upscales Padel Market / Awin productserve image URLs from 200x200 to a larger size.
+ * These URLs have the pattern: https://images2.productserve.com/?w=200&h=200&...
+ * We replace w/h params to get a higher-resolution image.
+ */
+export function upscaleProductserveUrl(url: string | null | undefined, size = 600): string | null | undefined {
+    if (!url) return url;
+    if (!url.includes("productserve.com")) return url;
+    return url
+        .replace(/([?&])w=\d+/, `$1w=${size}`)
+        .replace(/([?&])h=\d+/, `$1h=${size}`);
+}

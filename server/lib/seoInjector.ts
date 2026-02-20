@@ -75,7 +75,9 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
       const racket = await storage.getRacketBySlug(slug);
       if (racket) {
         const title = `${racket.brand} ${racket.model} ${racket.year || ""} Review - Expert Analysis & Best Price`.trim();
-        const description = `Expert review of the ${racket.brand} ${racket.model} ${racket.year || ""} padel racket. Overall rating: ${racket.overallRating}/100. Power: ${racket.powerRating}, Control: ${racket.controlRating}.`;
+        const gameLevel = racket.gameLevel ? `${racket.gameLevel}-level ` : "";
+        const shape = racket.shape ? `${racket.shape}-shape ` : "";
+        const description = `${racket.brand} ${racket.model} ${racket.year || ""} review — ${racket.overallRating}/100 overall. ${gameLevel}${shape}racket rated ${racket.powerRating} for power and ${racket.controlRating} for control. Expert analysis & best price.`.trim();
 
         const extracted = extractProsCons(racket.reviewContent);
         const reviewSchema: any = {
@@ -113,10 +115,33 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           };
         }
 
+        const racketUrl = `${SITE_URL}/rackets/${buildRacketSlug(racket.brand, racket.model)}`;
+        const topLevelReviewSchema = {
+          "@context": "https://schema.org",
+          "@type": "Review",
+          "itemReviewed": {
+            "@type": "Product",
+            "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+            "brand": { "@type": "Brand", "name": racket.brand },
+            "image": racket.imageUrl || undefined,
+          },
+          "reviewRating": {
+            "@type": "Rating",
+            "ratingValue": racket.overallRating,
+            "bestRating": 100,
+            "worstRating": 0,
+          },
+          "author": { "@type": "Organization", "name": "Padel Racket Reviews" },
+          "datePublished": racket.createdAt ? new Date(racket.createdAt).toISOString().split("T")[0] : undefined,
+          "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
+          ...(extracted.pros.length > 0 ? { positiveNotes: reviewSchema.positiveNotes } : {}),
+          ...(extracted.cons.length > 0 ? { negativeNotes: reviewSchema.negativeNotes } : {}),
+        };
+
         return {
           title,
           description,
-          canonical: `${SITE_URL}/rackets/${buildRacketSlug(racket.brand, racket.model)}`,
+          canonical: racketUrl,
           ogType: "article",
           ogImage: racket.imageUrl || undefined,
           structuredData: [
@@ -128,7 +153,15 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
               "image": racket.imageUrl ? [racket.imageUrl] : undefined,
               "brand": { "@type": "Brand", "name": racket.brand },
               "review": reviewSchema,
-              "url": `${SITE_URL}/rackets/${buildRacketSlug(racket.brand, racket.model)}`,
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": racket.overallRating,
+                "bestRating": 100,
+                "worstRating": 0,
+                "reviewCount": 1,
+              },
+              "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
+              "url": racketUrl,
               "offers": (() => {
                 const offers: any[] = [];
                 if (racket.affiliateLink || racket.titleUrl) {
@@ -163,6 +196,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
                 };
               })(),
             },
+            topLevelReviewSchema,
           ],
         };
       }
