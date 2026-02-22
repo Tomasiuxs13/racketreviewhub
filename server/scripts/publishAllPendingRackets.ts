@@ -31,17 +31,12 @@ import {
   generateRacketReview,
   estimateRacketRatings,
   translateReviewLocales,
-  REVIEW_TRANSLATION_LOCALES
+  REVIEW_TRANSLATION_LOCALES,
+  openai,
+  OPENAI_MODEL
 } from "../lib/openai.js";
 import { checkPublishQualityGates } from "../lib/qualityGates.js";
 import type { Racket } from "@shared/schema";
-import OpenAI from "openai";
-
-const openai = process.env.OPENAI_API_KEY
-  ? new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  })
-  : null;
 
 /**
  * Fill missing specification fields using ChatGPT
@@ -122,7 +117,7 @@ Other fields with suggested values:
 - Color: Describe the main color(s)`;
 
     const completion = await openai.chat.completions.create({
-      model: process.env.OPENAI_MODEL || "gpt-4o",
+      model: OPENAI_MODEL,
       messages: [
         {
           role: "user",

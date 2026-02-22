@@ -74,10 +74,11 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
       const slug = racketMatch[1];
       const racket = await storage.getRacketBySlug(slug);
       if (racket) {
-        const title = `${racket.brand} ${racket.model} ${racket.year || ""} Review - Expert Analysis & Best Price`.trim();
+        const title = `${racket.brand} ${racket.model} ${racket.year || ""} Padel Racket Review - Expert Analysis & Best Price`.trim();
         const gameLevel = racket.gameLevel ? `${racket.gameLevel}-level ` : "";
         const shape = racket.shape ? `${racket.shape}-shape ` : "";
-        const description = `${racket.brand} ${racket.model} ${racket.year || ""} review — ${racket.overallRating}/100 overall. ${gameLevel}${shape}racket rated ${racket.powerRating} for power and ${racket.controlRating} for control. Expert analysis & best price.`.trim();
+        const playStyle = racket.gameType || "all-around";
+        const description = `Expert ${racket.brand} ${racket.model} ${racket.year || ""} padel racket review. ${racket.overallRating}/100 rating – ${racket.powerRating} power, ${racket.controlRating} control. ${gameLevel}${shape}racket for ${playStyle} players. Best price comparison & buying guide.`.trim();
 
         const extracted = extractProsCons(racket.reviewContent);
         const reviewSchema: any = {

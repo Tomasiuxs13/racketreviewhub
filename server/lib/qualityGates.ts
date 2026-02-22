@@ -17,9 +17,14 @@ export interface QualityCheckResult {
 export function checkPublishQualityGates(racket: Racket): QualityCheckResult {
   const failures: string[] = [];
 
-  // 1. Review content must exist and be substantial (6000 chars ≈ 1000+ words, competitive for SEO)
-  if (!racket.reviewContent || racket.reviewContent.trim().length < 6000) {
-    failures.push(`Review too short (${racket.reviewContent?.trim().length || 0} chars, need 6000+)`);
+  // 1. Review content must exist and be substantial (7000 chars ≈ 1100+ words, stronger for competitive SEO)
+  if (!racket.reviewContent || racket.reviewContent.trim().length < 7000) {
+    failures.push(`Review too short (${racket.reviewContent?.trim().length || 0} chars, need 7000+)`);
+  }
+
+  // 1b. Review must contain an FAQ section (one of the 8 required sections)
+  if (racket.reviewContent && !racket.reviewContent.includes("Frequently Asked Questions")) {
+    failures.push("Review is missing the FAQ section");
   }
 
   // 2. All 5 ratings must be non-default (not all identical at 75)

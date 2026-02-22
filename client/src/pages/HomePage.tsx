@@ -118,7 +118,7 @@ export default function HomePage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-              className="font-heading font-extrabold text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight mb-6"
+              className="font-heading font-extrabold text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight mb-6"
               data-testid="text-hero-title"
             >
               <span className="text-white drop-shadow-md">{t("home.hero.title")}</span>
@@ -128,7 +128,7 @@ export default function HomePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-lg sm:text-2xl text-white/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed"
+              className="text-base sm:text-xl md:text-2xl text-white/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed"
             >
               {t("home.hero.subtitle")}
             </motion.p>
@@ -137,23 +137,23 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-5"
+              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5"
             >
               <Link href="/rackets" data-testid="link-browse-rackets">
                 <Button
                   size="lg"
-                  className="bg-primary text-primary-foreground hover:bg-emerald-500 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:-translate-y-1 transition-all duration-300 text-lg px-8 py-6 rounded-full"
+                  className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-emerald-500 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg px-6 py-4 sm:px-8 sm:py-6 rounded-full"
                   data-testid="button-browse-rackets"
                 >
                   {t("common.actions.browseRackets")}
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
                 </Button>
               </Link>
               <Link href="/guides" data-testid="link-buying-guides">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="glass text-white hover:bg-white/20 hover:text-white border-white/20 hover:border-white/40 hover:-translate-y-1 transition-all duration-300 text-lg px-8 py-6 rounded-full"
+                  className="w-full sm:w-auto glass text-white hover:bg-white/20 hover:text-white border-white/20 hover:border-white/40 hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg px-6 py-4 sm:px-8 sm:py-6 rounded-full"
                   data-testid="button-buying-guides"
                 >
                   {t("common.actions.buyingGuides")}
@@ -166,25 +166,25 @@ export default function HomePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 1, delay: 0.8 }}
-              className="mt-14 sm:mt-16 inline-flex flex-wrap items-center justify-center gap-6 sm:gap-10 glass-card px-8 py-4 rounded-full mx-auto"
+              className="mt-8 sm:mt-12 md:mt-16 inline-flex flex-wrap items-center justify-center gap-4 sm:gap-8 md:gap-10 glass-card px-5 py-3 sm:px-8 sm:py-4 rounded-2xl sm:rounded-full mx-auto"
             >
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-full bg-yellow-400/20">
-                  <Star className="h-5 w-5 text-yellow-400" />
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="p-1 sm:p-1.5 rounded-full bg-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.2)]">
+                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-yellow-400/20" />
                 </div>
-                <span className="text-sm font-semibold text-white/90 tracking-wide uppercase">{t("home.hero.trust.reviews")}</span>
+                <span className="text-[10px] sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase">{t("home.hero.trust.reviews")}</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-full bg-green-400/20">
-                  <TrendingUp className="h-5 w-5 text-green-400" />
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="p-1 sm:p-1.5 rounded-full bg-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                 </div>
-                <span className="text-sm font-semibold text-white/90 tracking-wide uppercase">{t("home.hero.trust.updates")}</span>
+                <span className="text-[10px] sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase">{t("home.hero.trust.updates")}</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-full bg-blue-400/20">
-                  <Shield className="h-5 w-5 text-blue-400" />
+              <div className="flex items-center gap-2 sm:gap-2.5">
+                <div className="p-1 sm:p-1.5 rounded-full bg-blue-400/20 shadow-[0_0_10px_rgba(96,165,250,0.2)]">
+                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
                 </div>
-                <span className="text-sm font-semibold text-white/90 tracking-wide uppercase">{t("home.hero.trust.experts")}</span>
+                <span className="text-[10px] sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase">{t("home.hero.trust.experts")}</span>
               </div>
             </motion.div>
           </motion.div>

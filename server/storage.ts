@@ -837,7 +837,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getPublishedRackets(): Promise<Racket[]> {
     return Array.from(this.rackets.values())
-      .filter(r => r.isPublished !== false && r.inStock !== false)
+      .filter(r => r.isPublished !== false)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 
@@ -952,8 +952,11 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       updatedAt: new Date(),
     };
 
-    // Recalculate overall rating if any rating changed
-    if (
+    // Recalculate overall rating if sub-ratings changed but overallRating was NOT explicitly provided.
+    // When overallRating is explicitly set (e.g. from AI estimation), respect it.
+    if (updates.overallRating !== undefined) {
+      updated.overallRating = updates.overallRating;
+    } else if (
       updates.powerRating !== undefined ||
       updates.controlRating !== undefined ||
       updates.reboundRating !== undefined ||

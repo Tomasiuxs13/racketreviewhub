@@ -2,20 +2,24 @@ import OpenAI from "openai";
 import type { Racket } from "@shared/schema";
 import { upsertTranslation } from "./i18n.js";
 
-if (!process.env.OPENAI_API_KEY) {
-  console.warn("Warning: OPENAI_API_KEY not set. Review generation will be disabled.");
+// Support both OpenRouter_API_Key (preferred) and OPENAI_API_KEY (fallback) for compatibility
+const API_KEY = process.env.OpenRouter_API_Key || process.env.OPENAI_API_KEY;
+
+if (!API_KEY) {
+  console.warn("Warning: OpenRouter_API_Key or OPENAI_API_KEY not set. Review generation will be disabled.");
 }
 
 // Configurable models for the OpenRouter pipeline
-// We use Llama 3.3 for writing the review (latest and smartest open weights model)
-export const OPENAI_MODEL = process.env.OPENAI_MODEL || "meta-llama/llama-3.3-70b-instruct";
-// We use a fast/cheap model for translation and rating arrays (Llama 3.1 8B)
-export const OPENAI_TRANSLATION_MODEL = process.env.OPENAI_TRANSLATION_MODEL || "meta-llama/llama-3.1-8b-instruct";
+// We use Claude 3.5 Sonnet for writing the review and estimating ratings by default
+// Model docs: https://openrouter.ai/anthropic/claude-3.5-sonnet
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || "anthropic/claude-sonnet-4.5";
+// We use Gemini 2.5 Flash for reliable translations (lite was too weak for long HTML in JSON)
+export const OPENAI_TRANSLATION_MODEL = process.env.OPENAI_TRANSLATION_MODEL || "google/gemini-2.5-flash";
 // We use Perplexity Sonar for research tasks (latest model optimized for search on OpenRouter)
 export const OPENAI_RESEARCH_MODEL = process.env.OPENAI_RESEARCH_MODEL || "perplexity/sonar";
 
-const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 10;
-const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 4000;
+const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 1;
+const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 2000;
 
 interface ReviewSection {
   id: string;
@@ -213,10 +217,10 @@ function chunkReviewSections(sections: ReviewSection[]): ReviewSection[][] {
   return batches;
 }
 
-const openai = process.env.OPENAI_API_KEY
+export const openai = API_KEY
   ? new OpenAI({
     baseURL: "https://openrouter.ai/api/v1",
-    apiKey: process.env.OPENAI_API_KEY,
+    apiKey: API_KEY,
     defaultHeaders: {
       "HTTP-Referer": "http://localhost:5000",
       "X-Title": "Racket Review Hub"
@@ -224,7 +228,7 @@ const openai = process.env.OPENAI_API_KEY
   })
   : null;
 
-export const isOpenAIConfigured = Boolean(openai);
+export const isOpenAIConfigured = Boolean(openai && API_KEY);
 
 const DEFAULT_REVIEW_TRANSLATION_LOCALES = ["es", "pt", "it", "fr"];
 
@@ -236,8 +240,8 @@ const configuredReviewLocales = (process.env.REVIEW_TRANSLATION_LOCALES ?? DEFAU
 export const REVIEW_TRANSLATION_LOCALES = configuredReviewLocales;
 
 // Dynamic review template builder - generates different templates based on racket characteristics
-// to avoid duplicate content across 1000+ rackets
-function buildReviewTemplate(racket: Partial<Racket>, options?: ReviewGenerationOptions): string {
+// to avoid duplicate content across 1000+ rackets and improve SEO performance
+function buildReviewTemplate(racket: Partial<Racket>, racketInfo: string, options?: ReviewGenerationOptions): string {
   const price = Number(racket.currentPrice) || 0;
   const shape = racket.shape?.toLowerCase() || "teardrop";
   const gameLevel = racket.gameLevel?.toLowerCase() || "intermediate";
@@ -251,7 +255,7 @@ function buildReviewTemplate(racket: Partial<Racket>, options?: ReviewGeneration
 
   // Core sections that always appear (but with varied instructions)
   const introSection = `<h2>Introduction</h2>
-<p>Write an engaging, unique introduction for this specific racket from a first-person perspective ("we", "our team"). Mention the brand heritage, what makes this model stand out in the ${racket.year || "current"} lineup. Most importantly, explicitly state that we took this racket to the court and tested it. Be specific - reference actual specs like its ${shape} shape${racket.balance ? ` and ${racket.balance} balance` : ""}.</p>`;
+<p>Write a 2-3 paragraph introduction that opens with a hook sentence about what makes this racket distinctive on court — NOT with the price, NOT with a list of specs. Lead with a strong opinion or observation from testing. Then cover: what kind of player StarVie/this brand built it for, what makes this specific model stand out in the ${racket.year || "current"} lineup, and confirm that we tested it on court. Reference actual specs naturally (${shape} shape, ${racket.balance || ""} balance) as part of the narrative, not as a bullet list. End the intro with a single teaser sentence about what surprised us most during testing.</p>`;
 
   const prosConsSection = `<h2>Pros and Cons</h2>
 <p>Analyze this specific racket's strengths and weaknesses based on its actual specifications. Be honest and specific.</p>
@@ -285,28 +289,74 @@ function buildReviewTemplate(racket: Partial<Racket>, options?: ReviewGeneration
     : `<h2>Construction and Materials</h2>
 <p>Describe the materials and build quality of this racket. Discuss the ${racket.core || "core"} and ${racket.surface || "surface material"}, and how they contribute to the racket's performance at this price point. Offer our honest assessment of the material quality relative to the price.</p>`;
 
-  // Level-specific section
+  // Level-specific section — always includes specific player profile
   const levelSection = isAdvanced
-    ? `<h2>Advanced Player Perspective</h2>
-<p>Analyze this racket from an experienced player's viewpoint. Discuss how it handles at high-level play: spin generation, volley response, smash power, and consistency during intense rallies. Compare the feel to what advanced players typically expect from a top-tier ${shape}-shaped racket.</p>`
+    ? `<h2>Who Is This Racket For?</h2>
+<p>Give a highly specific player profile — not just skill level. Cover all of the following:</p>
+<ul>
+<li>Preferred court position (left side / right side / both)</li>
+<li>Playing style (aggressive baseliner, all-court, net-first, defensive retriever)</li>
+<li>Physical profile considerations (arm comfort, wrist sensitivity, swing speed)</li>
+<li>How often they play (recreational 1-2x/week vs competitive 4x+/week)</li>
+<li>One or two specific player archetypes who should look elsewhere and why</li>
+</ul>
+<p>Be decisive and opinionated. Example: "This is not a racket for the player who loves to end points with flat smashes from the left side — the round shape and soft core simply won't generate the explosive pop you need. It IS the racket for the right-side player who constructs points through bandejas and precise cross-court volleys."</p>`
     : `<h2>Who Should Buy This Racket?</h2>
-<p>Provide our honest assessment of the ideal player profile for this racket. Consider skill level, physical attributes, playing frequency, and style preferences. Be highly specific about who will love it and who should look elsewhere (e.g., "Skip this if you rely heavily on flat power").</p>`;
+<p>Provide our honest assessment of the ideal player profile for this racket. Cover all of the following:</p>
+<ul>
+<li>Skill level and how long they have been playing</li>
+<li>Preferred court position and playing style</li>
+<li>Physical considerations (arm comfort, swing speed, strength)</li>
+<li>Playing frequency</li>
+<li>One or two player archetypes who should NOT buy this racket and why</li>
+</ul>
+<p>Be highly specific. Avoid vague statements like "great for players who value control". Instead: "If you are a recreational player who plays twice a week and is still developing your vibora, this racket's forgiving sweet spot will save you more points than a diamond-shaped power racket ever could."</p>`;
 
-  // Competitor context (always unique per racket)
   const comparisonSection = options?.competitors?.length
     ? `<h2>How It Compares</h2>
-<p>Provide an authoritative market comparison. Discuss where this racket sits in the ${racket.brand} lineup and the broader ${tier} market segment. You MUST directly compare it against these specific alternatives: ${options.competitors.join(", ")}. What does this racket do better than its direct competitors? What might competing options do better?</p>`
+<p>Provide an authoritative market comparison. Discuss where this racket sits in the ${racket.brand} lineup and the broader ${tier} market segment. You MUST directly compare it against these specific alternatives: ${options.competitors.join(", ")}. What does THIS racket do better than its direct competitors? What might competing options do better?</p>`
     : `<h2>How It Compares</h2>
-<p>Provide an authoritative market comparison. Discuss where this racket sits in the ${racket.brand} lineup and the broader ${tier} market segment. You MUST name 1 or 2 specific equivalent rackets from other major brands that an online shopper might also be considering. What does this racket do better than its direct competitors? What might competing options do better?</p>`;
+<p>Provide an authoritative market comparison. Discuss where this racket sits within the broader ${tier} market segment. You MUST name 1 or 2 specific equivalent rackets from other major brands that an online shopper might also be considering. What does THIS racket do better than its direct competitors?</p>`;
+
+  const faqSection = `<h2>Frequently Asked Questions</h2>
+<p>Answer exactly 4 questions using this EXACT HTML format for every Q&A pair:</p>
+<p><strong>Q: [Question text here]</strong></p>
+<p>[Answer text here — 2-4 sentences, specific and direct.]</p>
+<p>Cover these 4 questions in this order:</p>
+<ol>
+<li>Is the ${racket.brand} ${racket.model} good for ${gameLevel || "intermediate"} players?</li>
+<li>Who is the ${racket.brand} ${racket.model} actually best suited for? (Be specific: playing style, court position, physical profile, how often they play)</li>
+<li>How does the ${racket.brand} ${racket.model} compare to ${options?.competitors?.[0] || "similar rackets from other major brands"}?</li>
+<li>Is the ${racket.brand} ${racket.model} still a good buy in ${new Date().getFullYear()} considering its price and performance?</li>
+</ol>
+<p>CRITICAL: Every question must be wrapped in &lt;strong&gt; tags prefixed with "Q:". Every answer must be in its own &lt;p&gt; tag. No &lt;h3&gt; or &lt;h4&gt; tags in this section.</p>`;
 
   const conclusionSection = `<h2>Final Verdict</h2>
 <p>Give a decisive, highly opinionated final verdict based on our time with the racket. State clearly whether we recommend this racket and for whom. Summarize the 2-3 most important takeaways. End with a definitive "Buy it if..." and "Skip it if..." statement.</p>`;
 
-  return `You are an expert padel racket reviewer writing for an enthusiast audience. Write a unique, insightful review article using HTML formatting.
+  const seoGuidance = `
+SEO OPTIMIZATION REQUIREMENTS:
+- Naturally weave in these keyword patterns where appropriate (without keyword stuffing):
+  * "${racket.brand} ${racket.model} review"
+  * "${racket.brand} ${racket.model} padel racket"
+  * "${shape} padel racket"
+  * "${gameLevel || "intermediate"} padel racket"
+- Explicitly mention the full racket name "${racket.brand} ${racket.model}" several times in the introduction and conclusion.
+- Answer search-intent questions directly in the body and FAQ-style section, such as:
+  * "Is ${racket.brand} ${racket.model} good for ${gameLevel || "intermediate"} players?"
+  * "Is this racket better for power, control, or all-around play?"
+  * "How does it compare against other ${tier} ${shape} rackets?"
+- Use natural language that would make this review a strong candidate for Google featured snippets.
+- Keep keyword usage natural and readable – never repeat phrases unnaturally just for SEO.`;
 
-IMPORTANT: Every review must be genuinely different. Do NOT use generic padel education content. Focus entirely on THIS specific racket's characteristics and how they translate to real-world performance.
+  return `You are an expert, highly opinionated padel racket reviewer writing for an enthusiast audience. Write a unique, focused review article using ONLY the HTML structure provided below.
 
-Required sections (use this exact HTML structure):
+CRITICAL DIRECTIVE: You MUST ONLY talk about THIS specific racket (${racket.brand} ${racket.model}). 
+ABSOLUTELY NO GENERIC PADEL EDUCATION. Do NOT explain what racket shapes are. Do NOT explain what weight categories are. Do NOT explain what different core foams mean. Your audience already knows how to play padel. If you include sections like "Understanding Padel Shapes", "Skill Level Recommendations", or "Maintenance Tips", YOU HAVE FAILED.
+
+You must output EXACTLY these 8 sections, utilizing the provided HTML structure.
+
+${seoGuidance}
 
 ${introSection}
 
@@ -320,20 +370,33 @@ ${levelSection}
 
 ${comparisonSection}
 
+${faqSection}
+
 ${conclusionSection}
 
+WRITING QUALITY REQUIREMENTS:
+- Each of the 8 sections must be substantive. Aim for at least 120 words per section.
+- Every performance claim must be grounded in a specific padel scenario. BAD: "excellent for volleys". GOOD: "when blocking a hard-hit smash from the back glass, the stiff frame returns the ball cleanly with minimal energy loss".
+- Never cite a numerical rating as evidence for itself. BAD: "The 92/100 control rating proves this racket has great control." GOOD: "We noticed pin-point accuracy on cross-court volleys, which aligns with its control-oriented design."
+- Reference specific, named shot types where relevant: bandeja, vibora, bajada, lob, smash, block volley.
+
+BANNED PHRASES & PATTERNS (never use these):
+- "we were keen to see", "we were excited to", "we were struck by", "we were eager to"
+- "making it a great choice for players who value these features"
+- "help them take their game to the next level"
+- "does not disappoint", "lives up to its reputation" (unless followed immediately by a specific why)
+- Starting consecutive sentences with "The [spec]..."
+- Ending sections with generic summaries that repeat the intro sentence
+
 CRITICAL HTML FORMATTING REQUIREMENTS:
-- Use <h2> tags for ALL section headings
-- Use <h3> tags for Pros and Cons / Performance subsections
-- Use <p> tags for ALL paragraph text
-- Use <ul> and <li> tags for ALL bullet lists
-- Use <strong> tags to emphasize key terms
-- DO NOT use markdown formatting - ONLY HTML tags
-- DO NOT wrap output in code blocks
-- Output should start with <h2> and end with </p>
-- Write at least 2-3 paragraphs per section, not just one sentence
-- Speak in the first person plural ("we", "our"). Represent the voice of expert padel testers.
-- Be highly specific and opinionated - NEVER use wishy-washy generic statements.`;
+- Use <h2> tags for the 8 section headings listed above ONLY. DO NOT invent new <h2> headings.
+- Use <h3> tags for Pros and Cons / Performance subsections.
+- Use <p> tags for ALL paragraph text.
+- Use <ul> and <li> tags for ALL bullet lists.
+- DO NOT use markdown formatting - ONLY HTML tags.
+- DO NOT wrap output in markdown code blocks (like \`\`\`html). Just output the raw HTML directly.
+- Speak in the first person plural ("we", "our") representing a team of expert playtesters.
+- Be highly specific to THIS racket's specs (${racket.shape} shape, ${racket.balance} balance, etc).`;
 }
 
 export interface RacketRatings {
@@ -354,6 +417,7 @@ export interface ReviewGenerationOptions {
   targetLocales?: string[];
   skipTranslations?: boolean;
   competitors?: string[];
+  keywords?: string[];
 }
 
 export interface RacketResearch {
@@ -368,6 +432,7 @@ export interface RacketResearch {
   };
   sentiment?: string; // Summarized pros/cons from the internet
   commonComplaints?: string[]; // Specific flaws/issues reported by users
+  keywords?: string[]; // Common search queries for SEO
 }
 
 export async function performRacketResearch(racketInfo: {
@@ -402,7 +467,8 @@ Return ONLY a JSON object with these exact keys (no other text):
     "player": "Man/Woman/Both"
   },
   "sentiment": "A 2-3 sentence summary of the general consensus on how this racket plays, its best features, and its flaws. Be specific.",
-  "commonComplaints": ["complaint 1 (e.g. paint chips easily, head heavy)", "complaint 2 (e.g. handle too short)"]
+  "commonComplaints": ["complaint 1 (e.g. paint chips easily, head heavy)", "complaint 2 (e.g. handle too short)"],
+  "keywords": ["up to 10 common Google search queries users type when looking for this racket, e.g. '${racketInfo.brand} ${racketInfo.model} review', '${racketInfo.brand} ${racketInfo.model} padel racket'"]
 }
 
 If you cannot find specific information for a field, leave it null or omit it. Do not guess.`;
@@ -416,7 +482,7 @@ If you cannot find specific information for a field, leave it null or omit it. D
         },
       ],
       temperature: 0.1, // Low temp for facts
-      max_tokens: 500,
+      max_tokens: 1200,
     }, { timeout: 30000 }); // 30 second hard timeout
 
     let content = completion.choices[0]?.message?.content?.trim();
@@ -435,6 +501,81 @@ If you cannot find specific information for a field, leave it null or omit it. D
   } catch (error) {
     console.error("Error performing research with OpenRouter:", error);
     return null;
+  }
+}
+
+// Optional keyword research helper to inform SEO-focused review generation.
+// Uses the research model to discover common search queries for a given racket.
+async function researchRacketKeywords(brand: string, model: string): Promise<string[]> {
+  if (!openai) {
+    return [];
+  }
+
+  try {
+    const prompt = `You are an SEO assistant. Find the MOST COMMON search queries users type into Google and Bing for: ${brand} ${model} padel racket.
+
+CRITICAL: Return ONLY a valid JSON array of strings. No explanations, no markdown, no other text. Example format:
+["query 1", "query 2", "query 3"]
+
+Return up to 10 common search queries as a JSON array.`;
+
+    const completion = await openai.chat.completions.create({
+      model: OPENAI_RESEARCH_MODEL,
+      messages: [
+        {
+          role: "system",
+          content: "You are a JSON-only API. Always return valid JSON arrays, never natural language.",
+        },
+        {
+          role: "user",
+          content: prompt,
+        },
+      ],
+      temperature: 0.1,
+      max_tokens: 400,
+    }, { timeout: 30000 });
+
+    let content = completion.choices[0]?.message?.content?.trim();
+    if (!content) {
+      return [];
+    }
+
+    // Remove markdown code blocks if present
+    content = content
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/```$/i, "")
+      .trim();
+
+    // Try to extract JSON array from the response if it's embedded in text
+    // Look for array pattern: [...]
+    const arrayMatch = content.match(/\[[\s\S]*\]/);
+    if (arrayMatch) {
+      content = arrayMatch[0];
+    }
+
+    // Try parsing as JSON
+    try {
+      const parsed = JSON.parse(content);
+      if (Array.isArray(parsed)) {
+        return parsed.filter((item) => typeof item === "string").slice(0, 10);
+      }
+    } catch (parseError) {
+      // If JSON parsing fails, try to extract quoted strings as a fallback
+      const stringMatches = content.match(/"([^"]+)"/g);
+      if (stringMatches && stringMatches.length > 0) {
+        return stringMatches
+          .map((match) => match.replace(/^"|"$/g, ""))
+          .filter((s) => s.length > 0)
+          .slice(0, 10);
+      }
+    }
+
+    return [];
+  } catch (error) {
+    // Silently fail - keyword research is optional, don't break review generation
+    console.warn(`Keyword research failed for ${brand} ${model} (non-critical):`, error instanceof Error ? error.message : String(error));
+    return [];
   }
 }
 
@@ -518,7 +659,7 @@ The overallRating should be a comprehensive assessment considering all factors, 
           content: prompt,
         },
       ],
-      temperature: 0.3,
+      temperature: 0.2,
       max_tokens: 200,
     }, { timeout: 45000 }); // 45 second hard timeout
 
@@ -583,6 +724,15 @@ export async function generateRacketReview(
 
   try {
     // Build racket information string with all specifications and ratings
+    // Use pre-fetched keywords from research if available, otherwise fall back to separate call
+    const keywordPhrases = options.keywords?.length
+      ? options.keywords
+      : await researchRacketKeywords(racket.brand, racket.model);
+    const keywordHintBlock = keywordPhrases.length
+      ? `Top real-world search queries users type when looking for this racket:
+${keywordPhrases.map((k: string) => `- ${k}`).join("\n")}`
+      : "";
+
     const racketInfo = `
 Brand: ${racket.brand}
 Model: ${racket.model}
@@ -612,22 +762,24 @@ ${racket.format ? `- Format: ${racket.format}` : ""}
 ${racket.playersCollection ? `- Players Collection: ${racket.playersCollection}` : ""}
 
 ${racket.researchBrief ? `ONLINE RESEARCH / SENTIMENT:\n${racket.researchBrief}\n` : ''}
+${keywordHintBlock ? `\nKEYWORD RESEARCH INSIGHTS (for SEO, not to be shown as a list, but woven naturally into the prose):\n${keywordHintBlock}\n` : ""}
 `;
 
-    const systemPrompt = buildReviewTemplate(racket, options);
+    const systemPrompt = buildReviewTemplate(racket, racketInfo, options);
 
-    const userPrompt = `Write a unique, in-depth review for the following padel racket. Follow the HTML structure from the system prompt exactly. Base your review on the actual specifications below - do NOT invent specs or use generic filler content.
+    const userPrompt = `Write the review now. Use the specs below.
 
-If "ONLINE RESEARCH / SENTIMENT" is provided below, you MUST heavily incorporate those findings into your review. Use the real-world sentiment to explain the pros/cons and write an accurate description of how it feels on court.
+Absolute prohibitions:
+1. NO GENERIC PADEL EXPLANATIONS. ONLY talk about the ${racket.brand} ${racket.model}.
+2. NO banned filler phrases (see system prompt).
+3. NO citing a rating number as proof of itself.
+4. Every performance claim needs a real padel scenario behind it.
+5. All 8 sections must be present and each at least 120 words long.
 
+Specs:
 ${racketInfo}
 
-CRITICAL FORMATTING:
-- Use ONLY HTML tags (<h2>, <h3>, <p>, <ul>, <li>, <strong>) - NO markdown
-- DO NOT wrap output in code blocks
-- Write 2-3 substantial paragraphs per section minimum
-- Be specific to THIS racket - reference its actual specs, ratings, research, and characteristics
-- Offer genuine opinions and recommendations, not generic padel advice`;
+Output ONLY the 8 required HTML sections. No markdown wrapping. No preamble.`;
 
     const completion = await openai.chat.completions.create({
       model: OPENAI_MODEL,
@@ -641,8 +793,8 @@ CRITICAL FORMATTING:
           content: userPrompt,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 6000,
+      temperature: 0.5,
+      max_tokens: 8000,
     }, { timeout: 180000 }); // 3 minute hard timeout for large review generation
 
     let reviewContent = completion.choices[0]?.message?.content || "";
@@ -678,124 +830,10 @@ CRITICAL FORMATTING:
     // Clean up any excessive newlines that might have been created
     reviewContent = reviewContent.replace(/\n{3,}/g, '\n\n');
 
-    // Post-process to ensure HTML formatting if ChatGPT didn't follow instructions
-    // Check if content already has HTML tags
-    const hasHtmlTags = reviewContent.includes('<h2>') || reviewContent.includes('<p>') || reviewContent.includes('<ul>');
-
-    if (!hasHtmlTags) {
-      console.log('Review content missing HTML tags, converting from plain text...');
-
-      // Split into lines and process
-      const lines = reviewContent.split('\n');
-      const processed: string[] = [];
-      let currentList: string[] = [];
-      let inList = false;
-
-      // Known section headings
-      const sectionHeadings = [
-        'Introduction',
-        'Understanding Padel Racket Shapes',
-        'Pros and Cons',
-        'Weight Considerations',
-        'Balance Point',
-        'Materials and Construction',
-        'Skill Level Recommendations',
-        'Price Ranges',
-        'Key Factors to Consider',
-        'Common Mistakes to Avoid',
-        'Where to Buy',
-        'Maintenance Tips',
-        'Conclusion'
-      ];
-
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-
-        if (!line) {
-          // Close any open list before empty line
-          if (inList && currentList.length > 0) {
-            processed.push('<ul>');
-            processed.push(...currentList);
-            processed.push('</ul>');
-            currentList = [];
-            inList = false;
-          }
-          processed.push('');
-          continue;
-        }
-
-        // Check if it's a section heading
-        const isHeading = sectionHeadings.some(heading =>
-          line === heading || line.startsWith(heading)
-        );
-
-        // Check if it's a Pros/Cons subheading
-        const isSubHeading = line === 'Pros' || line === 'Cons';
-
-        // Check if it's a bullet point (starts with dash or similar)
-        const isBullet = /^[-•*]\s+/.test(line) || /^\d+\.\s+/.test(line);
-
-        if (isHeading) {
-          // Close any open list
-          if (inList && currentList.length > 0) {
-            processed.push('<ul>');
-            processed.push(...currentList);
-            processed.push('</ul>');
-            currentList = [];
-            inList = false;
-          }
-          processed.push(`<h2>${line}</h2>`);
-        } else if (isSubHeading) {
-          // Close any open list
-          if (inList && currentList.length > 0) {
-            processed.push('<ul>');
-            processed.push(...currentList);
-            processed.push('</ul>');
-            currentList = [];
-            inList = false;
-          }
-          processed.push(`<h3>${line}</h3>`);
-        } else if (isBullet) {
-          // Add to current list
-          const bulletText = line.replace(/^[-•*]\s+/, '').replace(/^\d+\.\s+/, '');
-          // Check if it has strong formatting (text: description)
-          if (bulletText.includes(':')) {
-            const [key, ...valueParts] = bulletText.split(':');
-            const value = valueParts.join(':').trim();
-            currentList.push(`<li><strong>${key.trim()}:</strong> ${value}</li>`);
-          } else {
-            currentList.push(`<li>${bulletText}</li>`);
-          }
-          inList = true;
-        } else {
-          // Regular paragraph
-          // Close any open list first
-          if (inList && currentList.length > 0) {
-            processed.push('<ul>');
-            processed.push(...currentList);
-            processed.push('</ul>');
-            currentList = [];
-            inList = false;
-          }
-          processed.push(`<p>${line}</p>`);
-        }
-      }
-
-      // Close any remaining list
-      if (inList && currentList.length > 0) {
-        processed.push('<ul>');
-        processed.push(...currentList);
-        processed.push('</ul>');
-      }
-
-      reviewContent = processed.join('\n');
-    } else {
-      // Content has HTML but might need cleanup
-      // Convert any remaining markdown headings
-      reviewContent = reviewContent
-        .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-        .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
-    }
+    // Convert any remaining markdown headings that slipped through
+    reviewContent = reviewContent
+      .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+      .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
 
     // Try to extract ratings from the review if they're mentioned, otherwise use existing ratings
     // For now, we'll use the existing ratings from the racket
@@ -894,7 +932,7 @@ export async function translateTextBatch(
   options: TranslationBatchOptions = {},
 ): Promise<Record<string, string>> {
   if (!openai) {
-    throw new Error("OpenAI client not initialized. Set OPENAI_API_KEY to enable translations.");
+    throw new Error("OpenAI client not initialized. Set OpenRouter_API_Key or OPENAI_API_KEY to enable translations.");
   }
 
   if (!items.length) {
@@ -947,8 +985,15 @@ export async function translateTextBatch(
         content: `Translate the text_to_translate fields in the following entries.\n\nInput:\n${JSON.stringify(payload, null, 2)}\n\nCRITICAL: You MUST return ONLY a JSON object of this EXACT shape (do not include context fields in the output):\n{\n  "translations": {\n    "id_1": "translated text for id_1",\n    "id_2": "translated text for id_2"\n  }\n}`,
       },
     ],
-    max_tokens: 8000,
+    max_tokens: 12000,
   }, { timeout: 120000 }); // 2 minute hard timeout for batch translations
+
+  // Detect truncation before attempting to parse
+  const finishReason = completion.choices[0]?.finish_reason;
+  if (finishReason === "length") {
+    console.warn(`Translation output truncated (finish_reason=length) for ${targetLocale}. Batch too large.`);
+    throw new Error(`Translation truncated for ${targetLocale}: output exceeded max_tokens. Reduce batch size or increase max_tokens.`);
+  }
 
   let content = completion.choices[0]?.message?.content?.trim();
 

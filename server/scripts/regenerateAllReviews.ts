@@ -29,47 +29,60 @@ async function withRetry<T>(operation: () => Promise<T | null>, maxRetries = 3, 
     }
 }
 
+function parseIntArg(flag: string): number | undefined {
+    const idx = process.argv.indexOf(flag);
+    if (idx === -1 || idx + 1 >= process.argv.length) return undefined;
+    const val = parseInt(process.argv[idx + 1], 10);
+    return isNaN(val) ? undefined : val;
+}
+
 async function run() {
     console.log("Starting Bulk Racket Regeneration (Research -> Rate -> Review)...");
+
+    const processPublished = process.argv.includes("--published");
+    const processAll = process.argv.includes("--all");
+    const startFrom = parseIntArg("--start-from") ?? 1; // 1-based
+    const limit = parseIntArg("--limit");
+
+    const modeLabel = processAll ? "ALL (published + unpublished)" : processPublished ? "PUBLISHED" : "UNPUBLISHED";
+    console.log(`Targeting: ${modeLabel} rackets.`);
 
     // Get all rackets that exist
     const allRackets = await storage.getAllRackets();
 
-    // Target specific racket by model name
-    const TARGET_MODEL = "HEAD GRAVITY PRO 2024";
-    const TARGET_BRAND = "Head";
-    const targetRacket = await storage.getRacketByBrandAndModel(TARGET_BRAND, TARGET_MODEL);
-    if (!targetRacket) {
-        console.error(`Racket "${TARGET_BRAND} ${TARGET_MODEL}" not found.`);
-        process.exit(1);
-    }
-    const rackets = [targetRacket];
+    // Filter by publish status
+    let rackets = processAll
+        ? allRackets
+        : allRackets.filter(r => r.isPublished === processPublished);
 
-    console.log(`Found ${rackets.length} total rackets to process for this test run.`);
+    const totalMatched = rackets.length;
+    const inStockCount = rackets.filter(r => r.inStock).length;
+    const outOfStockCount = rackets.filter(r => !r.inStock).length;
+    console.log(`Found ${totalMatched} rackets (${inStockCount} in stock, ${outOfStockCount} out of stock).`);
+
+    // Apply --start-from (1-based index)
+    if (startFrom > 1) {
+        rackets = rackets.slice(startFrom - 1);
+        console.log(`Skipping first ${startFrom - 1} rackets (--start-from ${startFrom}).`);
+    }
+
+    // Apply --limit
+    if (limit !== undefined) {
+        rackets = rackets.slice(0, limit);
+        console.log(`Limiting to ${limit} rackets (--limit ${limit}).`);
+    }
+
+    console.log(`Processing ${rackets.length} of ${totalMatched} rackets (${modeLabel}).`);
 
     let successCount = 0;
     let failCount = 0;
 
     for (let i = 0; i < rackets.length; i++) {
+        const absoluteIndex = (startFrom - 1) + i; // 0-based position in the full list
         const racket = rackets[i];
-        console.log(`\n--- [${i + 1}/${rackets.length}] Processing: ${racket.brand} ${racket.model} ---`);
+        console.log(`\n--- [${i + 1}/${rackets.length}] (#${absoluteIndex + 1} overall) Processing: ${racket.brand} ${racket.model} ---`);
 
         try {
-            // Step 0: Ensure we start from scratch by wiping the current properties
-            console.log("-> Wiping existing review/ratings to run entirely from scratch...");
-            await storage.updateRacket(racket.id, {
-                // Wipe ratings
-                powerRating: 0,
-                controlRating: 0,
-                reboundRating: 0,
-                maneuverabilityRating: 0,
-                sweetSpotRating: 0,
-                // Wipe textuals
-                researchBrief: null,
-                reviewContent: null,
-                isPublished: false,
-            });
-
             // Step 1: Online Research
             console.log("-> Searching web for specs & sentiment (Perplexity)...");
             const research = await withRetry(() => performRacketResearch({
@@ -79,6 +92,7 @@ async function run() {
             }));
 
             let researchBriefText = null;
+            let researchKeywords: string[] = [];
 
             if (research) {
                 console.log("   Found research data. Updating DB with discovered specs...");
@@ -104,6 +118,12 @@ async function run() {
                     }
                     researchBriefText = brief;
                     updates.researchBrief = brief;
+                }
+
+                // Capture keywords for the review generation step
+                if (research.keywords?.length) {
+                    researchKeywords = research.keywords;
+                    console.log(`   Found ${researchKeywords.length} SEO keywords from research.`);
                 }
 
                 if (Object.keys(updates).length > 0) {
@@ -149,16 +169,27 @@ async function run() {
             const perfectlyUpdatedRacket = await storage.getRacket(racket.id);
 
             if (perfectlyUpdatedRacket) {
-                // Find 2-3 comparable rackets
+                // Find 2 comparable rackets using scoring
                 const priceNum = Number(perfectlyUpdatedRacket.currentPrice) || 0;
-                const competitors = allRackets
-                    .filter(r =>
-                        r.id !== perfectlyUpdatedRacket.id &&
-                        r.shape === perfectlyUpdatedRacket.shape &&
-                        Math.abs((Number(r.currentPrice) || 0) - priceNum) < 50
-                    )
-                    .slice(0, 2)
-                    .map(r => `${r.brand} ${r.model}`);
+                // Exclude pickleball/non-padel rackets from competitor pool
+                const PICKLEBALL_KEYWORDS = ["pickleball", "pickle ball"];
+                const scored = allRackets
+                    .filter(r => r.id !== perfectlyUpdatedRacket.id)
+                    .filter(r => !PICKLEBALL_KEYWORDS.some(kw => r.model.toLowerCase().includes(kw) || r.brand.toLowerCase().includes(kw)))
+                    .map(r => {
+                        let score = 0;
+                        if (r.shape === perfectlyUpdatedRacket.shape) score += 3;
+                        if (r.gameLevel && r.gameLevel === perfectlyUpdatedRacket.gameLevel) score += 2;
+                        if (r.gameType && r.gameType === perfectlyUpdatedRacket.gameType) score += 2;
+                        if (r.brand !== perfectlyUpdatedRacket.brand) score += 1; // diversity bonus
+                        const priceDiff = Math.abs((Number(r.currentPrice) || 0) - priceNum);
+                        if (priceDiff > 100) score -= 2;
+                        else if (priceDiff > 50) score -= 1;
+                        return { racket: r, score };
+                    })
+                    .filter(s => s.score > 0)
+                    .sort((a, b) => b.score - a.score);
+                const competitors = scored.slice(0, 2).map(s => `${s.racket.brand} ${s.racket.model}`);
 
                 if (competitors.length > 0) {
                     console.log(`   Found competitors for comparison: ${competitors.join(", ")}`);
@@ -167,14 +198,27 @@ async function run() {
                 console.log("   (Waiting for OpenRouter LLM Review Generation & Translations...)");
                 const reviewResult = await withRetry(() => generateRacketReview(perfectlyUpdatedRacket, {
                     competitors,
-                    targetLocales: ["es"] // Only test Spanish translation to save time
+                    keywords: researchKeywords,
+                    targetLocales: ["es", "pt", "it", "fr"]
                 }));
 
                 if (reviewResult?.reviewContent) {
                     console.log(`   Review length: ${reviewResult.reviewContent.length} chars`);
-                    const savedRacket = await storage.updateRacket(racket.id, {
+
+                    // Save review content together with ratings to keep them in sync
+                    const reviewUpdate: Record<string, any> = {
                         reviewContent: reviewResult.reviewContent,
-                    });
+                    };
+                    if (estimatedRatings) {
+                        reviewUpdate.powerRating = estimatedRatings.powerRating;
+                        reviewUpdate.controlRating = estimatedRatings.controlRating;
+                        reviewUpdate.reboundRating = estimatedRatings.reboundRating;
+                        reviewUpdate.maneuverabilityRating = estimatedRatings.maneuverabilityRating;
+                        reviewUpdate.sweetSpotRating = estimatedRatings.sweetSpotRating;
+                        reviewUpdate.overallRating = estimatedRatings.overallRating;
+                    }
+
+                    const savedRacket = await storage.updateRacket(racket.id, reviewUpdate);
                     console.log(`   Save result - isPublished: ${savedRacket?.isPublished}, reviewContent length: ${savedRacket?.reviewContent?.length ?? 0}`);
                     console.log("   Review generated & saved!");
 
@@ -197,6 +241,7 @@ async function run() {
 
         } catch (e) {
             console.error("   Error during pipeline:", e);
+            console.log(`   To resume from this racket, run with: --start-from ${absoluteIndex + 1}`);
             failCount++;
         }
 

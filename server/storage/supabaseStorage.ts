@@ -49,7 +49,7 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
-      .where(and(eq(rackets.isPublished, true), eq(rackets.inStock, true)))
+      .where(eq(rackets.isPublished, true))
       .orderBy(desc(rackets.createdAt));
     return result;
   }
@@ -98,7 +98,7 @@ export class SupabaseStorage implements IStorage {
         updatedAt: rackets.updatedAt,
       })
       .from(rackets)
-      .where(and(eq(rackets.isPublished, true), eq(rackets.inStock, true)))
+      .where(eq(rackets.isPublished, true))
       .orderBy(desc(rackets.createdAt));
     return result;
   }
@@ -257,15 +257,21 @@ export class SupabaseStorage implements IStorage {
     const current = await this.getRacket(id);
     if (!current) return undefined;
 
-    // Recalculate overall rating if any rating changed
+    // Recalculate overall rating if sub-ratings changed but overallRating was NOT explicitly provided.
+    // When overallRating is explicitly set (e.g. from AI estimation), respect it — it considers
+    // factors beyond the simple average (brand reputation, research sentiment, value proposition).
     let overallRating = current.overallRating;
-    if (
+    if (updates.overallRating !== undefined) {
+      // Explicitly provided — use it directly
+      overallRating = updates.overallRating;
+    } else if (
       updates.powerRating !== undefined ||
       updates.controlRating !== undefined ||
       updates.reboundRating !== undefined ||
       updates.maneuverabilityRating !== undefined ||
       updates.sweetSpotRating !== undefined
     ) {
+      // Sub-ratings changed without explicit overall — recalculate as average
       const power = updates.powerRating ?? current.powerRating;
       const control = updates.controlRating ?? current.controlRating;
       const rebound = updates.reboundRating ?? current.reboundRating;
