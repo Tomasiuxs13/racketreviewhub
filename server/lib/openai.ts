@@ -506,7 +506,13 @@ If you cannot find specific information for a field, leave it null or omit it. D
       .replace(/```$/i, "")
       .trim();
 
-    return JSON.parse(content) as RacketResearch;
+    try {
+      return JSON.parse(content) as RacketResearch;
+    } catch (_parseError) {
+      // Model returned a natural-language refusal instead of JSON (e.g. "I cannot provide...")
+      console.warn(`Research model returned non-JSON for ${racketInfo.brand} ${racketInfo.model} — skipping research.`);
+      return null;
+    }
   } catch (error) {
     console.error("Error performing research with OpenRouter:", error);
     return null;
