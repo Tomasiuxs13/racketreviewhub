@@ -15,10 +15,10 @@ export async function apiRequest(
 ): Promise<Response> {
   // Check if data is FormData (for file uploads)
   const isFormData = data instanceof FormData;
-  
+
   // Get auth headers
   const authHeaders = getAuthHeaders();
-  
+
   const res = await fetch(url, {
     method,
     headers: {
@@ -42,46 +42,46 @@ export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
-  async ({ queryKey }) => {
-    // Extract locale from queryKey if it's the last element and is a valid locale
-    const keyArray = [...queryKey];
-    const lastElement = keyArray[keyArray.length - 1];
-    const extractedLocale = typeof lastElement === "string" && SUPPORTED_LOCALES.includes(lastElement)
-      ? keyArray.pop() as string
-      : undefined;
-    
-    // Build URL from remaining queryKey elements
-    let url = keyArray.join("/") as string;
-    
-    // Append locale query parameter if provided and not English
-    if (extractedLocale && extractedLocale !== "en") {
-      const separator = url.includes("?") ? "&" : "?";
-      url = `${url}${separator}lang=${extractedLocale}`;
-    }
-    
-    // Get auth headers for admin routes
-    const authHeaders = getAuthHeaders();
-    
-    const res = await fetch(url, {
-      credentials: "include",
-      headers: authHeaders,
-    });
+    async ({ queryKey }) => {
+      // Extract locale from queryKey if it's the last element and is a valid locale
+      const keyArray = [...queryKey];
+      const lastElement = keyArray[keyArray.length - 1];
+      const extractedLocale = typeof lastElement === "string" && SUPPORTED_LOCALES.includes(lastElement)
+        ? keyArray.pop() as string
+        : undefined;
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
-    }
+      // Build URL from remaining queryKey elements
+      let url = keyArray.join("/") as string;
 
-    await throwIfResNotOk(res);
-    return await res.json();
-  };
+      // Append locale query parameter if provided and not English
+      if (extractedLocale && extractedLocale !== "en") {
+        const separator = url.includes("?") ? "&" : "?";
+        url = `${url}${separator}lang=${extractedLocale}`;
+      }
+
+      // Get auth headers for admin routes
+      const authHeaders = getAuthHeaders();
+
+      const res = await fetch(url, {
+        credentials: "include",
+        headers: authHeaders,
+      });
+
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+
+      await throwIfResNotOk(res);
+      return await res.json();
+    };
 
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
+      refetchOnWindowFocus: true,
+      staleTime: 5 * 60 * 1000, // 5 minutes — data is fresh for 5 min, then refetched
       retry: false,
     },
     mutations: {

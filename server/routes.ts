@@ -28,7 +28,7 @@ const CACHE_RACKET = 300; // 5 minutes for racket data (prices update frequently
  * @param data Data to generate ETag from (optional)
  */
 function setCacheHeaders(res: Response, maxAge: number, data?: unknown): void {
-  res.set('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${maxAge * 2}`);
+  res.set('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${Math.round(maxAge * 0.5)}, must-revalidate`);
   if (data) {
     const etag = crypto.createHash('md5').update(JSON.stringify(data)).digest('hex');
     res.set('ETag', `"${etag}"`);
@@ -56,12 +56,12 @@ function estimateRatingsByBrand(brand: string, model: string = ''): {
 } {
   const brandLower = brand.toLowerCase();
   const seed = hashString(`${brandLower}-${model.toLowerCase()}`);
-  
+
   // Generate deterministic pseudo-random offsets based on brand+model hash
   const getOffset = (index: number, range: number) => {
     return (hashString(`${seed}-${index}`) % range);
   };
-  
+
   // High-end professional brands
   if (['nox', 'bullpadel', 'head'].includes(brandLower)) {
     return {
@@ -72,7 +72,7 @@ function estimateRatingsByBrand(brand: string, model: string = ''): {
       sweetSpotRating: 80 + getOffset(5, 10),
     };
   }
-  
+
   // Premium brands
   if (['babolat', 'adidas', 'wilson'].includes(brandLower)) {
     return {
@@ -83,7 +83,7 @@ function estimateRatingsByBrand(brand: string, model: string = ''): {
       sweetSpotRating: 79 + getOffset(5, 10),
     };
   }
-  
+
   // Mid-tier brands
   if (['dunlop', 'prince', 'tecnifibre'].includes(brandLower)) {
     return {
@@ -94,7 +94,7 @@ function estimateRatingsByBrand(brand: string, model: string = ''): {
       sweetSpotRating: 75 + getOffset(5, 10),
     };
   }
-  
+
   // Default for other brands
   return {
     powerRating: 70 + getOffset(1, 15),
@@ -200,7 +200,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/auth/verify", async (req, res) => {
     try {
       const authHeader = req.headers.authorization;
-      
+
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({ valid: false, error: "No token provided" });
       }
@@ -231,12 +231,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Support compact mode to exclude reviewContent for list views
       const compact = req.query.fields === "compact";
-      
+
       // Only show published rackets to the public
-      const rackets = compact 
+      const rackets = compact
         ? await storage.getPublishedRacketsCompact()
         : await storage.getPublishedRackets();
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -250,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = rackets;
       }
-      
+
       // Set cache headers - 5 minutes for list endpoint
       setCacheHeaders(res, CACHE_SHORT, result);
       res.json(result);
@@ -269,7 +269,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const allRackets = await storage.getAllRackets();
       const searchTerm = query.toLowerCase().trim();
-      
+
       // Filter and deduplicate by brand+model (case-insensitive)
       const seen = new Map<string, Racket>();
       const filtered = allRackets.filter((racket) => {
@@ -281,12 +281,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Create a unique key for brand+model combination (case-insensitive)
         const key = `${racket.brand.toLowerCase()}:${racket.model.toLowerCase()}`;
-        
+
         // If we've seen this brand+model combination before, skip it
         if (seen.has(key)) {
           return false;
         }
-        
+
         // Keep the first occurrence (or you could keep the one with the highest rating)
         seen.set(key, racket);
         return true;
@@ -295,7 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let results = filtered.slice(0, 8); // Limit to 8 results for preview
-      
+
       if (locale !== "en" && isValidEntityType("racket_review")) {
         results = await applyTranslationsToEntities(
           results,
@@ -316,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rackets/recent", async (req, res) => {
     try {
       const rackets = await storage.getRecentRackets(10);
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -330,7 +330,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = rackets;
       }
-      
+
       // Cache for 5 minutes
       setCacheHeaders(res, CACHE_SHORT, result);
       res.json(result);
@@ -354,7 +354,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!racket) {
         return res.status(404).json({ error: "Racket not found" });
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -368,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = racket;
       }
-      
+
       // Cache individual rackets for 5 minutes (prices update frequently)
       setCacheHeaders(res, CACHE_RACKET, result);
 
@@ -392,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!racket) {
         return res.status(404).json({ error: "Racket not found" });
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -406,7 +406,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = racket;
       }
-      
+
       // Cache individual rackets for 5 minutes (prices update frequently)
       setCacheHeaders(res, CACHE_RACKET, result);
       res.json(result);
@@ -418,7 +418,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/rackets/related/:id", async (req, res) => {
     try {
       const related = await storage.getRelatedRackets(req.params.id, 4);
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -432,7 +432,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = related;
       }
-      
+
       // Cache related rackets for 30 minutes
       setCacheHeaders(res, CACHE_MEDIUM, result);
       res.json(result);
@@ -456,12 +456,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/guides", async (req, res) => {
     try {
       const guides = await storage.getAllGuides();
-      
+
       if (!guides || !Array.isArray(guides)) {
         console.error("[guides] Invalid guides data:", guides);
         return res.json([]);
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -484,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = guides;
       }
-      
+
       // Cache guides for 30 minutes
       setCacheHeaders(res, CACHE_MEDIUM, result);
       res.json(result);
@@ -497,7 +497,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/guides/recent", async (req, res) => {
     try {
       const guides = await storage.getRecentGuides(8);
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = guides;
       }
-      
+
       // Cache recent guides for 5 minutes
       setCacheHeaders(res, CACHE_SHORT, result);
       res.json(result);
@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!guide) {
         return res.status(404).json({ error: "Guide not found" });
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -551,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = guide;
       }
-      
+
       // Cache individual guides for 1 hour
       setCacheHeaders(res, CACHE_LONG, result);
       res.json(result);
@@ -567,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Guide not found" });
       }
       const related = await storage.getRelatedGuides(guide.id, guide.category, 3);
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = related;
       }
-      
+
       // Cache related guides for 30 minutes
       setCacheHeaders(res, CACHE_MEDIUM, result);
       res.json(result);
@@ -594,7 +594,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/brands", async (req, res) => {
     try {
       const brands = await storage.getAllBrands();
-      
+
       // Cache brands for 30 minutes
       setCacheHeaders(res, CACHE_MEDIUM, brands);
       res.json(brands);
@@ -610,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!brand) {
         return res.status(404).json({ error: "Brand not found" });
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -629,7 +629,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = brand;
       }
-      
+
       // Cache individual brands for 1 hour
       setCacheHeaders(res, CACHE_LONG, result);
       res.json(result);
@@ -645,7 +645,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Brand not found" });
       }
       const rackets = await storage.getRacketsByBrand(brand.name);
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -659,7 +659,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = rackets;
       }
-      
+
       // Cache brand rackets for 30 minutes
       setCacheHeaders(res, CACHE_MEDIUM, result);
       res.json(result);
@@ -672,12 +672,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/blog", async (req, res) => {
     try {
       const posts = await storage.getAllBlogPosts();
-      
+
       if (!posts || !Array.isArray(posts)) {
         console.error("[blog] Invalid posts data:", posts);
         return res.json([]);
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -700,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = posts;
       }
-      
+
       // Cache blog posts for 30 minutes
       setCacheHeaders(res, CACHE_MEDIUM, result);
       res.json(result);
@@ -716,7 +716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!post) {
         return res.status(404).json({ error: "Blog post not found" });
       }
-      
+
       // Apply translations if locale is provided
       const locale = (req.query.lang as string) || "en";
       let result;
@@ -735,7 +735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         result = post;
       }
-      
+
       // Cache individual blog posts for 1 hour
       setCacheHeaders(res, CACHE_LONG, result);
       res.json(result);
@@ -748,7 +748,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/authors", async (req, res) => {
     try {
       const authors = await storage.getAllAuthors();
-      
+
       // Cache authors for 1 hour (rarely changes)
       setCacheHeaders(res, CACHE_LONG, authors);
       res.json(authors);
@@ -763,7 +763,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!author) {
         return res.status(404).json({ error: "Author not found" });
       }
-      
+
       // Get author's articles, guides, reviews, and brands
       const [blogPosts, rackets, allGuides, allBrands] = await Promise.all([
         storage.getBlogPostsByAuthor(author.id),
@@ -771,16 +771,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getAllGuides(), // Get all guides since they're all by "Padel Racket Reviews"
         storage.getAllBrands(), // Get all brands since they're all by Carlos Rodriguez
       ]);
-      
+
       // Filter guides and brands - include all if author is Carlos Rodriguez
       // Since guides and brands don't have authorId, we show them for the default author
-      const guides = (author.slug === "carlos-rodriguez" || author.name === "Padel Racket Reviews") 
-        ? allGuides 
+      const guides = (author.slug === "carlos-rodriguez" || author.name === "Padel Racket Reviews")
+        ? allGuides
         : [];
-      const brands = (author.slug === "carlos-rodriguez") 
-        ? allBrands 
+      const brands = (author.slug === "carlos-rodriguez")
+        ? allBrands
         : [];
-      
+
       res.json({
         ...author,
         blogPosts,
@@ -969,7 +969,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/rackets", requireAdmin, async (req, res) => {
     try {
       const racket = await storage.createRacket(req.body);
-      
+
       // Generate review with ChatGPT if reviewContent is not provided
       if (!racket.reviewContent) {
         try {
@@ -987,7 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Continue without review - racket creation succeeded
         }
       }
-      
+
       res.status(201).json(racket);
     } catch (error) {
       res.status(500).json({ error: "Failed to create racket" });
@@ -1000,7 +1000,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!racket) {
         return res.status(404).json({ error: "Racket not found" });
       }
-      
+
       // Generate review with ChatGPT if reviewContent is not provided or was cleared
       if (!racket.reviewContent) {
         try {
@@ -1018,7 +1018,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Continue without review - racket update succeeded
         }
       }
-      
+
       res.json(racket);
     } catch (error) {
       res.status(500).json({ error: "Failed to update racket" });
@@ -1232,7 +1232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CJ Feed Sync Endpoints
-  
+
   // Manual sync trigger - downloads feed from SFTP and processes it
   app.post("/api/admin/cj-sync", requireAdmin, async (req, res) => {
     try {
@@ -1240,12 +1240,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { processCjFeed } = await import("./services/cjFeedProcessor.js");
 
       console.log("[CJ-Sync] Starting manual sync...");
-      
+
       // Fetch and parse the feed
       const feedResult = await fetchAndParseCjFeed();
-      
+
       if (!feedResult.success || !feedResult.products) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: feedResult.error || "Failed to fetch CJ feed",
           details: "Could not download or parse the product feed from CJ SFTP"
         });
@@ -1269,8 +1269,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[CJ-Sync] Error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to sync CJ feed" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to sync CJ feed"
       });
     }
   });
@@ -1282,11 +1282,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { quickPriceUpdate } = await import("./services/cjFeedProcessor.js");
 
       console.log("[CJ-Sync] Starting quick price update...");
-      
+
       const feedResult = await fetchAndParseCjFeed();
-      
+
       if (!feedResult.success || !feedResult.products) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: feedResult.error || "Failed to fetch CJ feed"
         });
       }
@@ -1299,8 +1299,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[CJ-Sync] Quick sync error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to quick sync" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to quick sync"
       });
     }
   });
@@ -1312,13 +1312,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { processCjFeed } = await import("./services/cjFeedProcessor.js");
 
       const filePath = req.body.filePath || "data/PadelNuestro_EU-Padel_Nuestro_Product_Feed_INTERNATIONAL_-shopping.txt";
-      
+
       console.log(`[CJ-Sync] Processing local file: ${filePath}`);
-      
+
       const feedResult = parseFeedFromFile(filePath);
-      
+
       if (!feedResult.success || !feedResult.products) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: feedResult.error || "Failed to parse local file"
         });
       }
@@ -1340,14 +1340,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[CJ-Sync] Local sync error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to process local file" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to process local file"
       });
     }
   });
 
   // Padel Market Feed Sync Endpoints
-  
+
   // Manual sync trigger - downloads feed from Awin URL and processes it
   app.post("/api/admin/padel-market-sync", requireAdmin, async (req, res) => {
     try {
@@ -1355,12 +1355,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { processPadelMarketFeed } = await import("./services/padelMarketFeedProcessor.js");
 
       console.log("[PadelMarket-Sync] Starting manual sync...");
-      
+
       // Fetch and parse the feed
       const feedResult = await fetchAndParsePadelMarketFeed();
-      
+
       if (!feedResult.success || !feedResult.products) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: feedResult.error || "Failed to fetch Padel Market feed",
           details: "Could not download or parse the product feed from Awin"
         });
@@ -1379,8 +1379,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[PadelMarket-Sync] Error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to sync Padel Market feed" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to sync Padel Market feed"
       });
     }
   });
@@ -1392,13 +1392,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { processPadelMarketFeed } = await import("./services/padelMarketFeedProcessor.js");
 
       const filePath = req.body.filePath || "data/padel-market-feed.csv.gz";
-      
+
       console.log(`[PadelMarket-Sync] Processing local file: ${filePath}`);
-      
+
       const feedResult = parsePadelMarketFeedFromFile(filePath);
-      
+
       if (!feedResult.success || !feedResult.products) {
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: feedResult.error || "Failed to parse local file",
           details: "Could not parse the product feed from local file"
         });
@@ -1417,8 +1417,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[PadelMarket-Sync] Local sync error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to process local file" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to process local file"
       });
     }
   });
@@ -1489,10 +1489,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/cleanup-duplicates", requireAdmin, async (req, res) => {
     try {
       console.log("[Cleanup] Starting duplicate cleanup...");
-      
+
       // Get all rackets
       const allRackets = await storage.getAllRackets();
-      
+
       // Group by brand + model (case-insensitive)
       const groups = new Map<string, typeof allRackets>();
       for (const racket of allRackets) {
@@ -1501,22 +1501,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         group.push(racket);
         groups.set(key, group);
       }
-      
+
       // Find duplicates and delete older ones
       const deleted: { id: string; brand: string; model: string }[] = [];
       const errors: string[] = [];
-      
+
       for (const [key, group] of groups) {
         if (group.length > 1) {
           // Sort by updatedAt descending (newest first)
-          group.sort((a, b) => 
+          group.sort((a, b) =>
             new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
           );
-          
+
           // Keep the first (newest), delete the rest
           const [keep, ...toDelete] = group;
           console.log(`[Cleanup] Keeping: ${keep.brand} ${keep.model} (${keep.id}, updated: ${keep.updatedAt})`);
-          
+
           for (const racket of toDelete) {
             try {
               await storage.deleteRacket(racket.id);
@@ -1528,9 +1528,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       }
-      
+
       console.log(`[Cleanup] Complete: ${deleted.length} duplicates removed`);
-      
+
       res.json({
         success: true,
         deleted: deleted.length,
@@ -1539,8 +1539,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("[Cleanup] Error:", error);
-      res.status(500).json({ 
-        error: error instanceof Error ? error.message : "Failed to cleanup duplicates" 
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Failed to cleanup duplicates"
       });
     }
   });
@@ -1586,10 +1586,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
 
       const published = results.filter(r => r !== undefined).length;
-      res.json({ 
+      res.json({
         message: `Published ${published} rackets`,
         published,
-        total: ids.length 
+        total: ids.length
       });
     } catch (error) {
       console.error("Error bulk publishing rackets:", error);

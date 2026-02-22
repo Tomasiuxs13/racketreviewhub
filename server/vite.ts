@@ -87,23 +87,49 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve hashed Vite assets (JS/CSS) with long-lived cache — filenames change on rebuild
+  app.use(
+    "/assets",
+    express.static(path.join(distPath, "assets"), {
+      maxAge: "1y",
+      immutable: true,
+    }),
+  );
+
+  // Serve other static files (images, fonts, etc.) with moderate caching
+  app.use(
+    express.static(distPath, {
+      maxAge: "1h",
+      // Don't serve index.html from here — we handle it below with no-cache
+      index: false,
+    }),
+  );
 
   // fall through to index.html with injected SEO meta tags
+  // IMPORTANT: Always set no-cache on HTML so browsers check for new bundles
   const indexHtml = fs.readFileSync(path.resolve(distPath, "index.html"), "utf-8");
 
   app.use("*", async (req, res) => {
     try {
       const urlPath = req.originalUrl.split("?")[0];
       const seoMeta = await resolveSeoMeta(urlPath);
+      const headers = {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      };
       if (seoMeta) {
         const html = injectSeoMeta(indexHtml, seoMeta);
-        res.status(200).set({ "Content-Type": "text/html" }).end(html);
+        res.status(200).set(headers).end(html);
       } else {
-        res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+        res.status(200).set(headers).end(indexHtml);
       }
     } catch {
-      res.status(200).set({ "Content-Type": "text/html" }).end(indexHtml);
+      res.status(200).set({
+        "Content-Type": "text/html",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+      }).end(indexHtml);
     }
   });
 }
