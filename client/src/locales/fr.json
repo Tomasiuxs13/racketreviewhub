@@ -27,11 +27,12 @@
       "brands": "Marques",
       "blog": "Blog"
     },
+    "quizButton": "Quiz Raquette",
     "search": {
       "placeholder": "Rechercher des raquettes...",
       "noResults": "Aucune raquette trouvée"
     },
-    "trustBadge": "1 200+ raquettes évaluées",
+    "trustBadge": "Quiz Raquette",
     "auth": {
       "logout": "Déconnexion",
       "userPlaceholder": "Utilisateur"
@@ -88,7 +89,7 @@
       "primaryCta": "Parcourir Tous les Rackets",
       "secondaryCta": "Guides d'Achat",
       "trust": {
-        "reviews": "Plus de 1 200 avis",
+        "reviews": "Quiz Raquette",
         "updates": "Mis à jour quotidiennement",
         "experts": "Analyse d'experts"
       }

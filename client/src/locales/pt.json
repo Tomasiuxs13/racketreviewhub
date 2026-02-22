@@ -27,11 +27,12 @@
       "brands": "Marcas",
       "blog": "Blog"
     },
+    "quizButton": "Quiz de Raquetes",
     "search": {
       "placeholder": "Pesquisar raquetes...",
       "noResults": "Nenhuma raquete encontrada"
     },
-    "trustBadge": "1.200+ Raquetes Avaliadas",
+    "trustBadge": "Quiz de Raquetes",
     "auth": {
       "logout": "Sair",
       "userPlaceholder": "Usuário"
@@ -88,7 +89,7 @@
       "primaryCta": "Navegue por Todas as Raquetes",
       "secondaryCta": "Guias de Compra",
       "trust": {
-        "reviews": "Mais de 1.200 Avaliações",
+        "reviews": "Quiz de Raquetes",
         "updates": "Atualizado Diariamente",
         "experts": "Análise de Especialistas"
       }

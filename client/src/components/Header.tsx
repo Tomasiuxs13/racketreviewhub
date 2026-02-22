@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Search, Menu, X, User, LogOut } from "lucide-react";
+import { Search, Menu, X, User, LogOut, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -113,11 +113,10 @@ export function Header() {
             {NAV_LINKS.map((item) => (
               <Link key={item.path} href={item.path}>
                 <div
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${
-                    isActive(item.path)
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground/80 hover:text-foreground"
-                  }`}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${isActive(item.path)
+                    ? "bg-accent text-accent-foreground"
+                    : "text-foreground/80 hover:text-foreground"
+                    }`}
                   data-testid={`link-${item.id}`}
                 >
                   {t(item.labelKey)}
@@ -189,10 +188,13 @@ export function Header() {
 
             <LanguageSwitcher className="hidden md:flex" />
 
-            {/* Trust Badge */}
-            <Badge variant="secondary" className="hidden xl:flex">
-              {t("header.trustBadge")}
-            </Badge>
+            {/* Racket Quiz Button */}
+            <Link href="/quiz">
+              <Button size="sm" className="hidden xl:flex bg-primary text-primary-foreground hover:bg-emerald-600 shadow-md hover:shadow-lg transition-all duration-300 rounded-full font-semibold">
+                <Star className="mr-2 h-4 w-4 fill-primary-foreground/20" />
+                {t("header.quizButton")}
+              </Button>
+            </Link>
 
             {/* Auth Section */}
             {isAuthenticated && (
@@ -288,11 +290,10 @@ export function Header() {
               {NAV_LINKS.map((item) => (
                 <Link key={item.path} href={item.path}>
                   <div
-                    className={`px-4 py-3 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${
-                      isActive(item.path)
-                        ? "bg-accent text-accent-foreground"
-                        : "text-foreground/80 hover:text-foreground"
-                    }`}
+                    className={`px-4 py-3 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${isActive(item.path)
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground/80 hover:text-foreground"
+                      }`}
                     onClick={() => setMobileMenuOpen(false)}
                     data-testid={`link-mobile-${item.id}`}
                   >

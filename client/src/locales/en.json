@@ -27,11 +27,12 @@
       "brands": "Brands",
       "blog": "Blog"
     },
+    "quizButton": "Racket Quiz",
     "search": {
       "placeholder": "Search rackets...",
       "noResults": "No rackets found"
     },
-    "trustBadge": "1,200+ Rackets Reviewed",
+    "trustBadge": "Racket Quiz",
     "auth": {
       "logout": "Logout",
       "userPlaceholder": "User"
@@ -51,7 +52,13 @@
     },
     "popularBrands": {
       "title": "Popular Brands",
-      "items": ["Babolat", "Bullpadel", "Head", "Adidas", "Nox"]
+      "items": [
+        "Babolat",
+        "Bullpadel",
+        "Head",
+        "Adidas",
+        "Nox"
+      ]
     },
     "gettingStarted": {
       "title": "Getting Started",
@@ -82,7 +89,7 @@
       "primaryCta": "Browse All Rackets",
       "secondaryCta": "Buying Guides",
       "trust": {
-        "reviews": "1,200+ Reviews",
+        "reviews": "Racket Quiz",
         "updates": "Updated Daily",
         "experts": "Expert Analysis"
       }
@@ -112,5 +119,3 @@
     }
   }
 }
-
-

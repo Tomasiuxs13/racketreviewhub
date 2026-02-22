@@ -27,11 +27,12 @@
       "brands": "Marche",
       "blog": "Blog"
     },
+    "quizButton": "Quiz Racchetta",
     "search": {
       "placeholder": "Cerca racchette...",
       "noResults": "Nessuna racchetta trovata"
     },
-    "trustBadge": "1.200+ Racchette Recensite",
+    "trustBadge": "Quiz Racchetta",
     "auth": {
       "logout": "Disconnetti",
       "userPlaceholder": "Utente"
@@ -88,7 +89,7 @@
       "primaryCta": "Sfoglia tutte le racchette",
       "secondaryCta": "Guide all'acquisto",
       "trust": {
-        "reviews": "Oltre 1.200 recensioni",
+        "reviews": "Quiz Racchetta",
         "updates": "Aggiornato quotidianamente",
         "experts": "Analisi esperta"
       }

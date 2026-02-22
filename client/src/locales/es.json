@@ -27,11 +27,12 @@
       "brands": "Marcas",
       "blog": "Blog"
     },
+    "quizButton": "Quiz de Palas",
     "search": {
       "placeholder": "Buscar palas...",
       "noResults": "No se encontraron palas"
     },
-    "trustBadge": "1,200+ Palas Revisadas",
+    "trustBadge": "Quiz de Palas",
     "auth": {
       "logout": "Cerrar sesión",
       "userPlaceholder": "Usuario"
@@ -88,7 +89,7 @@
       "primaryCta": "Explora Todas las Raquetas",
       "secondaryCta": "Guías de Compra",
       "trust": {
-        "reviews": "1,200+ Reseñas",
+        "reviews": "Quiz de Palas",
         "updates": "Actualizado Diariamente",
         "experts": "Análisis de Expertos"
       }

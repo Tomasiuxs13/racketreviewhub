@@ -168,12 +168,14 @@ export default function HomePage() {
               transition={{ duration: 1, delay: 0.8 }}
               className="mt-8 sm:mt-12 md:mt-16 flex flex-col sm:flex-row items-start sm:items-center justify-center gap-4 sm:gap-8 md:gap-10 glass-card px-6 py-5 sm:px-8 sm:py-4 rounded-3xl sm:rounded-full w-max mx-auto"
             >
-              <div className="flex items-center gap-3">
-                <div className="p-1.5 sm:p-2 rounded-full bg-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.2)]">
-                  <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-yellow-400/20" />
+              <Link href="/quiz">
+                <div className="flex items-center gap-3 cursor-pointer group hover:-translate-y-0.5 transition-all duration-300">
+                  <div className="p-1.5 sm:p-2 rounded-full bg-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.2)] group-hover:bg-yellow-400/30 transition-colors">
+                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-yellow-400/20" />
+                  </div>
+                  <span className="text-xs sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase group-hover:text-yellow-400 transition-colors">{t("home.hero.trust.reviews")}</span>
                 </div>
-                <span className="text-xs sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase">{t("home.hero.trust.reviews")}</span>
-              </div>
+              </Link>
               <div className="hidden sm:block w-px h-8 bg-white/10" />
               <div className="flex items-center gap-3">
                 <div className="p-1.5 sm:p-2 rounded-full bg-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
