@@ -12,16 +12,15 @@ import { ArrowLeft, ExternalLink, User } from "lucide-react";
 import { cleanReviewContent, getRacketSlug } from "@/lib/utils";
 import type { Racket, Author, Guide } from "@shared/schema";
 import SEO from "@/components/SEO";
-import { StructuredData } from "@/components/StructuredData";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { useMemo, useEffect } from "react";
+import { useEffect } from "react";
 import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 import { trackAffiliateClick } from "@/lib/analytics";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { ShareButtons } from "@/components/ShareButtons";
 import { TableOfContents } from "@/components/TableOfContents";
-import { extractProsCons, upscaleProductserveUrl } from "@shared/utils";
+import { upscaleProductserveUrl } from "@shared/utils";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -108,187 +107,6 @@ export default function RacketDetailPage() {
     type: "article" as const,
   };
 
-  // Structured data - must be called before conditional returns
-  const structuredData = useMemo(() => {
-    if (!racket) return [];
-
-    const siteUrl = SITE_URL;
-    const racketUrl = `${siteUrl}/rackets/${getRacketSlug(racket)}`;
-    const schemas = [];
-
-    // Product schema
-    const productSchema: any = {
-      "@context": "https://schema.org",
-      "@type": "Product",
-      "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
-      "description": seoDescription,
-      "image": racket.imageUrl ? [racket.imageUrl] : undefined,
-      "inLanguage": locale,
-      "brand": {
-        "@type": "Brand",
-        "name": racket.brand,
-      },
-      "review": {
-        "@type": "Review",
-        "reviewRating": {
-          "@type": "Rating",
-          "ratingValue": racket.overallRating,
-          "bestRating": 100,
-          "worstRating": 0,
-        },
-        "author": author
-          ? {
-            "@type": "Person",
-            "name": author.name,
-            "url": `${SITE_URL}/authors/${author.slug}`,
-          }
-          : {
-            "@type": "Organization",
-            "name": "Padel Racket Reviews",
-          },
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": racket.overallRating,
-        "bestRating": 100,
-        "worstRating": 0,
-        "reviewCount": 1,
-      },
-      "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
-    };
-
-    // Add offers (affiliate links) with correct availability
-    const offers: any[] = [];
-    if (racket.affiliateLink || racket.titleUrl) {
-      offers.push({
-        "@type": "Offer",
-        "price": racket.currentPrice,
-        "priceCurrency": "EUR",
-        "availability": racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-        "url": racket.affiliateLink || racket.titleUrl,
-        "seller": {
-          "@type": "Organization",
-          "name": "Padel Nuestro",
-        },
-      });
-    }
-    if (racket.padelMarketAffiliateLink) {
-      offers.push({
-        "@type": "Offer",
-        "price": racket.currentPrice,
-        "priceCurrency": "EUR",
-        "availability": racket.padelMarketInStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-        "url": racket.padelMarketAffiliateLink,
-        "seller": {
-          "@type": "Organization",
-          "name": "Padel Market",
-        },
-      });
-    }
-    if (offers.length === 1) {
-      productSchema.offers = offers[0];
-    } else if (offers.length > 1) {
-      productSchema.offers = {
-        "@type": "AggregateOffer",
-        "lowPrice": racket.currentPrice,
-        "highPrice": racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? racket.originalPrice : racket.currentPrice,
-        "priceCurrency": "EUR",
-        "offerCount": offers.length,
-        "offers": offers,
-      };
-    }
-
-    schemas.push(productSchema);
-
-    // Review schema (separate from Product)
-    if (racket.reviewContent) {
-      const reviewObj: any = {
-        "@context": "https://schema.org",
-        "@type": "Review",
-        "inLanguage": locale,
-        "itemReviewed": {
-          "@type": "Product",
-          "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
-          "brand": {
-            "@type": "Brand",
-            "name": racket.brand,
-          },
-        },
-        "reviewRating": {
-          "@type": "Rating",
-          "ratingValue": racket.overallRating,
-          "bestRating": 100,
-          "worstRating": 0,
-        },
-        "author": author
-          ? {
-            "@type": "Person",
-            "name": author.name,
-            "url": `${SITE_URL}/authors/${author.slug}`,
-          }
-          : {
-            "@type": "Organization",
-            "name": "Padel Racket Reviews",
-          },
-        "reviewBody": cleanReviewContent(racket.reviewContent).replace(/<[^>]*>/g, "").substring(0, 500),
-        "datePublished": racket.createdAt ? new Date(racket.createdAt).toISOString() : new Date().toISOString(),
-        "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString() : undefined,
-      };
-
-      const extracted = extractProsCons(racket.reviewContent);
-      if (extracted.pros.length > 0) {
-        reviewObj.positiveNotes = {
-          "@type": "ItemList",
-          "itemListElement": extracted.pros.map((p, i) => ({
-            "@type": "ListItem",
-            "position": i + 1,
-            "name": p
-          }))
-        };
-      }
-      if (extracted.cons.length > 0) {
-        reviewObj.negativeNotes = {
-          "@type": "ItemList",
-          "itemListElement": extracted.cons.map((c, i) => ({
-            "@type": "ListItem",
-            "position": i + 1,
-            "name": c
-          }))
-        };
-      }
-
-      schemas.push(reviewObj);
-    }
-
-    // BreadcrumbList schema
-    schemas.push({
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        {
-          "@type": "ListItem",
-          "position": 1,
-          "name": "Home",
-          "item": siteUrl,
-        },
-        {
-          "@type": "ListItem",
-          "position": 2,
-          "name": "Rackets",
-          "item": `${siteUrl}/rackets`,
-        },
-        {
-          "@type": "ListItem",
-          "position": 3,
-          "name": `${racket.brand} ${racket.model}`,
-          "item": racketUrl,
-        },
-      ],
-    });
-
-    return schemas;
-  }, [racket, seoDescription, author, locale]);
-
   const seoElement = <SEO {...seoData} />;
 
   if (isLoading) {
@@ -345,7 +163,6 @@ export default function RacketDetailPage() {
   return (
     <>
       {seoElement}
-      <StructuredData data={structuredData} />
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-8 sm:pt-10 pb-28 lg:pb-12">
           {/* Breadcrumbs */}

@@ -887,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/sitemap-rackets.xml", async (req, res) => {
     sendCachedSitemap(res, 'rackets', async () => {
       const baseUrl = req.protocol + "://" + req.get("host");
-      const allRackets = await storage.getAllRackets();
+      const allRackets = await storage.getPublishedRackets();
       let xml = urlsetHeader();
       for (const racket of allRackets) {
         const slug = getRacketSlug(racket);

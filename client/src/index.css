@@ -473,5 +473,9 @@
 
 /* Ensure the pros-cons grid has proper not-prose spacing */
 .pros-cons-grid {
-  @apply not-prose;
+  /* Reset prose styles — 'not-prose' cannot be used with @apply */
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  max-width: none;
 }

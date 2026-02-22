@@ -10,6 +10,8 @@ interface SeoMeta {
   ogType: string;
   ogImage?: string;
   structuredData?: object[];
+  /** Semantic HTML content injected into <div id="root"> for crawlers */
+  crawlableContent?: string;
 }
 
 function buildMetaTags(meta: SeoMeta): string {
@@ -60,6 +62,154 @@ function buildRacketSlug(brand: string, model: string): string {
   const brandLower = brand.toLowerCase();
   const base = lower.startsWith(brandLower) ? lower : `${brandLower} ${lower}`;
   return base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Cleans review content by stripping markdown code block markers.
+ * Server-side equivalent of the client-side cleanReviewContent.
+ */
+function cleanReviewContentServer(content: string): string {
+  if (!content) return content;
+  let cleaned = content.trim();
+  // Remove code blocks at the beginning
+  if (cleaned.startsWith('```html') || cleaned.startsWith('```')) {
+    const lines = cleaned.split('\n');
+    if (lines[0]?.match(/^```(html)?\s*$/)) lines.shift();
+    cleaned = lines.join('\n');
+  }
+  // Remove code blocks at the end
+  if (cleaned.endsWith('```')) {
+    const lines = cleaned.split('\n');
+    if (lines[lines.length - 1]?.trim() === '```') lines.pop();
+    cleaned = lines.join('\n');
+  }
+  cleaned = cleaned
+    .replace(/^```html\s*\n?/gm, '')
+    .replace(/^```\s*\n?/gm, '')
+    .replace(/\n?```\s*$/gm, '')
+    .trim();
+  // Clean up escaped quote artifacts
+  cleaned = cleaned.replace(/\\"/g, '"');
+  return cleaned;
+}
+
+/**
+ * Build crawlable HTML for a racket detail page.
+ * This content is injected inside <div id="root"> so crawlers can index it.
+ * React will replace it on client-side hydration.
+ */
+function buildRacketCrawlableHtml(racket: any): string {
+  const parts: string[] = [];
+  parts.push(`<article id="ssr-content" data-nosnippet="false">`);
+  parts.push(`<h1>${escapeHtml(`${racket.brand} ${racket.model} ${racket.year || ''} Padel Racket Review`.trim())}</h1>`);
+
+  // Overall rating
+  parts.push(`<p><strong>Overall Rating: ${racket.overallRating}/100</strong></p>`);
+
+  // Performance ratings
+  if (racket.powerRating || racket.controlRating) {
+    parts.push(`<section>`);
+    parts.push(`<h2>Performance Ratings</h2>`);
+    parts.push(`<ul>`);
+    if (racket.powerRating) parts.push(`<li>Power: ${racket.powerRating}/100</li>`);
+    if (racket.controlRating) parts.push(`<li>Control: ${racket.controlRating}/100</li>`);
+    if (racket.reboundRating) parts.push(`<li>Rebound: ${racket.reboundRating}/100</li>`);
+    if (racket.maneuverabilityRating) parts.push(`<li>Maneuverability: ${racket.maneuverabilityRating}/100</li>`);
+    if (racket.sweetSpotRating) parts.push(`<li>Sweet Spot: ${racket.sweetSpotRating}/100</li>`);
+    parts.push(`</ul>`);
+    parts.push(`</section>`);
+  }
+
+  // Specifications
+  const specs: [string, any][] = [
+    ['Brand', racket.brand],
+    ['Shape', racket.shape],
+    ['Balance', racket.balance],
+    ['Surface', racket.surface],
+    ['Hardness', racket.hardness],
+    ['Core', racket.core],
+    ['Game Level', racket.gameLevel],
+    ['Game Type', racket.gameType],
+    ['Year', racket.year],
+  ];
+  const validSpecs = specs.filter(([, v]) => v);
+  if (validSpecs.length > 0) {
+    parts.push(`<section>`);
+    parts.push(`<h2>Specifications</h2>`);
+    parts.push(`<dl>`);
+    for (const [label, value] of validSpecs) {
+      parts.push(`<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(String(value))}</dd>`);
+    }
+    parts.push(`</dl>`);
+    parts.push(`</section>`);
+  }
+
+  // Review content (the full article body)
+  if (racket.reviewContent) {
+    parts.push(`<section>`);
+    parts.push(`<h2>Expert Review</h2>`);
+    parts.push(cleanReviewContentServer(racket.reviewContent));
+    parts.push(`</section>`);
+  }
+
+  // Price info
+  if (racket.currentPrice) {
+    parts.push(`<p>Current Price: €${Number(racket.currentPrice).toFixed(2)}</p>`);
+  }
+
+  parts.push(`</article>`);
+  return parts.join('\n');
+}
+
+/**
+ * Build crawlable HTML for a guide detail page.
+ */
+function buildGuideCrawlableHtml(guide: any): string {
+  const parts: string[] = [];
+  parts.push(`<article id="ssr-content">`);
+  parts.push(`<h1>${escapeHtml(guide.title)}</h1>`);
+  if (guide.excerpt) {
+    parts.push(`<p>${escapeHtml(guide.excerpt)}</p>`);
+  }
+  if (guide.content) {
+    parts.push(cleanReviewContentServer(guide.content));
+  }
+  parts.push(`</article>`);
+  return parts.join('\n');
+}
+
+/**
+ * Build crawlable HTML for a brand detail page.
+ */
+function buildBrandCrawlableHtml(brand: any): string {
+  const parts: string[] = [];
+  parts.push(`<article id="ssr-content">`);
+  parts.push(`<h1>${escapeHtml(brand.name)} Padel Rackets</h1>`);
+  if (brand.description) {
+    parts.push(`<p>${escapeHtml(brand.description)}</p>`);
+  }
+  if (brand.articleContent) {
+    parts.push(cleanReviewContentServer(brand.articleContent));
+  }
+  parts.push(`</article>`);
+  return parts.join('\n');
+}
+
+/**
+ * Build crawlable HTML for a blog post page.
+ */
+function buildBlogCrawlableHtml(post: any): string {
+  const parts: string[] = [];
+  parts.push(`<article id="ssr-content">`);
+  parts.push(`<h1>${escapeHtml(post.title)}</h1>`);
+  if (post.excerpt) {
+    parts.push(`<p>${escapeHtml(post.excerpt)}</p>`);
+  }
+  if (post.content) {
+    parts.push(cleanReviewContentServer(post.content));
+  }
+  parts.push(`</article>`);
+  return parts.join('\n');
 }
 
 /**
@@ -145,6 +295,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           canonical: racketUrl,
           ogType: "article",
           ogImage: racket.imageUrl || undefined,
+          crawlableContent: buildRacketCrawlableHtml(racket),
           structuredData: [
             {
               "@context": "https://schema.org",
@@ -154,13 +305,6 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
               "image": racket.imageUrl ? [racket.imageUrl] : undefined,
               "brand": { "@type": "Brand", "name": racket.brand },
               "review": reviewSchema,
-              "aggregateRating": {
-                "@type": "AggregateRating",
-                "ratingValue": racket.overallRating,
-                "bestRating": 100,
-                "worstRating": 0,
-                "reviewCount": 1,
-              },
               "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
               "url": racketUrl,
               "offers": (() => {
@@ -217,6 +361,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           canonical: `${SITE_URL}/brands/${brand.slug}`,
           ogType: "article",
           ogImage: brand.logoUrl || undefined,
+          crawlableContent: buildBrandCrawlableHtml(brand),
         };
       }
     }
@@ -232,6 +377,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           canonical: `${SITE_URL}/guides/${guide.slug}`,
           ogType: "article",
           ogImage: guide.featuredImage || undefined,
+          crawlableContent: buildGuideCrawlableHtml(guide),
         };
       }
     }
@@ -247,6 +393,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           canonical: `${SITE_URL}/blog/${post.slug}`,
           ogType: "article",
           ogImage: post.featuredImage || undefined,
+          crawlableContent: buildBlogCrawlableHtml(post),
         };
       }
     }
@@ -325,6 +472,15 @@ export function injectSeoMeta(html: string, meta: SeoMeta): string {
 
   // Inject before closing </head>
   html = html.replace("</head>", `    ${metaTags}\n  </head>`);
+
+  // Inject crawlable content inside <div id="root"> for search engine crawlers.
+  // React's createRoot will replace this content on client-side hydration.
+  if (meta.crawlableContent) {
+    html = html.replace(
+      '<div id="root"></div>',
+      `<div id="root">${meta.crawlableContent}</div>`,
+    );
+  }
 
   return html;
 }
