@@ -379,3 +379,99 @@
   background-color: rgb(239, 68, 68);
   /* red-500 */
 }
+
+/* ======================================
+   Review Article Typography & Styling
+   Scoped to [data-testid="text-review-content"]
+   ====================================== */
+
+/* Section dividers — H2 headings get a top border and accent */
+[data-testid="text-review-content"] h2 {
+  @apply border-t border-border/60 pt-8 mt-10 first:border-0 first:pt-0 first:mt-0;
+  position: relative;
+}
+
+[data-testid="text-review-content"] h2::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 3rem;
+  height: 3px;
+  border-radius: 2px;
+  background: hsl(var(--primary));
+}
+
+[data-testid="text-review-content"] h2:first-child::before {
+  display: none;
+}
+
+/* H3 subheadings — subtle primary color */
+[data-testid="text-review-content"] h3:not(.pro-con-card h3) {
+  @apply text-lg font-semibold mt-6 mb-3;
+  color: hsl(var(--foreground));
+}
+
+/* Paragraph spacing — more breathing room */
+[data-testid="text-review-content"] p {
+  @apply leading-relaxed mb-5;
+  font-size: 0.975rem;
+}
+
+/* List items — better readability */
+[data-testid="text-review-content"]>ul:not(.pro-con-card ul) li,
+[data-testid="text-review-content"]>ol li {
+  @apply mb-3 leading-relaxed;
+  font-size: 0.95rem;
+}
+
+/* FAQ section styling */
+.review-faq {
+  @apply rounded-xl border border-border/50 bg-muted/20 p-6 sm:p-8 mt-8;
+}
+
+.review-faq h2 {
+  @apply !border-0 !pt-0 !mt-0 !mb-6;
+}
+
+.review-faq h2::before {
+  display: none !important;
+}
+
+/* FAQ question styling — card-like appearance */
+.review-faq p:has(strong) {
+  @apply bg-card border border-border/40 rounded-lg px-4 py-3 font-semibold text-foreground !mb-2 mt-6;
+  font-size: 1rem;
+}
+
+.review-faq p:has(strong):first-of-type {
+  @apply mt-0;
+}
+
+/* FAQ answer paragraphs */
+.review-faq p:not(:has(strong)) {
+  @apply text-muted-foreground pl-1 !mb-4;
+  font-size: 0.925rem;
+}
+
+/* Final Verdict section styling */
+.review-verdict {
+  @apply rounded-xl border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-background to-background p-6 sm:p-8 mt-8;
+}
+
+.review-verdict h2 {
+  @apply !border-0 !pt-0 !mt-0 text-primary;
+}
+
+.review-verdict h2::before {
+  display: none !important;
+}
+
+.review-verdict p {
+  @apply text-foreground/90;
+}
+
+/* Ensure the pros-cons grid has proper not-prose spacing */
+.pros-cons-grid {
+  @apply not-prose;
+}

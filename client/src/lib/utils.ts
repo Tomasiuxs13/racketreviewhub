@@ -56,6 +56,21 @@ export function cleanReviewContent(content: string): string {
     '<div class="pros-cons-grid gap-6 grid grid-cols-1 md:grid-cols-2 my-8">$1$2</div>'
   );
 
+  // Wrap FAQ section in a styled container
+  cleaned = cleaned.replace(
+    /(<h2>Frequently Asked Questions<\/h2>)([\s\S]*?)(?=<h2>|$)/gi,
+    '<div class="review-faq">$1$2</div>'
+  );
+
+  // Wrap Final Verdict section in a styled container
+  cleaned = cleaned.replace(
+    /(<h2>Final Verdict<\/h2>)([\s\S]*?)(?=<h2>|$)/gi,
+    '<div class="review-verdict">$1$2</div>'
+  );
+
+  // Clean up escaped quote artifacts from AI-generated content
+  cleaned = cleaned.replace(/\\"/g, '"');
+
   return cleaned;
 }
 

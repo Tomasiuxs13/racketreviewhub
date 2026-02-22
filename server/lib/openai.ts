@@ -378,14 +378,23 @@ WRITING QUALITY REQUIREMENTS:
 - Each of the 8 sections must be substantive. Aim for at least 120 words per section.
 - Every performance claim must be grounded in a specific padel scenario. BAD: "excellent for volleys". GOOD: "when blocking a hard-hit smash from the back glass, the stiff frame returns the ball cleanly with minimal energy loss".
 - Never cite a numerical rating as evidence for itself. BAD: "The 92/100 control rating proves this racket has great control." GOOD: "We noticed pin-point accuracy on cross-court volleys, which aligns with its control-oriented design."
+- Never START a sentence or bullet point with a rating number. BAD: "The 85/100 maneuverability rating delivers..." GOOD: "During quick exchanges at the net, the racket felt nimble..."
 - Reference specific, named shot types where relevant: bandeja, vibora, bajada, lob, smash, block volley.
+
+PARAGRAPH FORMATTING (CRITICAL FOR READABILITY):
+- Every <p> tag must contain 2-4 sentences MAXIMUM. Never write a paragraph longer than 60 words.
+- Break long explanations into multiple short <p> tags. Readers scan on mobile — dense paragraphs get skipped.
+- For <li> bullet points, keep each to 1-2 sentences (40 words max). If a point needs more explanation, split it into separate bullets.
+- After each H3 subheading, use 2-3 short paragraphs rather than one long block.
 
 BANNED PHRASES & PATTERNS (never use these):
 - "we were keen to see", "we were excited to", "we were struck by", "we were eager to"
 - "making it a great choice for players who value these features"
 - "help them take their game to the next level"
 - "does not disappoint", "lives up to its reputation" (unless followed immediately by a specific why)
+- "reveals its true character across different court positions"
 - Starting consecutive sentences with "The [spec]..."
+- Starting a sentence with a rating number like "The 85/100..."
 - Ending sections with generic summaries that repeat the intro sentence
 
 CRITICAL HTML FORMATTING REQUIREMENTS:
