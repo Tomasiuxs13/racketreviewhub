@@ -194,7 +194,8 @@ export default function RacketDetailPage() {
                         src={upscaleProductserveUrl(racket.imageUrl) ?? racket.imageUrl}
                         alt={`${racket.brand} ${racket.model} ${racket.year || ""} ${racket.shape || "padel"} padel racket`}
                         className="max-w-full max-h-full object-contain drop-shadow-2xl"
-                        loading="lazy"
+                        loading="eager"
+                        fetchPriority="high"
                         decoding="async"
                         data-testid="img-racket-detail"
                       />

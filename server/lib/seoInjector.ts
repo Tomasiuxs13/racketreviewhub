@@ -1,7 +1,36 @@
 import { storage } from "../storage.js";
 import { extractProsCons } from "@shared/utils";
+import { fetchTranslation } from "./i18n.js";
 
 const SITE_URL = process.env.SITE_URL || "https://racketreviewhub.com";
+const SUPPORTED_LOCALES = ["en", "es", "pt", "it", "fr"] as const;
+type SupportedLocale = typeof SUPPORTED_LOCALES[number];
+
+/** Extract locale from path, e.g. "/es/rackets/slug" -> "es" */
+function extractLocaleFromPath(path: string): SupportedLocale | null {
+  const match = path.match(/^\/([a-z]{2})(\/|$)/);
+  if (!match) return null;
+  const candidate = match[1] as SupportedLocale;
+  return SUPPORTED_LOCALES.includes(candidate) && candidate !== "en" ? candidate : null;
+}
+
+/** Strip locale prefix from path, e.g. "/es/rackets/slug" -> "/rackets/slug" */
+function stripLocalePrefix(path: string): string {
+  return path.replace(/^\/[a-z]{2}(\/|$)/, (_, sep) => sep || "/");
+}
+
+/** Build hreflang alternate link tags for head injection */
+function buildHreflangTags(resourcePath: string): string {
+  const tags: string[] = [];
+  for (const locale of SUPPORTED_LOCALES) {
+    const href = locale === "en"
+      ? `${SITE_URL}${resourcePath}`
+      : `${SITE_URL}/${locale}${resourcePath}`;
+    tags.push(`<link rel="alternate" hreflang="${locale}" href="${href}">`);
+  }
+  tags.push(`<link rel="alternate" hreflang="x-default" href="${SITE_URL}${resourcePath}">`);
+  return tags.join("\n    ");
+}
 
 interface SeoMeta {
   title: string;
@@ -12,6 +41,8 @@ interface SeoMeta {
   structuredData?: object[];
   /** Semantic HTML content injected into <div id="root"> for crawlers */
   crawlableContent?: string;
+  /** Pre-built hreflang link tags for injection into <head> */
+  hreflangTags?: string;
 }
 
 function buildMetaTags(meta: SeoMeta): string {
@@ -44,6 +75,11 @@ function buildMetaTags(meta: SeoMeta): string {
     for (const schema of meta.structuredData) {
       tags.push(`<script type="application/ld+json">${JSON.stringify(schema)}</script>`);
     }
+  }
+
+  // hreflang alternate links
+  if (meta.hreflangTags) {
+    tags.push(meta.hreflangTags);
   }
 
   return tags.join("\n    ");
@@ -214,23 +250,42 @@ function buildBlogCrawlableHtml(post: any): string {
 
 /**
  * Resolve SEO metadata for a given URL path.
+ * Handles both English paths (/rackets/:slug) and locale-prefixed paths (/es/rackets/:slug).
  * Returns null if no special SEO data is needed (uses default HTML).
  */
 export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
   try {
-    // Racket detail page: /rackets/:slug
-    const racketMatch = path.match(/^\/rackets\/([^/]+)$/);
+    // Detect and strip locale prefix from path
+    const locale = extractLocaleFromPath(path) ?? "en";
+    const resourcePath = locale !== "en" ? stripLocalePrefix(path) : path;
+
+    // Racket detail page: /rackets/:slug (or /es/rackets/:slug)
+    const racketMatch = resourcePath.match(/^\/rackets\/([^/]+)$/);
     if (racketMatch) {
       const slug = racketMatch[1];
       const racket = await storage.getRacketBySlug(slug);
       if (racket) {
+        // Apply translation if non-English locale
+        let reviewContent = racket.reviewContent;
+        if (locale !== "en") {
+          try {
+            const translation = await fetchTranslation("racket_review", racket.id, locale);
+            if (translation?.reviewContent) {
+              reviewContent = translation.reviewContent;
+            }
+          } catch (err) {
+            console.warn(`[SEO] Failed to load ${locale} translation for racket ${racket.id}:`, err);
+          }
+        }
+        const translatedRacket = { ...racket, reviewContent };
+
         const title = `${racket.brand} ${racket.model} ${racket.year || ""} Padel Racket Review - Expert Analysis & Best Price`.trim();
         const gameLevel = racket.gameLevel ? `${racket.gameLevel}-level ` : "";
         const shape = racket.shape ? `${racket.shape}-shape ` : "";
         const playStyle = racket.gameType || "all-around";
         const description = `Expert ${racket.brand} ${racket.model} ${racket.year || ""} padel racket review. ${racket.overallRating}/100 rating – ${racket.powerRating} power, ${racket.controlRating} control. ${gameLevel}${shape}racket for ${playStyle} players. Best price comparison & buying guide.`.trim();
 
-        const extracted = extractProsCons(racket.reviewContent);
+        const extracted = extractProsCons(reviewContent);
         const reviewSchema: any = {
           "@type": "Review",
           "reviewRating": {
@@ -266,7 +321,10 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           };
         }
 
-        const racketUrl = `${SITE_URL}/rackets/${buildRacketSlug(racket.brand, racket.model)}`;
+        const racketCanonicalPath = `/rackets/${buildRacketSlug(racket.brand, racket.model)}`;
+        const racketUrl = locale === "en"
+          ? `${SITE_URL}${racketCanonicalPath}`
+          : `${SITE_URL}/${locale}${racketCanonicalPath}`;
         const topLevelReviewSchema = {
           "@context": "https://schema.org",
           "@type": "Review",
@@ -295,7 +353,8 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           canonical: racketUrl,
           ogType: "article",
           ogImage: racket.imageUrl || undefined,
-          crawlableContent: buildRacketCrawlableHtml(racket),
+          crawlableContent: buildRacketCrawlableHtml(translatedRacket),
+          hreflangTags: buildHreflangTags(racketCanonicalPath),
           structuredData: [
             {
               "@context": "https://schema.org",
@@ -348,99 +407,113 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
     }
 
     // Brand detail page: /brands/:slug
-    const brandMatch = path.match(/^\/brands\/([^/]+)$/);
+    const brandMatch = resourcePath.match(/^\/brands\/([^/]+)$/);
     if (brandMatch) {
       const brand = await storage.getBrand(brandMatch[1]);
       if (brand) {
         const year = new Date().getFullYear();
         const title = `Best ${brand.name} Padel Rackets ${year} - Reviews & Buying Guide`;
         const description = brand.description || `Discover the best ${brand.name} padel rackets. Expert reviews, ratings, and buying guide.`;
+        const brandCanonicalPath = `/brands/${brand.slug}`;
+        const brandUrl = locale === "en" ? `${SITE_URL}${brandCanonicalPath}` : `${SITE_URL}/${locale}${brandCanonicalPath}`;
         return {
           title,
           description,
-          canonical: `${SITE_URL}/brands/${brand.slug}`,
+          canonical: brandUrl,
           ogType: "article",
           ogImage: brand.logoUrl || undefined,
           crawlableContent: buildBrandCrawlableHtml(brand),
+          hreflangTags: buildHreflangTags(brandCanonicalPath),
         };
       }
     }
 
     // Guide detail page: /guides/:slug
-    const guideMatch = path.match(/^\/guides\/([^/]+)$/);
+    const guideMatch = resourcePath.match(/^\/guides\/([^/]+)$/);
     if (guideMatch) {
       const guide = await storage.getGuide(guideMatch[1]);
       if (guide) {
+        const guideCanonicalPath = `/guides/${guide.slug}`;
+        const guideUrl = locale === "en" ? `${SITE_URL}${guideCanonicalPath}` : `${SITE_URL}/${locale}${guideCanonicalPath}`;
         return {
           title: `${guide.title} - Padel Racket Reviews`,
           description: guide.excerpt,
-          canonical: `${SITE_URL}/guides/${guide.slug}`,
+          canonical: guideUrl,
           ogType: "article",
           ogImage: guide.featuredImage || undefined,
           crawlableContent: buildGuideCrawlableHtml(guide),
+          hreflangTags: buildHreflangTags(guideCanonicalPath),
         };
       }
     }
 
     // Blog post page: /blog/:slug
-    const blogMatch = path.match(/^\/blog\/([^/]+)$/);
+    const blogMatch = resourcePath.match(/^\/blog\/([^/]+)$/);
     if (blogMatch) {
       const post = await storage.getBlogPost(blogMatch[1]);
       if (post) {
+        const blogCanonicalPath = `/blog/${post.slug}`;
+        const blogUrl = locale === "en" ? `${SITE_URL}${blogCanonicalPath}` : `${SITE_URL}/${locale}${blogCanonicalPath}`;
         return {
           title: `${post.title} - Padel Racket Reviews`,
           description: post.excerpt,
-          canonical: `${SITE_URL}/blog/${post.slug}`,
+          canonical: blogUrl,
           ogType: "article",
           ogImage: post.featuredImage || undefined,
           crawlableContent: buildBlogCrawlableHtml(post),
+          hreflangTags: buildHreflangTags(blogCanonicalPath),
         };
       }
     }
 
     // Static pages
-    if (path === "/" || path === "") {
+    if (resourcePath === "/" || resourcePath === "") {
       return {
         title: "Padel Racket Reviews - Expert Reviews & Best Prices",
         description: "Expert padel racket reviews with detailed ratings for power, control, and performance. Find the best prices from top retailers.",
-        canonical: SITE_URL,
+        canonical: locale === "en" ? SITE_URL : `${SITE_URL}/${locale}`,
         ogType: "website",
+        hreflangTags: buildHreflangTags("/"),
       };
     }
 
-    if (path === "/rackets") {
+    if (resourcePath === "/rackets") {
       return {
         title: "All Padel Rackets - Compare Reviews & Prices",
         description: "Browse our complete collection of expert padel racket reviews. Filter by brand, shape, price, and performance ratings.",
-        canonical: `${SITE_URL}/rackets`,
+        canonical: locale === "en" ? `${SITE_URL}/rackets` : `${SITE_URL}/${locale}/rackets`,
         ogType: "website",
+        hreflangTags: buildHreflangTags("/rackets"),
       };
     }
 
-    if (path === "/guides") {
+    if (resourcePath === "/guides") {
       return {
         title: "Padel Buying Guides - Expert Advice for Every Level",
         description: "Comprehensive padel racket buying guides for beginners, intermediate, and advanced players. Learn how to choose the right racket.",
-        canonical: `${SITE_URL}/guides`,
+        canonical: locale === "en" ? `${SITE_URL}/guides` : `${SITE_URL}/${locale}/guides`,
         ogType: "website",
+        hreflangTags: buildHreflangTags("/guides"),
       };
     }
 
-    if (path === "/brands") {
+    if (resourcePath === "/brands") {
       return {
         title: "Padel Racket Brands - Top Manufacturers Reviewed",
         description: "Explore top padel racket brands including Babolat, Bullpadel, Head, Adidas, and Nox. Expert reviews and brand comparisons.",
-        canonical: `${SITE_URL}/brands`,
+        canonical: locale === "en" ? `${SITE_URL}/brands` : `${SITE_URL}/${locale}/brands`,
         ogType: "website",
+        hreflangTags: buildHreflangTags("/brands"),
       };
     }
 
-    if (path === "/quiz") {
+    if (resourcePath === "/quiz") {
       return {
         title: "Find Your Perfect Padel Racket - Recommendation Quiz",
         description: "Answer 4 quick questions and we'll recommend the best padel racket for your playing level, style, and budget.",
-        canonical: `${SITE_URL}/quiz`,
+        canonical: locale === "en" ? `${SITE_URL}/quiz` : `${SITE_URL}/${locale}/quiz`,
         ogType: "website",
+        hreflangTags: buildHreflangTags("/quiz"),
       };
     }
 

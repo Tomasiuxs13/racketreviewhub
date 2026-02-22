@@ -222,7 +222,7 @@ export const openai = API_KEY
     baseURL: "https://openrouter.ai/api/v1",
     apiKey: API_KEY,
     defaultHeaders: {
-      "HTTP-Referer": "http://localhost:5000",
+      "HTTP-Referer": process.env.SITE_URL || "https://racketreviewhub.com",
       "X-Title": "Racket Review Hub"
     }
   })

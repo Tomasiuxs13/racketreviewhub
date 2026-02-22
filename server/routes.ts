@@ -145,6 +145,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.redirect(301, `/rackets/${normalizedSlug}${query}`);
   });
 
+  // robots.txt - directs crawlers away from API/admin routes and points to sitemap
+  app.get("/robots.txt", (req, res) => {
+    const siteUrl = process.env.SITE_URL || `${req.protocol}://${req.get("host")}`;
+    const content = [
+      "User-agent: *",
+      "Allow: /",
+      "Disallow: /api/",
+      "Disallow: /admin",
+      "",
+      `Sitemap: ${siteUrl}/sitemap.xml`,
+    ].join("\n");
+    res.set("Content-Type", "text/plain");
+    res.set("Cache-Control", "public, max-age=86400"); // cache 24h
+    res.send(content);
+  });
+
   // Authentication endpoints (JWT-based)
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -810,9 +826,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function buildHrefLangLinks(baseUrl: string, path: string): string {
     let links = '';
     for (const locale of SITEMAP_LOCALES) {
-      const href = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+      // Use path-based locale URLs for non-English: /es/rackets/slug
+      const localePath = locale === 'en' ? path : `/${locale}${path}`;
+      const href = `${baseUrl}${localePath}`;
       links += `    <xhtml:link rel="alternate" hreflang="${locale}" href="${href}" />\n`;
     }
+    // x-default points to English (no prefix)
     links += `    <xhtml:link rel="alternate" hreflang="x-default" href="${baseUrl}${path}" />\n`;
     return links;
   }
@@ -824,7 +843,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   function buildUrlEntry(baseUrl: string, path: string, changefreq: string, priority: string, lastmod?: string): string {
     let entries = '';
     for (const locale of SITEMAP_LOCALES) {
-      const loc = locale === 'en' ? `${baseUrl}${path}` : `${baseUrl}${path}?lang=${locale}`;
+      // Use path-based locale URLs: /es/rackets/slug (not ?lang=es)
+      const localePath = locale === 'en' ? path : `/${locale}${path}`;
+      const loc = `${baseUrl}${localePath}`;
       entries += `  <url>\n    <loc>${loc}</loc>\n`;
       if (lastmod) entries += `    <lastmod>${lastmod}</lastmod>\n`;
       entries += `    <changefreq>${changefreq}</changefreq>\n    <priority>${priority}</priority>\n`;

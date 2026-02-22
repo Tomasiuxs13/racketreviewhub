@@ -33,6 +33,35 @@ interface I18nProviderProps {
 const DEFAULT_LOCALE: Locale = "en";
 const LOCALE_STORAGE_KEY = "rrh_locale";
 
+/**
+ * Extract locale from a URL pathname prefix like /es/rackets/... → "es"
+ * Returns null if no locale prefix found.
+ */
+function extractLocaleFromPath(pathname: string): Locale | null {
+  const match = pathname.match(/^\/([a-z]{2})(\/|$)/);
+  if (!match) return null;
+  const candidate = match[1] as Locale;
+  return SUPPORTED_LOCALES.includes(candidate) && candidate !== DEFAULT_LOCALE
+    ? candidate
+    : null;
+}
+
+/**
+ * Strip the locale prefix from a pathname, e.g. /es/rackets/foo → /rackets/foo
+ */
+function stripLocaleFromPath(pathname: string): string {
+  return pathname.replace(/^\/[a-z]{2}(\/|$)/, (_, sep) => sep || "/");
+}
+
+/**
+ * Build a locale-prefixed pathname, e.g. /rackets/foo + "es" → /es/rackets/foo
+ */
+function buildLocalizedPath(pathname: string, locale: Locale): string {
+  const stripped = stripLocaleFromPath(pathname);
+  if (locale === DEFAULT_LOCALE) return stripped || "/";
+  return `/${locale}${stripped.startsWith("/") ? stripped : "/" + stripped}`;
+}
+
 // Pre-import all locale files for Vite compatibility
 const localeModules = {
   en: () => import("../locales/en.json"),
@@ -129,43 +158,34 @@ export function I18nProvider({
       return;
     }
 
+    // Priority 1: locale from URL path prefix, e.g. /es/rackets/...
+    const pathLocale = extractLocaleFromPath(window.location.pathname);
+    if (pathLocale) {
+      setLocaleState(pathLocale);
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, pathLocale);
+      return;
+    }
+
+    // Priority 2: legacy ?lang= query param (redirect to path-based URL)
     const params = new URLSearchParams(window.location.search);
     const paramLocale = params.get("lang");
-    if (paramLocale && isSupportedLocale(paramLocale)) {
-      setLocaleState(paramLocale);
+    if (paramLocale && isSupportedLocale(paramLocale) && paramLocale !== DEFAULT_LOCALE) {
+      // Redirect to the new path-based URL format
+      const newPath = buildLocalizedPath(window.location.pathname, paramLocale as Locale);
+      params.delete("lang");
+      const search = params.toString() ? `?${params.toString()}` : "";
+      window.history.replaceState({}, "", `${newPath}${search}${window.location.hash}`);
+      setLocaleState(paramLocale as Locale);
       window.localStorage.setItem(LOCALE_STORAGE_KEY, paramLocale);
       return;
     }
 
+    // Priority 3: stored preference
     const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY);
     if (stored && isSupportedLocale(stored)) {
-      setLocaleState(stored);
+      setLocaleState(stored as Locale);
     }
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-    const currentUrl = new URL(window.location.href);
-    if (locale === DEFAULT_LOCALE) {
-      if (currentUrl.searchParams.has("lang")) {
-        currentUrl.searchParams.delete("lang");
-        window.history.replaceState(
-          {},
-          "",
-          `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
-        );
-      }
-      return;
-    }
-    currentUrl.searchParams.set("lang", locale);
-    window.history.replaceState(
-      {},
-      "",
-      `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`,
-    );
-  }, [locale]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -205,6 +225,14 @@ export function I18nProvider({
     setLocaleState(nextLocale);
     if (typeof window !== "undefined") {
       window.localStorage.setItem(LOCALE_STORAGE_KEY, nextLocale);
+      // Navigate to the locale-prefixed URL so the new locale is in the path
+      const currentPath = stripLocaleFromPath(window.location.pathname);
+      const newPath = buildLocalizedPath(currentPath, nextLocale);
+      // Keep existing search params (but remove legacy ?lang=)
+      const params = new URLSearchParams(window.location.search);
+      params.delete("lang");
+      const search = params.toString() ? `?${params.toString()}` : "";
+      window.location.href = `${newPath}${search}${window.location.hash}`;
     }
   }, [locale]);
 
