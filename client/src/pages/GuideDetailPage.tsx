@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
@@ -16,8 +16,10 @@ import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 
 export default function GuideDetailPage() {
-  const [, params] = useRoute("/guides/:slug");
-  const slug = params?.slug;
+  const [location] = useLocation();
+  // Extract slug from the path, supporting both /guides/:slug and /:locale/guides/:slug
+  const guideSlugMatch = location.match(/\/guides\/([^/?#]+)/);
+  const slug = guideSlugMatch ? decodeURIComponent(guideSlugMatch[1]) : undefined;
 
   const { data: guide, isLoading } = useLocalizedQuery<Guide>({
     queryKey: [`/api/guides/${slug}`],

@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
@@ -85,8 +85,10 @@ ${overviewItems}
 }
 
 export default function BrandDetailPage() {
-  const [, params] = useRoute("/brands/:slug");
-  const slug = params?.slug;
+  const [location] = useLocation();
+  // Extract slug from the path, supporting both /brands/:slug and /:locale/brands/:slug
+  const brandSlugMatch = location.match(/\/brands\/([^/?#]+)/);
+  const slug = brandSlugMatch ? decodeURIComponent(brandSlugMatch[1]) : undefined;
 
   const { data: brand, isLoading: brandLoading } = useLocalizedQuery<Brand>({
     queryKey: [`/api/brands/${slug}`],
@@ -114,9 +116,8 @@ export default function BrandDetailPage() {
   const canonicalPath = brand ? `/brands/${brand.slug}` : "/brands";
   const seoDescription = brand
     ? brand.description ||
-      `Discover the best ${brand.name} padel rackets in ${year}. Expert reviews, ratings, and buying guide for top ${
-        racketCount || 10
-      } models. Find your perfect racket today.`
+    `Discover the best ${brand.name} padel rackets in ${year}. Expert reviews, ratings, and buying guide for top ${racketCount || 10
+    } models. Find your perfect racket today.`
     : "Padel racket brand page";
   const seoData = {
     title: articleTitle,
@@ -261,12 +262,12 @@ export default function BrandDetailPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <Skeleton className="h-10 w-32 mb-8" />
-          <Skeleton className="h-32 w-full mb-8" />
-          <Skeleton className="h-96 w-full" />
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <Skeleton className="h-10 w-32 mb-8" />
+            <Skeleton className="h-32 w-full mb-8" />
+            <Skeleton className="h-96 w-full" />
+          </div>
         </div>
-      </div>
       </>
     );
   }
@@ -276,15 +277,15 @@ export default function BrandDetailPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground mb-4">Brand not found</p>
-            <Link href="/brands">
-              <Button>Back to Brands</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-muted-foreground mb-4">Brand not found</p>
+              <Link href="/brands">
+                <Button>Back to Brands</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </>
     );
   }
@@ -293,191 +294,191 @@ export default function BrandDetailPage() {
     <>
       {seoElement}
       <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <StructuredData data={structuredData} />
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <StructuredData data={structuredData} />
 
-        {/* Breadcrumbs */}
-        <Breadcrumbs
-          items={[
-            { label: "Brands", href: "/brands" },
-            { label: brand.name },
-          ]}
-        />
+          {/* Breadcrumbs */}
+          <Breadcrumbs
+            items={[
+              { label: "Brands", href: "/brands" },
+              { label: brand.name },
+            ]}
+          />
 
-        {/* Back Button */}
-        <Link href="/brands" data-testid="link-back-to-brands">
-          <Button variant="ghost" className="mb-8 -ml-3" data-testid="button-back">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Brands
-          </Button>
-        </Link>
+          {/* Back Button */}
+          <Link href="/brands" data-testid="link-back-to-brands">
+            <Button variant="ghost" className="mb-8 -ml-3" data-testid="button-back">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Brands
+            </Button>
+          </Link>
 
-        {/* Brand Header */}
-        <div className="mb-12">
-          <div className="flex items-center gap-6 mb-6">
-            {brand.logoUrl && (
-              <div className="w-24 h-24 flex items-center justify-center">
-                <img
-                  src={brand.logoUrl}
-                  alt={`${brand.name} logo`}
-                  className="max-w-full max-h-full object-contain"
-                  loading="lazy"
-                  decoding="async"
-                  data-testid="img-brand-logo"
-                />
+          {/* Brand Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-6 mb-6">
+              {brand.logoUrl && (
+                <div className="w-24 h-24 flex items-center justify-center">
+                  <img
+                    src={brand.logoUrl}
+                    alt={`${brand.name} logo`}
+                    className="max-w-full max-h-full object-contain"
+                    loading="lazy"
+                    decoding="async"
+                    data-testid="img-brand-logo"
+                  />
+                </div>
+              )}
+              <div>
+                <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2" data-testid="text-brand-name">
+                  {brand.name}
+                </h1>
+                {/* Author */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                  <User className="h-4 w-4" />
+                  <Link
+                    href="/authors/carlos-rodriguez"
+                    className="hover:text-primary hover:underline transition-colors"
+                    data-testid="link-author"
+                  >
+                    Padel Racket Reviews
+                  </Link>
+                </div>
+                <p className="text-muted-foreground text-lg">
+                  {brand.description}
+                </p>
               </div>
-            )}
-            <div>
-              <h1 className="font-heading font-bold text-4xl md:text-5xl mb-2" data-testid="text-brand-name">
-                {brand.name}
-              </h1>
-              {/* Author */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                <User className="h-4 w-4" />
-                <Link
-                  href="/authors/carlos-rodriguez"
-                  className="hover:text-primary hover:underline transition-colors"
-                  data-testid="link-author"
-                >
-                  Padel Racket Reviews
-                </Link>
-              </div>
-              <p className="text-muted-foreground text-lg">
-                {brand.description}
-              </p>
             </div>
           </div>
-        </div>
 
-        {/* Brand SEO Article with Top 3 Racket Cards */}
-        <Card className="mb-12">
-          <CardContent className="p-8 md:p-12">
-            <article>
-              {/* Article Intro - only show if using generated content */}
-              {sanitizedIntro && (
-                <div
-                  className="prose prose-lg max-w-none mb-8"
-                  dangerouslySetInnerHTML={{ __html: sanitizedIntro }}
-                  data-testid="text-brand-article-intro"
-                />
-              )}
-
-            {/* Top 3 Racket Cards */}
-            {top3Rackets.length > 0 && (
-              <div className="mb-8">
-                {racketsLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 3 }).map((_, i) => (
-                      <Card key={i}>
-                        <CardContent className="p-0">
-                          <Skeleton className="aspect-[3/4] w-full" />
-                          <div className="p-6 space-y-3">
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-6 w-full" />
-                            <Skeleton className="h-20 w-full" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {top3Rackets.map((racket) => (
-                      <RacketCard key={racket.id} racket={racket} />
-                    ))}
-                  </div>
+          {/* Brand SEO Article with Top 3 Racket Cards */}
+          <Card className="mb-12">
+            <CardContent className="p-8 md:p-12">
+              <article>
+                {/* Article Intro - only show if using generated content */}
+                {sanitizedIntro && (
+                  <div
+                    className="prose prose-lg max-w-none mb-8"
+                    dangerouslySetInnerHTML={{ __html: sanitizedIntro }}
+                    data-testid="text-brand-article-intro"
+                  />
                 )}
-              </div>
-            )}
 
-              {/* Article Content - use existing articleContent from database if available */}
-              {sanitizedRest && (
-                <div
-                  className="prose prose-lg max-w-none prose-headings:font-heading prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-8 prose-img:object-cover prose-img:object-top mb-12"
-                  dangerouslySetInnerHTML={{ __html: sanitizedRest }}
-                  data-testid="text-brand-article-rest"
-                />
-              )}
-            </article>
-
-            {/* Top 10 Rackets within Article */}
-            {top10Rackets.length > 0 && (
-              <>
-                <h2 className="font-heading font-semibold text-3xl mb-6">
-                  Top {top10Rackets.length} rackets from {brand.name}
-                </h2>
-                <p className="text-muted-foreground text-lg mb-8">
-                  These cards summarise the same rackets discussed in the article above. Click through to read the full review for each model.
-                </p>
-
-                {racketsLoading ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <Card key={i}>
-                        <CardContent className="p-0">
-                          <Skeleton className="aspect-square w-full" />
-                          <div className="p-6 space-y-3">
-                            <Skeleton className="h-4 w-3/4" />
-                            <Skeleton className="h-6 w-full" />
-                            <Skeleton className="h-20 w-full" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {top10Rackets.map((racket) => (
-                      <RacketCard key={racket.id} racket={racket} />
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* All Rackets from Brand */}
-        {allRackets && allRackets.length > 10 && (
-          <div>
-            <h2 className="font-heading font-semibold text-3xl mb-6" data-testid="text-top-rackets-title">
-              All Rackets from {brand.name}
-            </h2>
-
-            {racketsLoading ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-0">
-                      <Skeleton className="aspect-[3/4] w-full" />
-                      <div className="p-6 space-y-3">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-20 w-full" />
+                {/* Top 3 Racket Cards */}
+                {top3Rackets.length > 0 && (
+                  <div className="mb-8">
+                    {racketsLoading ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {Array.from({ length: 3 }).map((_, i) => (
+                          <Card key={i}>
+                            <CardContent className="p-0">
+                              <Skeleton className="aspect-[3/4] w-full" />
+                              <div className="p-6 space-y-3">
+                                <Skeleton className="h-4 w-3/4" />
+                                <Skeleton className="h-6 w-full" />
+                                <Skeleton className="h-20 w-full" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : allRackets.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {allRackets.map((racket) => (
-                  <RacketCard key={racket.id} racket={racket} />
-                ))}
-              </div>
-            ) : (
-              <Card>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <p className="text-muted-foreground text-center">
-                    No rackets available from {brand.name} yet.
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {top3Rackets.map((racket) => (
+                          <RacketCard key={racket.id} racket={racket} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Article Content - use existing articleContent from database if available */}
+                {sanitizedRest && (
+                  <div
+                    className="prose prose-lg max-w-none prose-headings:font-heading prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-img:rounded-lg prose-img:shadow-md prose-img:my-8 prose-img:object-cover prose-img:object-top mb-12"
+                    dangerouslySetInnerHTML={{ __html: sanitizedRest }}
+                    data-testid="text-brand-article-rest"
+                  />
+                )}
+              </article>
+
+              {/* Top 10 Rackets within Article */}
+              {top10Rackets.length > 0 && (
+                <>
+                  <h2 className="font-heading font-semibold text-3xl mb-6">
+                    Top {top10Rackets.length} rackets from {brand.name}
+                  </h2>
+                  <p className="text-muted-foreground text-lg mb-8">
+                    These cards summarise the same rackets discussed in the article above. Click through to read the full review for each model.
                   </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
+
+                  {racketsLoading ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <Card key={i}>
+                          <CardContent className="p-0">
+                            <Skeleton className="aspect-square w-full" />
+                            <div className="p-6 space-y-3">
+                              <Skeleton className="h-4 w-3/4" />
+                              <Skeleton className="h-6 w-full" />
+                              <Skeleton className="h-20 w-full" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                      {top10Rackets.map((racket) => (
+                        <RacketCard key={racket.id} racket={racket} />
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* All Rackets from Brand */}
+          {allRackets && allRackets.length > 10 && (
+            <div>
+              <h2 className="font-heading font-semibold text-3xl mb-6" data-testid="text-top-rackets-title">
+                All Rackets from {brand.name}
+              </h2>
+
+              {racketsLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <Card key={i}>
+                      <CardContent className="p-0">
+                        <Skeleton className="aspect-[3/4] w-full" />
+                        <div className="p-6 space-y-3">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-6 w-full" />
+                          <Skeleton className="h-20 w-full" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : allRackets.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {allRackets.map((racket) => (
+                    <RacketCard key={racket.id} racket={racket} />
+                  ))}
+                </div>
+              ) : (
+                <Card>
+                  <CardContent className="flex flex-col items-center justify-center py-16">
+                    <p className="text-muted-foreground text-center">
+                      No rackets available from {brand.name} yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </>
   );
 }

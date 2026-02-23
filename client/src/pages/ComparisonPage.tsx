@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,10 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trackAffiliateClick } from "@/lib/analytics";
 
 export default function ComparisonPage() {
-  const [, params] = useRoute("/compare/:ids");
-  const ids = params?.ids?.split(",") || [];
+  const [location] = useLocation();
+  // Extract ids from the path, supporting both /compare/:ids and /:locale/compare/:ids
+  const compareMatch = location.match(/\/compare\/([^/?#]+)/);
+  const ids = compareMatch ? decodeURIComponent(compareMatch[1]).split(",") : [];
 
   const { data: allRackets, isLoading } = useQuery<Racket[]>({
     queryKey: ["/api/rackets"],

@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,10 @@ type AuthorWithContent = Author & {
 };
 
 export default function AuthorPage() {
-  const [, params] = useRoute("/authors/:slug");
-  const slug = params?.slug;
+  const [location] = useLocation();
+  // Extract slug from the path, supporting both /authors/:slug and /:locale/authors/:slug
+  const authorSlugMatch = location.match(/\/authors\/([^/?#]+)/);
+  const slug = authorSlugMatch ? decodeURIComponent(authorSlugMatch[1]) : undefined;
 
   const { data: authorData, isLoading } = useQuery<AuthorWithContent>({
     queryKey: [`/api/authors/${slug}`],
@@ -41,13 +43,13 @@ export default function AuthorPage() {
   // Structured data
   const structuredData = authorData
     ? {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        name: authorData.name,
-        description: authorData.bio,
-        image: authorData.avatarUrl,
-        url: `${SITE_URL}${canonicalPath}`,
-      }
+      "@context": "https://schema.org",
+      "@type": "Person",
+      name: authorData.name,
+      description: authorData.bio,
+      image: authorData.avatarUrl,
+      url: `${SITE_URL}${canonicalPath}`,
+    }
     : null;
 
   const seoElement = <SEO {...seoData} />;
@@ -57,19 +59,19 @@ export default function AuthorPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <Skeleton className="h-10 w-32 mb-8" />
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-1">
-              <Skeleton className="h-64 w-full" />
-            </div>
-            <div className="lg:col-span-2 space-y-6">
-              <Skeleton className="h-12 w-3/4" />
-              <Skeleton className="h-32 w-full" />
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <Skeleton className="h-10 w-32 mb-8" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1">
+                <Skeleton className="h-64 w-full" />
+              </div>
+              <div className="lg:col-span-2 space-y-6">
+                <Skeleton className="h-12 w-3/4" />
+                <Skeleton className="h-32 w-full" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </>
     );
   }
@@ -79,15 +81,15 @@ export default function AuthorPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground mb-4">Author not found</p>
-            <Link href="/blog">
-              <button className="text-primary hover:underline">Back to Blog</button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-muted-foreground mb-4">Author not found</p>
+              <Link href="/blog">
+                <button className="text-primary hover:underline">Back to Blog</button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </>
     );
   }
@@ -130,7 +132,7 @@ export default function AuthorPage() {
                   </div>
                 )}
               </div>
-              
+
               {/* Author Info */}
               <div className="flex-1">
                 <h1 className="font-heading font-bold text-4xl md:text-5xl mb-3">

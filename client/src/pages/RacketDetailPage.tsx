@@ -1,4 +1,4 @@
-import { useRoute, Link, useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
@@ -28,9 +28,10 @@ function isUuid(value: string | undefined): boolean {
 }
 
 export default function RacketDetailPage() {
-  const [, params] = useRoute("/rackets/:id");
-  const [, setLocation] = useLocation();
-  const routeParam = params?.id;
+  const [location, setLocation] = useLocation();
+  // Extract the racket id/slug from the path, supporting both /rackets/:id and /:locale/rackets/:id
+  const racketIdMatch = location.match(/\/rackets\/([^/?#]+)/);
+  const routeParam = racketIdMatch ? decodeURIComponent(racketIdMatch[1]) : undefined;
   const treatAsId = isUuid(routeParam);
 
   // Legacy path: detail URLs that still use the raw ID

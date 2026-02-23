@@ -1,4 +1,4 @@
-import { useRoute, Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,10 @@ import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 
 export default function BlogPostPage() {
-  const [, params] = useRoute("/blog/:slug");
-  const slug = params?.slug;
+  const [location] = useLocation();
+  // Extract slug from the path, supporting both /blog/:slug and /:locale/blog/:slug
+  const blogSlugMatch = location.match(/\/blog\/([^/?#]+)/);
+  const slug = blogSlugMatch ? decodeURIComponent(blogSlugMatch[1]) : undefined;
 
   const { data: post, isLoading } = useLocalizedQuery<BlogPost>({
     queryKey: [`/api/blog/${slug}`],
@@ -50,27 +52,27 @@ export default function BlogPostPage() {
   // Structured Data for Article
   const articleStructuredData = post
     ? {
-        "@context": "https://schema.org",
-        "@type": "BlogPosting",
-        headline: post.title,
-        description: post.excerpt,
-        image: post.featuredImage ? [post.featuredImage] : [],
-        inLanguage: locale,
-        datePublished: new Date(post.publishedAt).toISOString(),
-        dateModified: new Date(post.updatedAt).toISOString(),
-        author: {
-          "@type": "Person",
-          name: post.author,
-        },
-        publisher: {
-          "@type": "Organization",
-          name: "Padel Racket Reviews",
-        },
-        mainEntityOfPage: {
-          "@type": "WebPage",
-          "@id": `${SITE_URL}${canonicalPath}`,
-        },
-      }
+      "@context": "https://schema.org",
+      "@type": "BlogPosting",
+      headline: post.title,
+      description: post.excerpt,
+      image: post.featuredImage ? [post.featuredImage] : [],
+      inLanguage: locale,
+      datePublished: new Date(post.publishedAt).toISOString(),
+      dateModified: new Date(post.updatedAt).toISOString(),
+      author: {
+        "@type": "Person",
+        name: post.author,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: "Padel Racket Reviews",
+      },
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": `${SITE_URL}${canonicalPath}`,
+      },
+    }
     : null;
 
   const seoElement = <SEO {...seoData} />;
@@ -80,20 +82,20 @@ export default function BlogPostPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-6 py-8">
-          <Skeleton className="h-10 w-32 mb-8" />
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-8">
-              <Skeleton className="h-64 w-full" />
-              <Skeleton className="h-12 w-3/4" />
-              <Skeleton className="h-96 w-full" />
-            </div>
-            <div className="lg:col-span-4">
-              <Skeleton className="h-64 w-full" />
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <Skeleton className="h-10 w-32 mb-8" />
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-8 space-y-8">
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-12 w-3/4" />
+                <Skeleton className="h-96 w-full" />
+              </div>
+              <div className="lg:col-span-4">
+                <Skeleton className="h-64 w-full" />
+              </div>
             </div>
           </div>
         </div>
-      </div>
       </>
     );
   }
@@ -103,15 +105,15 @@ export default function BlogPostPage() {
       <>
         {seoElement}
         <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card>
-          <CardContent className="p-12 text-center">
-            <p className="text-muted-foreground mb-4">Blog post not found</p>
-            <Link href="/blog">
-              <Button>Back to Blog</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardContent className="p-12 text-center">
+              <p className="text-muted-foreground mb-4">Blog post not found</p>
+              <Link href="/blog">
+                <Button>Back to Blog</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </>
     );
   }
