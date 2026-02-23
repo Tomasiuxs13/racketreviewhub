@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/i18n/useI18n";
 
 interface TocItem {
     id: string;
@@ -9,6 +10,7 @@ interface TocItem {
 export function TableOfContents({ contentHtml, className }: { contentHtml: string; className?: string }) {
     const [items, setItems] = useState<TocItem[]>([]);
     const [activeId, setActiveId] = useState<string>("");
+    const { t } = useI18n();
 
     useEffect(() => {
         // Extract h2 elements and assign IDs to the actual DOM elements if they don't have them
@@ -77,7 +79,7 @@ export function TableOfContents({ contentHtml, className }: { contentHtml: strin
 
     return (
         <div className={cn("bg-card/50 rounded-xl border border-border/40 p-5 w-full", className)}>
-            <h3 className="font-heading font-bold text-lg mb-3">Table of Contents</h3>
+            <h3 className="font-heading font-bold text-lg mb-3">{t("racket.detail.tableOfContents") || "Table of Contents"}</h3>
             <ul className="space-y-2 text-sm">
                 {items.map((item) => (
                     <li key={item.id}>

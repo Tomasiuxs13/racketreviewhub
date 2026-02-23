@@ -6,6 +6,7 @@ import {
     ResponsiveContainer,
 } from "recharts";
 import { useMemo } from "react";
+import { useI18n } from "@/i18n/useI18n";
 
 interface RatingRadarProps {
     power: number;
@@ -22,15 +23,17 @@ export function RatingRadar({
     maneuverability,
     sweetSpot,
 }: RatingRadarProps) {
+    const { t } = useI18n();
+
     const data = useMemo(
         () => [
-            { subject: "Power", A: power, fullMark: 100 },
-            { subject: "Control", A: control, fullMark: 100 },
-            { subject: "Rebound", A: rebound, fullMark: 100 },
-            { subject: "Maneuverability", A: maneuverability, fullMark: 100 },
-            { subject: "Sweet Spot", A: sweetSpot, fullMark: 100 },
+            { subject: t("racket.detail.radar.power") || "Power", A: power, fullMark: 100 },
+            { subject: t("racket.detail.radar.control") || "Control", A: control, fullMark: 100 },
+            { subject: t("racket.detail.radar.rebound") || "Rebound", A: rebound, fullMark: 100 },
+            { subject: t("racket.detail.radar.maneuverability") || "Maneuverability", A: maneuverability, fullMark: 100 },
+            { subject: t("racket.detail.radar.sweetSpot") || "Sweet Spot", A: sweetSpot, fullMark: 100 },
         ],
-        [power, control, rebound, maneuverability, sweetSpot]
+        [power, control, rebound, maneuverability, sweetSpot, t]
     );
 
     return (

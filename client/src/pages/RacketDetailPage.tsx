@@ -177,7 +177,7 @@ export default function RacketDetailPage() {
           <Link href="/rackets" data-testid="link-back-to-rackets">
             <Button variant="ghost" className="mb-6 sm:mb-8 -ml-2 sm:-ml-3" data-testid="button-back">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Rackets
+              {t("racket.detail.backToRackets")}
             </Button>
           </Link>
 
@@ -201,7 +201,7 @@ export default function RacketDetailPage() {
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-muted/50 rounded-md">
-                        <span className="text-muted-foreground font-medium">No image available</span>
+                        <span className="text-muted-foreground font-medium">{t("racket.detail.noImage")}</span>
                       </div>
                     )}
                   </div>
@@ -219,7 +219,7 @@ export default function RacketDetailPage() {
                             <User className="h-5 w-5" />
                           </div>
                           <div>
-                            <span className="block text-xs uppercase tracking-wider font-semibold">Review by</span>
+                            <span className="block text-xs uppercase tracking-wider font-semibold">{t("racket.detail.reviewBy")}</span>
                             <Link
                               href={`/authors/${author.slug}`}
                               className="text-foreground hover:text-primary transition-colors font-bold text-base"
@@ -240,7 +240,7 @@ export default function RacketDetailPage() {
                   ) : (
                     <div className="text-center py-10">
                       <p className="text-muted-foreground text-lg">
-                        Full review coming soon for the <span className="font-semibold text-foreground">{racket.brand} {racket.model}</span>.
+                        {t("racket.detail.reviewComingSoon")} <span className="font-semibold text-foreground">{racket.brand} {racket.model}</span>.
                       </p>
                     </div>
                   )}
@@ -255,7 +255,7 @@ export default function RacketDetailPage() {
                     {hasOriginalPrice && originalPriceValue > currentPriceValue ? (
                       <>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium text-muted-foreground">Previous price:</p>
+                          <p className="text-sm font-medium text-muted-foreground">{t("racket.detail.previousPrice")}</p>
                           {hasOriginalPrice && (
                             <span className="text-lg text-muted-foreground line-through decoration-destructive/50">
                               €{originalPriceValue.toFixed(2)}
@@ -263,12 +263,12 @@ export default function RacketDetailPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap items-baseline gap-3">
-                          <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">Current price:</p>
+                          <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{t("racket.detail.currentPrice")}</p>
                           <span className="text-4xl sm:text-5xl font-heading font-extrabold text-gradient" data-testid="text-price">
                             {formattedCurrentPrice}
                           </span>
                           <Badge variant="destructive" className="font-bold whitespace-nowrap text-sm px-2.5 py-1">
-                            Save {discountPercentage}%
+                            {t("racket.detail.save", { percent: String(discountPercentage) })}
                           </Badge>
                         </div>
                       </>
@@ -281,7 +281,7 @@ export default function RacketDetailPage() {
                             </span>
                           </div>
                         )}
-                        <p className="text-sm font-medium text-muted-foreground">Current price</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t("racket.detail.currentPriceShort")}</p>
                       </>
                     )}
                   </div>
@@ -297,7 +297,7 @@ export default function RacketDetailPage() {
                         data-testid="button-buy-now-pn"
                       >
                         <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail", price: Number(racket.currentPrice), inStock: racket.inStock })}>
-                          Buy from Padel Nuestro {!racket.inStock && "(Check Availability)"}
+                          {t("racket.detail.buyFromPN")} {!racket.inStock && t("racket.detail.checkAvailability")}
                           <ExternalLink className="ml-2 h-5 w-5" />
                         </a>
                       </Button>
@@ -313,7 +313,7 @@ export default function RacketDetailPage() {
                         data-testid="button-buy-now-pm"
                       >
                         <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
-                          Buy from Padel Market {!racket.padelMarketInStock && "(Check Availability)"}
+                          {t("racket.detail.buyFromPM")} {!racket.padelMarketInStock && t("racket.detail.checkAvailability")}
                           <ExternalLink className="ml-2 h-5 w-5" />
                         </a>
                       </Button>
@@ -323,12 +323,12 @@ export default function RacketDetailPage() {
                     {!(racket.affiliateLink || racket.titleUrl) &&
                       !racket.padelMarketAffiliateLink ? (
                       <Button size="lg" className="w-full py-6 text-lg" disabled>
-                        Not Available
+                        {t("racket.detail.notAvailable")}
                       </Button>
                     ) : null}
 
                     <p className="text-xs text-muted-foreground/80 text-center mt-3 font-medium">
-                      We earn a commission from purchases made through affiliate links at no extra cost to you.
+                      {t("racket.detail.affiliateDisclaimer")}
                     </p>
                   </div>
                 </CardContent>
@@ -352,7 +352,7 @@ export default function RacketDetailPage() {
                   {racket.model}
                 </h1>
                 <p className="text-muted-foreground font-medium capitalize mb-5 text-lg">
-                  {racket.shape} shape
+                  {t("racket.detail.shape", { shape: racket.shape || "" })}
                 </p>
                 {/* Author */}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium bg-muted/40 p-3 rounded-lg w-fit mb-5">
@@ -385,11 +385,11 @@ export default function RacketDetailPage() {
               {/* Overall Rating */}
               <Card className="border-primary/20 bg-gradient-to-br from-primary/10 via-background to-background premium-shadow">
                 <CardContent className="p-6 text-center">
-                  <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary/80 mb-2">Overall Score</p>
+                  <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary/80 mb-2">{t("racket.detail.overallScore")}</p>
                   <div className="text-6xl sm:text-7xl font-heading font-extrabold text-gradient drop-shadow-sm mb-1" data-testid="text-overall-rating">
                     {racket.overallRating}
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground">out of 100</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("racket.detail.outOf100")}</p>
                 </CardContent>
               </Card>
 
@@ -401,7 +401,7 @@ export default function RacketDetailPage() {
                     {hasOriginalPrice && originalPriceValue > currentPriceValue ? (
                       <>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm font-medium text-muted-foreground">Previous price:</p>
+                          <p className="text-sm font-medium text-muted-foreground">{t("racket.detail.previousPrice")}</p>
                           {hasOriginalPrice && (
                             <span className="text-lg text-muted-foreground line-through decoration-destructive/50">
                               €{originalPriceValue.toFixed(2)}
@@ -409,12 +409,12 @@ export default function RacketDetailPage() {
                           )}
                         </div>
                         <div className="flex flex-wrap items-baseline gap-3">
-                          <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">Current price:</p>
+                          <p className="text-sm font-medium text-muted-foreground whitespace-nowrap">{t("racket.detail.currentPrice")}</p>
                           <span className="text-4xl xl:text-5xl font-heading font-extrabold text-gradient" data-testid="text-price-sidebar">
                             {formattedCurrentPrice}
                           </span>
                           <Badge variant="destructive" className="font-bold whitespace-nowrap text-sm px-2.5 py-1">
-                            Save {discountPercentage}%
+                            {t("racket.detail.save", { percent: String(discountPercentage) })}
                           </Badge>
                         </div>
                       </>
@@ -427,7 +427,7 @@ export default function RacketDetailPage() {
                             </span>
                           </div>
                         )}
-                        <p className="text-sm font-medium text-muted-foreground">Current price</p>
+                        <p className="text-sm font-medium text-muted-foreground">{t("racket.detail.currentPriceShort")}</p>
                       </>
                     )}
                   </div>
@@ -443,7 +443,7 @@ export default function RacketDetailPage() {
                         data-testid="button-buy-now-sidebar"
                       >
                         <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.inStock })}>
-                          Buy from Padel Nuestro {!racket.inStock && "(Check Availability)"}
+                          {t("racket.detail.buyFromPN")} {!racket.inStock && t("racket.detail.checkAvailability")}
                           <ExternalLink className="ml-2 h-5 w-5" />
                         </a>
                       </Button>
@@ -459,7 +459,7 @@ export default function RacketDetailPage() {
                         data-testid="button-buy-now-sidebar-pm"
                       >
                         <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
-                          Buy from Padel Market {!racket.padelMarketInStock && "(Check Availability)"}
+                          {t("racket.detail.buyFromPM")} {!racket.padelMarketInStock && t("racket.detail.checkAvailability")}
                           <ExternalLink className="ml-2 h-5 w-5" />
                         </a>
                       </Button>
@@ -483,7 +483,7 @@ export default function RacketDetailPage() {
               {/* Performance Ratings */}
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4">Performance Metrics</h3>
+                  <h3 className="font-semibold mb-4">{t("racket.detail.performanceMetrics")}</h3>
                   <RatingRadar
                     power={racket.powerRating}
                     control={racket.controlRating}
@@ -497,54 +497,54 @@ export default function RacketDetailPage() {
               {/* Specifications */}
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold mb-4">Specifications</h3>
+                  <h3 className="font-semibold mb-4">{t("racket.detail.specifications")}</h3>
                   <dl className="grid grid-cols-1 rounded-lg border overflow-hidden">
                     <div className="flex items-center justify-between p-3 bg-muted/30 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Brand</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.brand")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right" data-testid="spec-brand">{racket.brand || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Color</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.color")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.color || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted/30 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Balance</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.balance")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.balance || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Surface</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.surface")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.surface || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted/30 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Hardness</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.hardness")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.hardness || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Finish</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.finish")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.finish || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted/30 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Collection</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.collection")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.playersCollection || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Core</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.core")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.core || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted/30 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Game Level</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.gameLevel")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.gameLevel || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Shape</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.shape")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right capitalize">{racket.shape || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 bg-muted/30 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Game Type</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.gameType")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right">{racket.gameType || "-"}</dd>
                     </div>
                     <div className="flex items-center justify-between p-3 border-b last:border-0">
-                      <dt className="text-sm font-medium text-muted-foreground w-1/3">Player</dt>
+                      <dt className="text-sm font-medium text-muted-foreground w-1/3">{t("racket.detail.specs.player")}</dt>
                       <dd className="text-sm font-semibold w-2/3 text-right capitalize">{racket.player || "-"}</dd>
                     </div>
                   </dl>
@@ -566,7 +566,7 @@ export default function RacketDetailPage() {
           {/* Related Guides */}
           {recentGuides && recentGuides.length > 0 && (
             <div className="mb-12">
-              <h2 className="font-heading font-semibold text-2xl mb-4">Helpful Guides</h2>
+              <h2 className="font-heading font-semibold text-2xl mb-4">{t("racket.detail.helpfulGuides")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentGuides.slice(0, 3).map((guide) => (
                   <Link key={guide.id} href={`/guides/${guide.slug}`}>
@@ -586,7 +586,7 @@ export default function RacketDetailPage() {
           {/* Related Rackets */}
           {relatedRackets && relatedRackets.length > 0 && (
             <div>
-              <h2 className="font-heading font-semibold text-3xl mb-6">Related Rackets</h2>
+              <h2 className="font-heading font-semibold text-3xl mb-6">{t("racket.detail.relatedRackets")}</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {relatedRackets.slice(0, 4).map((relatedRacket) => (
                   <Link
@@ -631,31 +631,31 @@ export default function RacketDetailPage() {
           >
             <div className="max-w-7xl mx-auto flex items-center gap-4">
               <div className="flex flex-col">
-                <span className="text-xs uppercase tracking-wide text-muted-foreground">Current price</span>
+                <span className="text-xs uppercase tracking-wide text-muted-foreground">{t("racket.detail.currentPriceShort")}</span>
                 <span className="text-2xl font-bold leading-tight text-primary">
                   {formattedCurrentPrice}
                 </span>
                 {discountPercentage > 0 && (
-                  <span className="text-xs font-semibold text-destructive">Save {discountPercentage}%</span>
+                  <span className="text-xs font-semibold text-destructive">{t("racket.detail.save", { percent: String(discountPercentage) })}</span>
                 )}
               </div>
               {(racket.affiliateLink || racket.titleUrl) ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy">
                   <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.inStock })}>
-                    Buy from Padel Nuestro {!racket.inStock && "(Check)"}
+                    {t("racket.detail.buyFromPN")} {!racket.inStock && t("racket.detail.checkShort")}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
               ) : racket.padelMarketAffiliateLink ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy-pm">
                   <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
-                    Buy from Padel Market {!racket.padelMarketInStock && "(Check)"}
+                    {t("racket.detail.buyFromPM")} {!racket.padelMarketInStock && t("racket.detail.checkShort")}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
               ) : (
                 <Button size="lg" className="flex-1 min-h-[48px]" disabled>
-                  Not Available
+                  {t("racket.detail.notAvailable")}
                 </Button>
               )}
             </div>

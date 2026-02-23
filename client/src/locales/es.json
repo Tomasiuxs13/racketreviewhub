@@ -116,6 +116,52 @@
       "description": "Reseña experta de la pala de padel {{brand}} {{model}} {{year}}. Calificaciones detalladas de potencia, control y rendimiento. Calificación general: {{rating}}/100. Encuentra el mejor precio con nuestros enlaces de afiliados.",
       "defaultTitle": "Reseña de Pala de Padel",
       "defaultDescription": "Reseña experta de pala de padel con calificaciones detalladas y comparación de mejores precios"
+    },
+    "detail": {
+      "backToRackets": "Volver a las Palas",
+      "notFound": "Pala no encontrada",
+      "noImage": "Imagen no disponible",
+      "reviewBy": "Reseña por",
+      "reviewComingSoon": "Reseña completa próximamente para la",
+      "overallScore": "Puntuación General",
+      "outOf100": "de 100",
+      "previousPrice": "Precio anterior:",
+      "currentPrice": "Precio actual:",
+      "currentPriceShort": "Precio actual",
+      "save": "Ahorra {{percent}}%",
+      "buyFromPN": "Comprar en Padel Nuestro",
+      "buyFromPM": "Comprar en Padel Market",
+      "checkAvailability": "(Consultar Disponibilidad)",
+      "checkShort": "(Consultar)",
+      "notAvailable": "No Disponible",
+      "affiliateDisclaimer": "Ganamos una comisión por las compras realizadas a través de enlaces de afiliados sin coste adicional para ti.",
+      "performanceMetrics": "Métricas de Rendimiento",
+      "specifications": "Especificaciones",
+      "specs": {
+        "brand": "Marca",
+        "color": "Color",
+        "balance": "Balance",
+        "surface": "Superficie",
+        "hardness": "Dureza",
+        "finish": "Acabado",
+        "collection": "Colección",
+        "core": "Núcleo",
+        "gameLevel": "Nivel de Juego",
+        "shape": "Forma",
+        "gameType": "Tipo de Juego",
+        "player": "Jugador"
+      },
+      "helpfulGuides": "Guías Útiles",
+      "relatedRackets": "Palas Relacionadas",
+      "shape": "forma {{shape}}",
+      "tableOfContents": "Índice",
+      "radar": {
+        "power": "Potencia",
+        "control": "Control",
+        "rebound": "Rebote",
+        "maneuverability": "Maniobrabilidad",
+        "sweetSpot": "Punto Dulce"
+      }
     }
   }
 }
