@@ -24,6 +24,40 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
+// Handle SEO redirects for legacy ?lang= parameter
+const SUPPORTED_LOCALES = ["en", "es", "pt", "it", "fr"];
+app.use((req, res, next) => {
+  if (req.method === 'GET' && req.query.lang) {
+    const lang = req.query.lang as string;
+
+    if (SUPPORTED_LOCALES.includes(lang)) {
+      try {
+        const urlObj = new URL(req.originalUrl, `http://${req.headers.host || 'localhost'}`);
+        urlObj.searchParams.delete('lang');
+
+        let newPath = urlObj.pathname;
+        // Remove existing locale prefix to avoid double prefixes like /pt/pt/
+        newPath = newPath.replace(/^\/[a-z]{2}(\/|$)/, (_, sep) => sep || "/");
+
+        if (lang !== "en") {
+          newPath = `/${lang}${newPath.startsWith("/") ? newPath : "/" + newPath}`;
+        } else if (!newPath.startsWith("/")) {
+          newPath = "/" + newPath;
+        }
+
+        // Clean up multiple slashes just in case
+        newPath = newPath.replace(/\/\/+/g, '/');
+
+        const search = urlObj.search;
+        return res.redirect(301, `${newPath}${search}`);
+      } catch (err) {
+        console.error("Error processing lang redirect:", err);
+      }
+    }
+  }
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
