@@ -133,6 +133,17 @@ export default function ComparisonPage() {
     setSearchQuery("");
   };
 
+  const handleRemoveRacket = (slug: string) => {
+    const newIds = ids.filter(id => id !== slug);
+    const localePrefix = location.match(/^\/[a-z]{2}(?=\/|$)/)?.[0] || "";
+    removeFromCompare(slug);
+    if (newIds.length === 0) {
+      setLocation(`${localePrefix}/compare`);
+    } else {
+      setLocation(`${localePrefix}/compare/${newIds.join(",")}`);
+    }
+  };
+
   return (
     <>
       <SEO {...seoData} />
@@ -205,7 +216,7 @@ export default function ComparisonPage() {
                 {rackets.map((racket) => (
                   <Card key={racket.id} className="relative overflow-hidden group border-none shadow-xl">
                     <button
-                      onClick={() => removeFromCompare(getRacketSlug(racket))}
+                      onClick={() => handleRemoveRacket(getRacketSlug(racket))}
                       className="absolute top-2 right-2 z-10 p-1 rounded-full bg-black/10 hover:bg-black/20 transition-colors"
                     >
                       <X className="h-4 w-4" />

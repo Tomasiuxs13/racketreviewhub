@@ -1,12 +1,31 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { X, ArrowRight } from "lucide-react";
 import { useCompare } from "@/hooks/useCompare";
 import { useI18n } from "@/i18n/useI18n";
 
 export function CompareBar() {
+  const [location, setLocation] = useLocation();
   const { compareIds, removeFromCompare, clearCompare, compareUrl, compareCount } = useCompare();
   const { locale } = useI18n();
+
+  const handleRemove = (slug: string) => {
+    removeFromCompare(slug);
+
+    // If we're on the comparison page, we need to update the URL too
+    const compareMatch = location.match(/\/compare\/([^/?#]+)/);
+    if (compareMatch) {
+      const currentIds = decodeURIComponent(compareMatch[1]).split(",");
+      const newIds = currentIds.filter(id => id !== slug);
+      const localePrefix = location.match(/^\/[a-z]{2}(?=\/|$)/)?.[0] || "";
+
+      if (newIds.length === 0) {
+        setLocation(`${localePrefix}/compare`);
+      } else {
+        setLocation(`${localePrefix}/compare/${newIds.join(",")}`);
+      }
+    }
+  };
 
   if (compareCount === 0) return null;
 
@@ -25,7 +44,7 @@ export function CompareBar() {
               >
                 {slug.replace(/-/g, " ")}
                 <button
-                  onClick={() => removeFromCompare(slug)}
+                  onClick={() => handleRemove(slug)}
                   className="text-muted-foreground hover:text-foreground"
                   aria-label={`Remove ${slug} from comparison`}
                 >
