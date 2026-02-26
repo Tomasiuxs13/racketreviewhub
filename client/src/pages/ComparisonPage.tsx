@@ -192,30 +192,34 @@ export default function ComparisonPage() {
     }
   };
 
+  const columnCount = Math.max(2, rackets.length + (rackets.length < 3 ? 1 : 0));
+  const gridTemplate = `14rem repeat(${columnCount}, minmax(0, 1fr))`;
+
   return (
     <>
       <SEO {...seoData} />
 
-      {/* Sticky Header */}
       <div className={`fixed top-14 left-0 right-0 z-40 bg-background/95 backdrop-blur border-b shadow-md transition-all duration-300 ${isSticky ? "translate-y-0" : "-translate-y-full opacity-0"}`}>
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center gap-4">
-          <div className="w-32 flex-shrink-0 font-bold text-xs uppercase text-muted-foreground mr-4">Compare</div>
-          <div className="flex-1 flex gap-4 overflow-x-auto no-scrollbar">
-            {rackets.map(r => (
-              <div key={r.id} className="flex-1 min-w-[200px] flex items-center gap-3">
-                <img src={getOptimizedImageUrl(r.imageUrl || "", 100)} className="w-10 h-10 object-contain" alt="" />
-                <div className="min-w-0">
-                  <p className="font-bold text-sm truncate">{r.model}</p>
-                  <p className="text-xs text-primary font-bold">{r.overallRating}</p>
+        <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center">
+          <div className="flex-1 overflow-x-auto no-scrollbar">
+            <div className="grid items-center h-full" style={{ gridTemplateColumns: gridTemplate }}>
+              <div className="font-black text-xs uppercase text-primary tracking-widest pl-4 border-r mr-6 h-full flex items-center">Compare</div>
+              {rackets.map(r => (
+                <div key={r.id} className="flex items-center gap-3 px-4 min-w-[200px] border-r border-border/30 last:border-r-0">
+                  <img src={getOptimizedImageUrl(r.imageUrl || "", 80)} className="w-8 h-8 object-contain" alt="" />
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs truncate uppercase tracking-tighter leading-none mb-1">{r.model}</p>
+                    <p className="text-[10px] font-black text-primary bg-primary/10 rounded px-1 w-fit">SCORE: {r.overallRating}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="min-h-screen bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="min-h-screen bg-muted/20">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 py-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div className="flex items-center gap-4">
               <Link href={locale === "en" ? "/rackets" : `/${locale}/rackets`}>
@@ -257,102 +261,106 @@ export default function ComparisonPage() {
             </div>
           </div>
 
-          <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-            <div className="min-w-[800px] md:min-w-0 grid gap-6">
-              {/* Header Cards */}
-              <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(2, rackets.length)}, minmax(0, 1fr))` }}>
+          <div className="overflow-x-auto pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
+            <div className="min-w-[1000px] grid gap-1">
+              {/* Header Grid */}
+              <div className="grid items-stretch" style={{ gridTemplateColumns: gridTemplate }}>
+                {/* Spacer for label column */}
+                <div className="pr-8 py-6 flex flex-col justify-end">
+                  <Badge variant="outline" className="w-fit mb-4 border-primary text-primary font-black animate-pulse">LIVE COMPARISON</Badge>
+                  <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground opacity-50 italic">Quick View</h2>
+                </div>
+
                 {rackets.map((racket) => (
-                  <Card key={racket.id} className="relative overflow-hidden group border-none shadow-xl">
+                  <Card key={racket.id} className="relative overflow-hidden group border-none bg-transparent shadow-none hover:bg-background/40 transition-colors">
                     <button
                       onClick={() => handleRemoveRacket(getRacketSlug(racket))}
-                      className="absolute top-2 right-2 z-10 p-1 rounded-full bg-black/10 hover:bg-black/20 transition-colors"
+                      className="absolute top-2 right-2 z-10 p-1.5 rounded-full bg-black/5 hover:bg-black/10 transition-colors opacity-0 group-hover:opacity-100"
                     >
                       <X className="h-4 w-4" />
                     </button>
-                    <CardContent className="p-6 text-center">
-                      <div className="aspect-square mb-6 flex items-center justify-center max-h-48 group-hover:scale-105 transition-transform duration-500">
+                    <CardContent className="p-6 flex flex-col items-center">
+                      <div className="w-full aspect-square mb-6 flex items-center justify-center max-h-48 group-hover:scale-105 transition-all duration-700 ease-out">
                         <img
                           src={getOptimizedImageUrl(racket.imageUrl || "", 400)}
                           alt={`${racket.brand} ${racket.model}`}
-                          className="max-w-full max-h-full object-contain drop-shadow-2xl"
+                          className="max-w-full max-h-full object-contain mx-auto drop-shadow-2xl"
                         />
                       </div>
-                      <Badge variant="secondary" className="mb-2 bg-primary/10 text-primary border-none">{racket.brand}</Badge>
-                      <h2 className="font-heading font-bold text-xl mb-4 h-14 overflow-hidden">
-                        <Link href={`/rackets/${getRacketSlug(racket)}`} className="hover:text-primary transition-colors">
+                      <Badge variant="secondary" className="mb-2 bg-primary/10 text-primary border-none text-[10px] font-black uppercase tracking-tighter">{racket.brand}</Badge>
+                      <h2 className="font-heading font-black text-lg mb-4 h-14 overflow-hidden leading-tight text-center">
+                        <Link href={`/rackets/${getRacketSlug(racket)}`} className="hover:text-primary transition-colors decoration-primary/30 underline-offset-4 hover:underline">
                           {racket.model}
                         </Link>
                       </h2>
-                      <div className="flex items-center justify-center gap-2 mb-6">
-                        <span className="text-3xl font-black text-foreground">€{Math.round(Number(racket.currentPrice))}</span>
-                        {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) && (
-                          <span className="text-sm text-muted-foreground line-through">€{Math.round(Number(racket.originalPrice))}</span>
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-2xl font-black text-foreground tracking-tighter">€{Math.round(Number(racket.currentPrice))}</span>
+                          {racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) && (
+                            <span className="text-xs text-muted-foreground line-through opacity-60">€{Math.round(Number(racket.originalPrice))}</span>
+                          )}
+                        </div>
+                        {(racket.affiliateLink || racket.padelMarketAffiliateLink) && (
+                          <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90 font-black shadow-lg shadow-primary/20 text-[10px] uppercase tracking-widest">
+                            <a href={racket.affiliateLink || racket.padelMarketAffiliateLink || "#"} target="_blank" rel="sponsored">
+                              Shop Best Price <ExternalLink className="ml-1 h-3 w-3" />
+                            </a>
+                          </Button>
                         )}
                       </div>
-                      {(racket.affiliateLink || racket.padelMarketAffiliateLink) && (
-                        <Button asChild className="w-full bg-primary hover:bg-primary/90 font-bold shadow-lg shadow-primary/20">
-                          <a href={racket.affiliateLink || racket.padelMarketAffiliateLink || "#"} target="_blank" rel="sponsored">
-                            View Price <ExternalLink className="ml-2 h-4 w-4" />
-                          </a>
-                        </Button>
-                      )}
                     </CardContent>
                   </Card>
                 ))}
 
-                {rackets.length < 4 && (
-                  <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center min-h-[400px] bg-background/50">
+                {rackets.length < 3 && (
+                  <Card className="border-dashed border-2 flex flex-col items-center justify-center p-6 text-center min-h-[400px] bg-background/20 border-border/50">
                     {!showSearch ? (
                       <>
-                        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                          <Plus className="h-8 w-8 text-muted-foreground" />
+                        <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                          <Plus className="h-6 w-6 text-muted-foreground opacity-30" />
                         </div>
-                        <h3 className="font-bold mb-2">Add Comparison</h3>
-                        <p className="text-sm text-muted-foreground mb-6 max-w-[200px]">Add another racket to see how they compare.</p>
-                        <Button variant="outline" onClick={() => setShowSearch(true)}>Search Racket</Button>
+                        <h3 className="font-black text-xs uppercase tracking-widest opacity-40 mb-2">Add Comparison</h3>
+                        <Button variant="outline" size="sm" onClick={() => setShowSearch(true)} className="text-[10px] font-black uppercase tracking-widest">Search Racket</Button>
                       </>
                     ) : (
                       <div className="w-full space-y-4">
                         <div className="relative">
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground opacity-50" />
                           <Input
-                            placeholder="Search brand or model..."
-                            className="pl-9"
+                            placeholder="Type brand/model..."
+                            className="pl-8 h-8 text-xs font-bold bg-background/50 border-none"
                             autoFocus
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                           />
                         </div>
-                        <div className="text-left space-y-1">
+                        <div className="text-left space-y-1 bg-background/80 rounded-lg overflow-hidden p-1 shadow-inner">
                           {searchResults.map(r => (
                             <button
                               key={r.id}
                               onClick={() => handleAddRacket(getRacketSlug(r))}
-                              className="w-full flex items-center gap-3 p-2 rounded hover:bg-muted transition-colors text-sm"
+                              className="w-full flex items-center gap-3 p-2 rounded hover:bg-primary/5 transition-colors text-xs font-bold"
                             >
-                              <img src={getOptimizedImageUrl(r.imageUrl || "", 100)} className="w-8 h-8 object-contain" alt="" />
-                              <span className="font-medium">{r.brand} {r.model}</span>
-                              <ChevronRight className="h-4 w-4 ml-auto opacity-50" />
+                              <img src={getOptimizedImageUrl(r.imageUrl || "", 100)} className="w-6 h-6 object-contain" alt="" />
+                              <span className="truncate">{r.brand} {r.model}</span>
                             </button>
                           ))}
-                          {searchQuery && searchResults.length === 0 && (
-                            <p className="text-xs text-muted-foreground p-4 text-center">No results found.</p>
-                          )}
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => setShowSearch(false)}>Cancel</Button>
+                        <Button variant="ghost" size="sm" onClick={() => setShowSearch(false)} className="text-[10px] font-black uppercase">Cancel</Button>
                       </div>
                     )}
                   </Card>
                 )}
               </div>
 
-              {/* Performance Ratings */}
-              <h3 className="font-heading font-bold text-xl flex items-center gap-2 mt-4 ml-2">
-                <Trophy className="h-5 w-5 text-yellow-500" />
-                Performance Ratings
-              </h3>
-              <Card className="border-none shadow-lg overflow-hidden">
-                <div className="divide-y divide-border/50">
+              {/* Unified Combined Card for Data */}
+              <Card className="border-none shadow-2xl overflow-hidden bg-background/60 backdrop-blur-xl ring-1 ring-border/50">
+                <div className="divide-y divide-border/30">
+                  {/* Performance Ratings Section */}
+                  <div className="bg-primary/5 p-4 flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-primary" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Performance Stats</span>
+                  </div>
                   {ratingFields.map((field) => {
                     const values = rackets.map(r => Number(r[field.key]));
                     const maxVal = Math.max(...values);
@@ -362,50 +370,42 @@ export default function ComparisonPage() {
                     return (
                       <div
                         key={field.key}
-                        className={`grid items-center p-6 gap-6 transition-opacity duration-300 ${highlightDifferences && !isDifferential ? "opacity-30" : "opacity-100"}`}
-                        style={{ gridTemplateColumns: `12rem repeat(${Math.max(2, rackets.length)}, minmax(0, 1fr))` }}
+                        className={`grid items-center p-6 gap-6 transition-all duration-300 ${highlightDifferences && !isDifferential ? "opacity-20 translate-x-1" : "opacity-100"}`}
+                        style={{ gridTemplateColumns: gridTemplate }}
                       >
-                        <div className="space-y-1">
-                          <span className="font-bold text-sm uppercase tracking-wider text-muted-foreground">{field.label}</span>
+                        <div className="space-y-1 border-r border-border/20">
+                          <span className="font-black text-[11px] uppercase tracking-widest text-muted-foreground/60">{field.label}</span>
                           {highlightDifferences && isDifferential && (
-                            <p className="text-[10px] text-primary font-bold uppercase tracking-tighter">Varying Stats</p>
+                            <p className="text-[9px] text-primary font-black uppercase tracking-tighter shadow-sm w-fit bg-primary/5 rounded px-1">Varying</p>
                           )}
                         </div>
                         {rackets.map((racket, i) => {
                           const val = values[i];
                           const isWinner = isDifferential && val === maxVal;
                           return (
-                            <div key={racket.id} className="relative">
+                            <div key={racket.id} className="relative px-4 group/item">
                               <div className="flex items-center gap-4">
-                                <div className="flex-1">
+                                <div className="flex-1 opacity-80 group-hover/item:opacity-100 transition-opacity">
                                   <RatingBar label="" value={val} abbreviation="" showLabel={false} />
                                 </div>
-                                <span className={`text-lg font-black w-8 text-right ${isWinner ? "text-primary" : "text-muted-foreground"}`}>
-                                  {val}
-                                </span>
                               </div>
                               {isWinner && (
-                                <div className="absolute -top-6 right-0">
-                                  <Badge className="bg-primary text-[10px] font-black uppercase tracking-widest px-2 py-0">Best</Badge>
+                                <div className="absolute -top-7 right-4">
+                                  <Badge className="bg-primary hover:bg-primary shadow-lg shadow-primary/20 text-[9px] font-black uppercase tracking-widest px-2 py-0">BEST IN CLASS</Badge>
                                 </div>
                               )}
                             </div>
                           );
                         })}
-                        {rackets.length === 1 && <div className="text-center text-muted-foreground/30 font-bold">-</div>}
                       </div>
                     );
                   })}
-                </div>
-              </Card>
 
-              {/* Technical Specifications */}
-              <h3 className="font-heading font-bold text-xl flex items-center gap-2 mt-4 ml-2">
-                <Info className="h-5 w-5 text-primary" />
-                Technical Specifications
-              </h3>
-              <Card className="border-none shadow-lg overflow-hidden">
-                <div className="divide-y divide-border/50">
+                  {/* Tech Specs Section */}
+                  <div className="bg-muted/50 p-4 flex items-center gap-2">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Technical Specs</span>
+                  </div>
                   {specFields.map((field) => {
                     const values = rackets.map(r => (r as any)[field.key] || "-");
                     const allSame = values.every((v, _, arr) => v === arr[0]);
@@ -413,16 +413,15 @@ export default function ComparisonPage() {
                     return (
                       <div
                         key={field.key}
-                        className={`grid items-center p-6 gap-6 transition-opacity duration-300 ${highlightDifferences && allSame ? "opacity-30" : "opacity-100"}`}
-                        style={{ gridTemplateColumns: `12rem repeat(${Math.max(2, rackets.length)}, minmax(0, 1fr))` }}
+                        className={`grid items-center p-6 gap-6 transition-all duration-300 ${highlightDifferences && allSame ? "opacity-20" : "opacity-100"}`}
+                        style={{ gridTemplateColumns: gridTemplate }}
                       >
-                        <span className="font-bold text-sm uppercase tracking-wider text-muted-foreground">{field.label}</span>
+                        <span className="font-black text-[11px] uppercase tracking-widest text-muted-foreground/60 border-r border-border/20 h-full flex items-center">{field.label}</span>
                         {rackets.map((racket, i) => (
-                          <span key={racket.id} className={`text-sm font-bold capitalize ${!allSame ? "text-foreground" : "text-muted-foreground/80"}`}>
+                          <span key={racket.id} className={`text-sm font-black tracking-tight px-4 ${!allSame ? "text-primary" : "text-muted-foreground/80"}`}>
                             {values[i]}
                           </span>
                         ))}
-                        {rackets.length === 1 && <div className="text-center text-muted-foreground/30 font-bold">-</div>}
                       </div>
                     );
                   })}

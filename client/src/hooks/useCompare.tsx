@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 const STORAGE_KEY = "compareRackets";
-const MAX_COMPARE = 4;
+const MAX_COMPARE = 3;
 
 interface CompareContextType {
   compareIds: string[];
@@ -60,8 +60,8 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <CompareContext.Provider value= { value } >
-    { children }
+    <CompareContext.Provider value={value} >
+      {children}
     </CompareContext.Provider>
   );
 }
