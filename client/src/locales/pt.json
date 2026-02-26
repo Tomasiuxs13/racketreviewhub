@@ -22,7 +22,8 @@
   },
   "header": {
     "menu": {
-      "rackets": "Raquetes de Padel",
+      "rackets": "Raquetes",
+      "compare": "Comparar",
       "guides": "Guias",
       "brands": "Marcas",
       "blog": "Blog"

@@ -24,6 +24,7 @@ import { useI18n } from "@/i18n/useI18n";
 
 const NAV_LINKS = [
   { id: "rackets", path: "/rackets", labelKey: "header.menu.rackets" },
+  { id: "compare", path: "/compare", labelKey: "header.menu.compare" },
   { id: "guides", path: "/guides", labelKey: "header.menu.guides" },
   { id: "brands", path: "/brands", labelKey: "header.menu.brands" },
   { id: "blog", path: "/blog", labelKey: "header.menu.blog" },
