@@ -86,112 +86,115 @@ export default function HomePage() {
       <StructuredData data={structuredData} />
       <div className="min-h-screen">
         {/* Hero Section */}
-        <section className="relative min-h-[420px] sm:min-h-[520px] lg:min-h-[600px] flex items-center justify-center overflow-hidden py-16 sm:py-24">
-          {/* Background Image with Dark Overlay and slow pan effect */}
-          <div className="absolute inset-0">
-            <motion.img
-              src={heroImage}
-              alt="Padel court"
-              className="w-full h-full object-cover origin-center"
-              initial={{ scale: 1.05 }}
-              animate={{ scale: 1 }}
-              transition={{ duration: 10, ease: "easeOut" }}
-              fetchPriority="high"
-            />
-            {/* Richer gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/50 to-emerald-900/60" />
+        <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 lg:pt-40 lg:pb-32 bg-background overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col-reverse lg:flex-row items-center gap-12 lg:gap-8">
+            {/* Hero Content (Left) */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, ease: "easeOut" }}
+              className="flex-1 text-center lg:text-left z-10 w-full"
+            >
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
+                className="font-heading font-extrabold text-4xl sm:text-6xl md:text-7xl lg:text-7xl tracking-tight mb-6 text-foreground"
+                data-testid="text-hero-title"
+              >
+                {t("home.hero.title")}
+              </motion.h1>
 
-            {/* Subtle radial glow in the center */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-[800px] h-[800px] bg-primary/20 rounded-full blur-[120px] opacity-50 pointer-events-none" />
-            </div>
-          </div>
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.3 }}
+                className="text-base sm:text-lg md:text-xl text-muted-foreground font-medium mb-10 max-w-2xl mx-auto lg:mx-0 leading-relaxed"
+              >
+                {t("home.hero.subtitle")}
+              </motion.p>
 
-          {/* Hero Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
-            className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center"
-          >
-            <motion.h1
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, delay: 0.4 }}
+                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-12"
+              >
+                <Link href="/rackets" data-testid="link-browse-rackets">
+                  <Button
+                    size="lg"
+                    className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-emerald-500 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg px-6 py-6 sm:px-8 rounded-full"
+                    data-testid="button-browse-rackets"
+                  >
+                    {t("common.actions.browseRackets")}
+                    <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
+                  </Button>
+                </Link>
+                <Link href="/guides" data-testid="link-buying-guides">
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    className="w-full sm:w-auto bg-background text-foreground hover:bg-accent hover:text-accent-foreground border-border hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg px-6 py-6 sm:px-8 rounded-full"
+                    data-testid="button-buying-guides"
+                  >
+                    {t("common.actions.buyingGuides")}
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Trust Indicators */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 1, delay: 0.6 }}
+                className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 sm:gap-6 text-sm"
+              >
+                <Link href="/quiz">
+                  <div className="flex items-center gap-2.5 cursor-pointer group hover:-translate-y-0.5 transition-all duration-300">
+                    <div className="p-1.5 sm:p-2 rounded-full bg-yellow-100 dark:bg-yellow-900/40 group-hover:bg-yellow-200 dark:group-hover:bg-yellow-900/60 shadow-[0_0_10px_rgba(250,204,21,0.2)] transition-colors">
+                      <Star className="h-4 w-4 text-yellow-600 dark:text-yellow-500 fill-yellow-600/50 dark:fill-yellow-500/50" />
+                    </div>
+                    <span className="font-bold text-foreground tracking-widest uppercase group-hover:text-primary transition-colors">{t("home.hero.trust.reviews")}</span>
+                  </div>
+                </Link>
+                <div className="hidden sm:block w-px h-6 bg-border" />
+                <div className="flex items-center gap-2.5 group hover:-translate-y-0.5 transition-all duration-300 cursor-default">
+                  <div className="p-1.5 sm:p-2 rounded-full bg-green-100 dark:bg-green-900/40 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
+                    <TrendingUp className="h-4 w-4 text-green-600 dark:text-green-500" />
+                  </div>
+                  <span className="font-bold text-foreground tracking-widest uppercase">{t("home.hero.trust.updates")}</span>
+                </div>
+                <div className="hidden sm:block w-px h-6 bg-border" />
+                <div className="flex items-center gap-2.5 group hover:-translate-y-0.5 transition-all duration-300 cursor-default">
+                  <div className="p-1.5 sm:p-2 rounded-full bg-blue-100 dark:bg-blue-900/40 shadow-[0_0_10px_rgba(96,165,250,0.2)]">
+                    <Shield className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+                  </div>
+                  <span className="font-bold text-foreground tracking-widest uppercase">{t("home.hero.trust.experts")}</span>
+                </div>
+              </motion.div>
+            </motion.div>
+
+            {/* Hero Image / Visuals (Right) */}
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.8, delay: 0.1, ease: "easeOut" }}
-              className="font-heading font-extrabold text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight mb-6"
-              data-testid="text-hero-title"
+              transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              className="flex-1 relative w-full max-w-lg lg:max-w-none mx-auto lg:mr-0"
             >
-              <span className="text-white drop-shadow-md">{t("home.hero.title")}</span>
-            </motion.h1>
+              {/* Decorative background blur behind image */}
+              <div className="absolute -inset-4 bg-gradient-to-tr from-primary/20 via-emerald-500/10 to-blue-500/20 rounded-[3rem] blur-[60px] lg:blur-[80px] -z-10" />
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-base sm:text-xl md:text-2xl text-white/80 font-medium mb-10 max-w-3xl mx-auto leading-relaxed"
-            >
-              {t("home.hero.subtitle")}
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-5"
-            >
-              <Link href="/rackets" data-testid="link-browse-rackets">
-                <Button
-                  size="lg"
-                  className="w-full sm:w-auto bg-primary text-primary-foreground hover:bg-emerald-500 shadow-[0_0_30px_rgba(34,197,94,0.4)] hover:shadow-[0_0_40px_rgba(34,197,94,0.6)] hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg px-6 py-4 sm:px-8 sm:py-6 rounded-full"
-                  data-testid="button-browse-rackets"
-                >
-                  {t("common.actions.browseRackets")}
-                  <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5" />
-                </Button>
-              </Link>
-              <Link href="/guides" data-testid="link-buying-guides">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="w-full sm:w-auto glass text-white hover:bg-white/20 hover:text-white border-white/20 hover:border-white/40 hover:-translate-y-1 transition-all duration-300 text-base sm:text-lg px-6 py-4 sm:px-8 sm:py-6 rounded-full"
-                  data-testid="button-buying-guides"
-                >
-                  {t("common.actions.buyingGuides")}
-                </Button>
-              </Link>
-            </motion.div>
-
-            {/* Trust Indicators */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.8 }}
-              className="mt-8 sm:mt-12 md:mt-16 flex flex-col sm:flex-row items-start sm:items-center justify-center gap-4 sm:gap-8 md:gap-10 glass-card px-6 py-5 sm:px-8 sm:py-4 rounded-3xl sm:rounded-full w-max mx-auto"
-            >
-              <Link href="/quiz">
-                <div className="flex items-center gap-3 cursor-pointer group hover:-translate-y-0.5 transition-all duration-300">
-                  <div className="p-1.5 sm:p-2 rounded-full bg-yellow-400/20 shadow-[0_0_10px_rgba(250,204,21,0.2)] group-hover:bg-yellow-400/30 transition-colors">
-                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400 fill-yellow-400/20" />
-                  </div>
-                  <span className="text-xs sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase group-hover:text-yellow-400 transition-colors">{t("home.hero.trust.reviews")}</span>
-                </div>
-              </Link>
-              <div className="hidden sm:block w-px h-8 bg-white/10" />
-              <div className="flex items-center gap-3">
-                <div className="p-1.5 sm:p-2 rounded-full bg-green-400/20 shadow-[0_0_10px_rgba(74,222,128,0.2)]">
-                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
-                </div>
-                <span className="text-xs sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase">{t("home.hero.trust.updates")}</span>
-              </div>
-              <div className="hidden sm:block w-px h-8 bg-white/10" />
-              <div className="flex items-center gap-3">
-                <div className="p-1.5 sm:p-2 rounded-full bg-blue-400/20 shadow-[0_0_10px_rgba(96,165,250,0.2)]">
-                  <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
-                </div>
-                <span className="text-xs sm:text-xs md:text-sm font-bold text-white tracking-widest uppercase">{t("home.hero.trust.experts")}</span>
+              <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50 bg-muted aspect-[4/3] lg:aspect-square xl:aspect-[4/3] group cursor-default group-hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all duration-500">
+                <img
+                  src={heroImage}
+                  alt="Padel court"
+                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-1000 ease-out"
+                  fetchPriority="high"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />
               </div>
             </motion.div>
-          </motion.div>
+          </div>
         </section>
 
         {/* Recent Reviews Section */}
