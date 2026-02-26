@@ -31,8 +31,11 @@ export default function ComparisonPage() {
   const compareMatch = location.match(/\/compare\/([^/?#]+)/);
   const urlIds = compareMatch ? decodeURIComponent(compareMatch[1]).split(",") : [];
 
-  // Use URL ids if present, otherwise fallback to stored ids
-  const ids = urlIds.length > 0 ? urlIds : storedIds;
+  // Use URL ids if present, otherwise fallback to stored ids. Deduplicate.
+  const ids = useMemo(() => {
+    const combined = urlIds.length > 0 ? urlIds : storedIds;
+    return Array.from(new Set(combined));
+  }, [urlIds, storedIds]);
 
   const { data: allRackets, isLoading } = useQuery<Racket[]>({
     queryKey: ["/api/rackets"],
@@ -47,12 +50,22 @@ export default function ComparisonPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Sync URL state to useCompare hook storage
+  useEffect(() => {
+    if (urlIds.length > 0) {
+      urlIds.forEach(id => {
+        if (!storedIds.includes(id)) {
+          addToCompare(id);
+        }
+      });
+    }
+  }, [urlIds, storedIds, addToCompare]);
+
   // Find rackets by slug from the comma-separated URL param
   const rackets = useMemo(() => {
-    return (allRackets || []).filter((r) => {
-      const slug = getRacketSlug(r);
-      return ids.includes(slug) || ids.includes(r.id);
-    });
+    if (!allRackets) return [];
+    // Only match by slug to avoid duplication when both UUID and slug appear
+    return allRackets.filter((r) => ids.includes(getRacketSlug(r)));
   }, [allRackets, ids]);
 
   const searchResults = useMemo(() => {
