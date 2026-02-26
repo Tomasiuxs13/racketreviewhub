@@ -35,7 +35,7 @@ export interface IStorage {
   updateRacket(id: string, racket: Partial<InsertRacket>): Promise<Racket | undefined>;
   deleteRacket(id: string): Promise<boolean>;
   markOutOfStockExcept(feedProductIds: string[]): Promise<number>; // Mark rackets not in feed as out of stock
-  
+
   // Guides
   getAllGuides(): Promise<Guide[]>;
   getGuide(slug: string): Promise<Guide | undefined>;
@@ -44,21 +44,21 @@ export interface IStorage {
   getRelatedGuides(guideId: string, category: string, limit: number): Promise<Guide[]>;
   createGuide(guide: InsertGuide): Promise<Guide>;
   updateGuide(id: string, guide: Partial<InsertGuide>): Promise<Guide | undefined>;
-  
+
   // Blog Posts
   getAllBlogPosts(): Promise<BlogPost[]>;
   getBlogPost(slug: string): Promise<BlogPost | undefined>;
   getBlogPostById(id: string): Promise<BlogPost | undefined>;
   createBlogPost(post: InsertBlogPost): Promise<BlogPost>;
   updateBlogPost(id: string, post: Partial<InsertBlogPost>): Promise<BlogPost | undefined>;
-  
+
   // Brands
   getAllBrands(): Promise<Brand[]>;
   getBrand(slug: string): Promise<Brand | undefined>;
   getBrandById(id: string): Promise<Brand | undefined>;
   createBrand(brand: InsertBrand): Promise<Brand>;
   updateBrand(id: string, brand: Partial<InsertBrand>): Promise<Brand | undefined>;
-  
+
   // Authors
   getAllAuthors(): Promise<Author[]>;
   getAuthor(slug: string): Promise<Author | undefined>;
@@ -93,7 +93,7 @@ export class MemStorage implements IStorage {
     this.authors = new Map();
     this.emailSubscribers = new Map();
     this.priceHistoryEntries = new Map();
-    
+
     // Initialize with some sample data
     this.seedData();
   }
@@ -108,7 +108,7 @@ export class MemStorage implements IStorage {
     };
     const authorId = randomUUID();
     this.authors.set(authorId, { ...defaultAuthor, id: authorId, createdAt: new Date() });
-    
+
     // Sample brands
     const sampleBrands: InsertBrand[] = [
       {
@@ -488,9 +488,9 @@ export class MemStorage implements IStorage {
         racket.maneuverabilityRating +
         racket.sweetSpotRating
       ) / 5);
-      
+
       const now = new Date(Date.now() - Math.random() * 45 * 24 * 60 * 60 * 1000);
-      
+
       this.rackets.set(id, {
         ...racket,
         id,
@@ -505,8 +505,8 @@ export class MemStorage implements IStorage {
     // Helper function to find racket ID by brand and model
     const findRacketId = (brand: string, model: string): string | null => {
       for (const [id, racket] of this.rackets.entries()) {
-        if (racket.brand.toLowerCase() === brand.toLowerCase() && 
-            racket.model.toLowerCase() === model.toLowerCase()) {
+        if (racket.brand.toLowerCase() === brand.toLowerCase() &&
+          racket.model.toLowerCase() === model.toLowerCase()) {
           return id;
         }
       }
@@ -535,7 +535,7 @@ export class MemStorage implements IStorage {
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        
+
         if (!line) {
           if (inList) {
             processed.push('</ul>');
@@ -553,7 +553,7 @@ export class MemStorage implements IStorage {
           processed.push(`<h3>${line.substring(4)}</h3>`);
           continue;
         }
-        
+
         if (line.startsWith('## ')) {
           if (inList) {
             processed.push('</ul>');
@@ -585,7 +585,7 @@ export class MemStorage implements IStorage {
         let paraContent = line
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
           .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-        
+
         processed.push(`<p>${paraContent}</p>`);
       }
 
@@ -830,7 +830,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   // Racket methods
   async getAllRackets(): Promise<Racket[]> {
-    return Array.from(this.rackets.values()).sort((a, b) => 
+    return Array.from(this.rackets.values()).sort((a, b) =>
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
   }
@@ -871,16 +871,16 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getRacketByBrandAndModel(brand: string, model: string): Promise<Racket | undefined> {
     return Array.from(this.rackets.values()).find(
-      r => r.brand.toLowerCase() === brand.toLowerCase() && 
-           r.model.toLowerCase() === model.toLowerCase()
+      r => r.brand.toLowerCase() === brand.toLowerCase() &&
+        r.model.toLowerCase() === model.toLowerCase()
     );
   }
 
   async getRacketByBrandModelAndYear(brand: string, model: string, year: number): Promise<Racket | undefined> {
     return Array.from(this.rackets.values()).find(
-      r => r.brand.toLowerCase() === brand.toLowerCase() && 
-           r.model.toLowerCase() === model.toLowerCase() &&
-           r.year === year
+      r => r.brand.toLowerCase() === brand.toLowerCase() &&
+        r.model.toLowerCase() === model.toLowerCase() &&
+        r.year === year
     );
   }
 
@@ -898,7 +898,10 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
 
   async getRecentRackets(limit: number): Promise<Racket[]> {
     const published = await this.getPublishedRackets();
-    return published.slice(0, limit);
+    return published
+      .filter(r => !r.model.toLowerCase().includes('pickleball'))
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, limit);
   }
 
   async getRelatedRackets(racketId: string, limit: number): Promise<Racket[]> {
@@ -920,7 +923,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   async createRacket(insertRacket: InsertRacket): Promise<Racket> {
     const id = randomUUID();
     const now = new Date();
-    
+
     // Calculate overall rating
     const overallRating = Math.round((
       insertRacket.powerRating +
@@ -984,7 +987,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     // Mark all rackets with feedProductId that are NOT in the provided list as out of stock
     const feedProductIdSet = new Set(feedProductIds);
     let count = 0;
-    
+
     for (const [id, racket] of this.rackets.entries()) {
       // Only mark out of stock if racket has a feedProductId (came from CJ feed)
       // and it's not in the current feed
@@ -993,7 +996,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
         count++;
       }
     }
-    
+
     return count;
   }
 
@@ -1163,13 +1166,13 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     // Get author name for matching
     const author = Array.from(this.authors.values()).find(a => a.id === authorId);
     const authorName = author?.name;
-    
+
     return Array.from(this.blogPosts.values())
       .filter(p => {
         // Match by authorId OR author name OR "Padel Racket Reviews" (default organization name)
-        return p.authorId === authorId || 
-               (authorName && p.author === authorName) ||
-               p.author === "Padel Racket Reviews";
+        return p.authorId === authorId ||
+          (authorName && p.author === authorName) ||
+          p.author === "Padel Racket Reviews";
       })
       .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
   }

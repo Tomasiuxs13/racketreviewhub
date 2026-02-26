@@ -98,9 +98,7 @@ export function Header() {
           <Link href="/">
             <div className="flex items-center gap-2 hover-elevate rounded-md px-3 py-2 -ml-1 sm:-ml-3 cursor-pointer" data-testid="link-home">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-lg">P</span>
-                </div>
+                <img src="/favicon.png" alt="Padel Racket Reviews Logo" className="w-8 h-8 rounded-md object-contain" />
                 <span className="font-heading font-bold text-xl hidden sm:inline">
                   {t("common.brandName")}
                 </span>

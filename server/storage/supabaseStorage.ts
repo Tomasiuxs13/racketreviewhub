@@ -192,8 +192,14 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
-      .where(and(eq(rackets.isPublished, true), eq(rackets.inStock, true)))
-      .orderBy(desc(rackets.createdAt))
+      .where(
+        and(
+          eq(rackets.isPublished, true),
+          eq(rackets.inStock, true),
+          sql`LOWER(${rackets.model}) NOT LIKE '%pickleball%'`
+        )
+      )
+      .orderBy(desc(rackets.updatedAt))
       .limit(limit);
     return result;
   }
@@ -208,7 +214,7 @@ export class SupabaseStorage implements IStorage {
       .select()
       .from(rackets)
       .where(and(
-        eq(rackets.brand, racket.brand), 
+        eq(rackets.brand, racket.brand),
         ne(rackets.id, racketId),
         eq(rackets.isPublished, true),
         eq(rackets.inStock, true)
@@ -239,7 +245,7 @@ export class SupabaseStorage implements IStorage {
         insertRacket.reboundRating +
         insertRacket.maneuverabilityRating +
         insertRacket.sweetSpotRating) /
-        5
+      5
     );
 
     const result = await db
@@ -311,7 +317,7 @@ export class SupabaseStorage implements IStorage {
         .returning();
       return result.length;
     }
-    
+
     // Mark rackets with feedProductId not in the list as out of stock
     const result = await db
       .update(rackets)
@@ -475,9 +481,9 @@ export class SupabaseStorage implements IStorage {
       .from(authors)
       .where(eq(authors.id, authorId))
       .limit(1);
-    
+
     const authorName = author[0]?.name;
-    
+
     // Query by authorId OR author name (for backward compatibility)
     // Also match "Padel Racket Reviews" as a fallback since many posts use this as the author name
     const conditions = [eq(blogPosts.authorId, authorId)];
@@ -486,13 +492,13 @@ export class SupabaseStorage implements IStorage {
     }
     // Match "Padel Racket Reviews" for any author (since this is the default organization name)
     conditions.push(eq(blogPosts.author, "Padel Racket Reviews"));
-    
+
     const result = await db
       .select()
       .from(blogPosts)
       .where(or(...conditions))
       .orderBy(desc(blogPosts.publishedAt));
-    
+
     // Remove duplicates (in case a post has both authorId and matching author name)
     const seen = new Set<string>();
     return result.filter(post => {

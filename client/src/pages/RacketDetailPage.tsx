@@ -8,7 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RatingMetrics } from "@/components/RatingBar";
 import { RatingRadar } from "@/components/RatingRadar";
-import { ArrowLeft, ExternalLink, User } from "lucide-react";
+import { ArrowLeft, ExternalLink, User, Scale } from "lucide-react";
 import { cleanReviewContent, getRacketSlug } from "@/lib/utils";
 import type { Racket, Author, Guide } from "@shared/schema";
 import SEO from "@/components/SEO";
@@ -174,13 +174,21 @@ export default function RacketDetailPage() {
             ]}
           />
 
-          {/* Back Button */}
-          <Link href="/rackets" data-testid="link-back-to-rackets">
-            <Button variant="ghost" className="mb-6 sm:mb-8 -ml-2 sm:-ml-3" data-testid="button-back">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              {t("racket.detail.backToRackets")}
-            </Button>
-          </Link>
+          {/* Back Button and Compare Button */}
+          <div className="flex items-center justify-between mb-6 sm:mb-8">
+            <Link href="/rackets" data-testid="link-back-to-rackets">
+              <Button variant="ghost" className="-ml-2 sm:-ml-3" data-testid="button-back">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                {t("racket.detail.backToRackets")}
+              </Button>
+            </Link>
+            <Link href={`/rackets?compare=${racket.id}`}>
+              <Button variant="outline" className="border-primary/20 hover:bg-primary/5 text-primary">
+                <Scale className="mr-2 h-4 w-4" />
+                {t("racket.detail.compareButton")}
+              </Button>
+            </Link>
+          </div>
 
           {/* Main Content */}
           <div className="grid lg:grid-cols-5 gap-8 lg:gap-12 mb-16">

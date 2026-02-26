@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLocalizedQuery } from "@/hooks/useLocalizedQuery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowRight, Star, TrendingUp, Shield } from "lucide-react";
+import { ArrowRight, Star, TrendingUp, Shield, Scale } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Racket, Guide } from "@shared/schema";
@@ -364,6 +364,59 @@ export default function HomePage() {
                 </CardContent>
               </Card>
             )}
+          </div>
+        </section>
+
+        {/* Compare Rackets Section */}
+        <section className="py-16 bg-muted/50 border-t">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="bg-background rounded-3xl p-8 md:p-12 shadow-sm border border-border/50 max-w-5xl mx-auto relative overflow-hidden flex flex-col md:flex-row items-center gap-8 md:gap-12">
+              <div className="absolute -inset-4 bg-gradient-to-tr from-primary/10 via-emerald-500/5 to-transparent blur-3xl -z-10" />
+              <div className="flex-1 space-y-4 text-center md:text-left z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary font-medium text-sm mb-2">
+                  <Scale className="h-4 w-4" />
+                  <span>New Feature</span>
+                </div>
+                <h2 className="font-heading font-bold text-3xl md:text-4xl">
+                  {t("home.compareRackets.title")}
+                </h2>
+                <p className="text-lg text-muted-foreground pb-2 max-w-xl mx-auto md:mx-0">
+                  {t("home.compareRackets.subtitle")}
+                </p>
+                <div className="pt-2">
+                  <Link href="/rackets">
+                    <Button size="lg" className="shadow-md hover:shadow-lg transition-all text-base  px-6 rounded-full group">
+                      <Scale className="mr-2 h-5 w-5" />
+                      {t("home.compareRackets.button")}
+                      <ArrowRight className="ml-2 h-4 w-4 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <div className="w-full md:w-5/12 relative min-h-[220px] flex items-center justify-center -mb-8 md:-mb-16 md:-mr-8">
+                {/* Visual mock of comparing two rackets */}
+                <div className="relative w-full aspect-video md:aspect-[4/3] max-w-md">
+                  <div className="absolute right-1/4 top-0 w-32 h-48 md:w-40 md:h-60 bg-white rounded-xl shadow-xl border border-border/50 rotate-12 origin-bottom flex items-center justify-center p-2 z-10 hover:z-30 transition-all hover:-translate-y-2">
+                    <div className="w-full h-full bg-slate-100 rounded-lg animate-pulse flex flex-col gap-2 p-2">
+                      <div className="w-full h-1/2 bg-slate-200 rounded-md" />
+                      <div className="w-3/4 h-3 bg-slate-200 rounded-sm mt-auto" />
+                      <div className="w-1/2 h-3 bg-slate-200 rounded-sm" />
+                    </div>
+                  </div>
+                  <div className="absolute left-1/4 top-4 w-32 h-48 md:w-40 md:h-60 bg-white rounded-xl shadow-xl border border-border/50 -rotate-12 origin-bottom flex items-center justify-center p-2 z-20 hover:z-30 transition-all hover:-translate-y-2">
+                    <div className="w-full h-full bg-slate-50 rounded-lg animate-pulse flex flex-col gap-2 p-2">
+                      <div className="w-full h-1/2 bg-primary/10 rounded-md" />
+                      <div className="w-3/4 h-3 bg-primary/20 rounded-sm mt-auto" />
+                      <div className="w-1/2 h-3 bg-primary/10 rounded-sm" />
+                    </div>
+                  </div>
+                  <div className="absolute left-1/2 bottom-8 -translate-x-1/2 bg-background shadow-lg rounded-full p-3 border z-30 flex items-center justify-center">
+                    <span className="font-bold text-primary text-xl">VS</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
       </div>

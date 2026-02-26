@@ -171,6 +171,13 @@ async function processProduct(
     const feedProductId = product.ID;
     const brand = product.BRAND;
     const model = extractModelFromTitle(product.TITLE, brand);
+
+    // Skip pickleball rackets
+    if (product.TITLE.toLowerCase().includes('pickleball') ||
+      (product.DESCRIPTION && product.DESCRIPTION.toLowerCase().includes('pickleball'))) {
+      return { action: "skipped", feedProductId, error: "Pickleball racket ignored" };
+    }
+
     const currentPrice = parseCjPrice(product.SALE_PRICE) || parseCjPrice(product.PRICE);
     const originalPrice = parseCjPrice(product.PRICE);
 
