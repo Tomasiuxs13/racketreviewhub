@@ -44,6 +44,6 @@ export function useCompare() {
     clearCompare,
     isInCompare,
     compareCount: compareIds.length,
-    compareUrl: compareIds.length >= 2 ? `/compare/${compareIds.join(",")}` : null,
+    compareUrl: compareIds.length > 0 ? `/compare/${compareIds.join(",")}` : "/compare",
   };
 }

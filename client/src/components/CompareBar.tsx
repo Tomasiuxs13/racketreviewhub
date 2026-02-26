@@ -2,9 +2,11 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { X, ArrowRight } from "lucide-react";
 import { useCompare } from "@/hooks/useCompare";
+import { useI18n } from "@/i18n/useI18n";
 
 export function CompareBar() {
   const { compareIds, removeFromCompare, clearCompare, compareUrl, compareCount } = useCompare();
+  const { locale } = useI18n();
 
   if (compareCount === 0) return null;
 
@@ -38,7 +40,7 @@ export function CompareBar() {
             Clear
           </Button>
           {compareUrl ? (
-            <Link href={compareUrl}>
+            <Link href={`${locale === "en" ? "" : "/" + locale}${compareUrl}`}>
               <Button size="sm">
                 Compare <ArrowRight className="ml-1 h-4 w-4" />
               </Button>

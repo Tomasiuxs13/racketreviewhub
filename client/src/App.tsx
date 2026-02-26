@@ -47,6 +47,7 @@ function Router() {
       <Route path="/brands/:slug" component={BrandDetailPage} />
       <Route path="/blog" component={BlogPage} />
       <Route path="/blog/:slug" component={BlogPostPage} />
+      <Route path="/compare" component={ComparisonPage} />
       <Route path="/compare/:ids" component={ComparisonPage} />
       <Route path="/quiz" component={QuizPage} />
       <Route path="/best/:category" component={BestOfPage} />
@@ -82,6 +83,7 @@ function Router() {
         <Route key={`${locale}-brand`} path={`/${locale}/brands/:slug`} component={BrandDetailPage} />,
         <Route key={`${locale}-blog`} path={`/${locale}/blog`} component={BlogPage} />,
         <Route key={`${locale}-post`} path={`/${locale}/blog/:slug`} component={BlogPostPage} />,
+        <Route key={`${locale}-compare-base`} path={`/${locale}/compare`} component={ComparisonPage} />,
         <Route key={`${locale}-compare`} path={`/${locale}/compare/:ids`} component={ComparisonPage} />,
         <Route key={`${locale}-quiz`} path={`/${locale}/quiz`} component={QuizPage} />,
         <Route key={`${locale}-best`} path={`/${locale}/best/:category`} component={BestOfPage} />,

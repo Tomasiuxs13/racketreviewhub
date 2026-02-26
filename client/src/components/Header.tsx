@@ -21,6 +21,7 @@ import { getRacketSlug } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useI18n } from "@/i18n/useI18n";
+import { useCompare } from "@/hooks/useCompare";
 
 const NAV_LINKS = [
   { id: "rackets", path: "/rackets", labelKey: "header.menu.rackets" },
@@ -39,6 +40,7 @@ export function Header() {
   const { user, isAuthenticated, signOut } = useAuth();
   const debouncedSearch = useDebounce(searchQuery, 300);
   const { t, locale } = useI18n();
+  const { compareUrl } = useCompare();
 
   const handleSearchInputChange = (value: string) => {
     setSearchQuery(value);
@@ -107,9 +109,9 @@ export function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {NAV_LINKS.map((item) => (
-              <Link key={item.path} href={item.path}>
+              <Link key={item.path} href={item.id === "compare" ? `${locale === "en" ? "" : "/" + locale}${compareUrl}` : (locale === "en" ? "" : "/" + locale) + item.path}>
                 <div
-                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${isActive(item.path)
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors hover-elevate cursor-pointer ${isActive(item.path) || (item.id === "compare" && location.includes("/compare"))
                     ? "bg-accent text-accent-foreground"
                     : "text-foreground/80 hover:text-foreground"
                     }`}

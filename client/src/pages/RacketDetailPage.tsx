@@ -231,31 +231,36 @@ export default function RacketDetailPage() {
                 {t("racket.detail.backToRackets")}
               </Button>
             </Link>
-            {isInCompare(racket?.id || "") ? (
-              <Button
-                variant="outline"
-                className="border-primary/20 bg-primary/10 text-primary"
-                onClick={() => removeFromCompare(racket?.id || "")}
-              >
-                <Scale className="mr-2 h-4 w-4" />
-                Remove from Compare
-              </Button>
-            ) : (
-              <Button
-                variant="outline"
-                className="border-primary/20 hover:bg-primary/5 text-primary"
-                onClick={() => {
-                  const id = racket?.id;
-                  if (!id) return;
-                  addToCompare(id);
-                  const newIds = compareIds.includes(id) ? compareIds : [...compareIds, id];
-                  const localePrefix = location.match(/^\/[a-z]{2}(?=\/|$)/)?.[0] || "";
-                  setLocation(`${localePrefix}/compare/${newIds.join(",")}`);
-                }}
-              >
-                <Scale className="mr-2 h-4 w-4" />
-                {t("racket.detail.compareButton")}
-              </Button>
+            {racket && (
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const slug = getRacketSlug(racket);
+                  return isInCompare(slug) ? (
+                    <Button
+                      variant="outline"
+                      className="border-primary/20 bg-primary/10 text-primary"
+                      onClick={() => removeFromCompare(slug)}
+                    >
+                      <Scale className="mr-2 h-4 w-4" />
+                      Remove from Compare
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="border-primary/20 hover:bg-primary/5 text-primary"
+                      onClick={() => {
+                        addToCompare(slug);
+                        const newIds = compareIds.includes(slug) ? compareIds : [...compareIds, slug];
+                        const localePrefix = location.match(/^\/[a-z]{2}(?=\/|$)/)?.[0] || "";
+                        setLocation(`${localePrefix}/compare/${newIds.join(",")}`);
+                      }}
+                    >
+                      <Scale className="mr-2 h-4 w-4" />
+                      {t("racket.detail.compareButton")}
+                    </Button>
+                  );
+                })()}
+              </div>
             )}
           </div>
 
