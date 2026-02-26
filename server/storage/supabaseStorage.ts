@@ -94,6 +94,7 @@ export class SupabaseStorage implements IStorage {
         padelMarketInStock: rackets.padelMarketInStock,
         padelMarketFeedProductId: rackets.padelMarketFeedProductId,
         padelMarketFeedLastUpdated: rackets.padelMarketFeedLastUpdated,
+        researchBrief: rackets.researchBrief,
         createdAt: rackets.createdAt,
         updatedAt: rackets.updatedAt,
       })
@@ -237,6 +238,46 @@ export class SupabaseStorage implements IStorage {
     return result;
   }
 
+  async getBestOfRackets(category: string, limit: number): Promise<Racket[]> {
+    const conditions = [
+      eq(rackets.isPublished, true),
+      eq(rackets.inStock, true)
+    ];
+
+    if (category === "power") {
+      conditions.push(or(
+        sql`LOWER(${rackets.gameType}) = 'power'`,
+        sql`LOWER(${rackets.shape}) = 'diamond'`
+      ) as any);
+    } else if (category === "control") {
+      conditions.push(or(
+        sql`LOWER(${rackets.gameType}) = 'control'`,
+        sql`LOWER(${rackets.shape}) = 'round'`
+      ) as any);
+    } else if (category === "beginner") {
+      conditions.push(or(
+        sql`LOWER(${rackets.gameLevel}) = 'beginner'`,
+        sql`LOWER(${rackets.gameLevel}) = 'intermediate'`
+      ) as any);
+    } else if (category === "advanced") {
+      conditions.push(or(
+        sql`LOWER(${rackets.gameLevel}) = 'advanced'`,
+        sql`LOWER(${rackets.gameLevel}) = 'professional'`
+      ) as any);
+    } else if (category === "budget") {
+      conditions.push(sql`${rackets.currentPrice} < 120` as any);
+    }
+
+    const result = await db
+      .select()
+      .from(rackets)
+      .where(and(...conditions))
+      .orderBy(desc(rackets.overallRating))
+      .limit(limit);
+
+    return result;
+  }
+
   async createRacket(insertRacket: InsertRacket): Promise<Racket> {
     // Calculate overall rating
     const overallRating = Math.round(
@@ -258,7 +299,7 @@ export class SupabaseStorage implements IStorage {
     return result[0];
   }
 
-  async updateRacket(id: string, updates: Partial<InsertRacket>): Promise<Racket | undefined> {
+  async updateRacket(id: string, updates: Partial<InsertRacket> & { overallRating?: number }): Promise<Racket | undefined> {
     // Get current racket to calculate new overall rating if needed
     const current = await this.getRacket(id);
     if (!current) return undefined;

@@ -31,8 +31,9 @@ export interface IStorage {
   getRecentRackets(limit: number): Promise<Racket[]>;
   getRelatedRackets(racketId: string, limit: number): Promise<Racket[]>;
   getRacketsByBrand(brand: string): Promise<Racket[]>;
+  getBestOfRackets(category: string, limit: number): Promise<Racket[]>;
   createRacket(racket: InsertRacket): Promise<Racket>;
-  updateRacket(id: string, racket: Partial<InsertRacket>): Promise<Racket | undefined>;
+  updateRacket(id: string, racket: Partial<InsertRacket> & { overallRating?: number }): Promise<Racket | undefined>;
   deleteRacket(id: string): Promise<boolean>;
   markOutOfStockExcept(feedProductIds: string[]): Promise<number>; // Mark rackets not in feed as out of stock
 
@@ -107,7 +108,7 @@ export class MemStorage implements IStorage {
       avatarUrl: null,
     };
     const authorId = randomUUID();
-    this.authors.set(authorId, { ...defaultAuthor, id: authorId, createdAt: new Date() });
+    this.authors.set(authorId, { ...defaultAuthor, id: authorId, createdAt: new Date() } as Author);
 
     // Sample brands
     const sampleBrands: InsertBrand[] = [
@@ -150,7 +151,7 @@ export class MemStorage implements IStorage {
 
     sampleBrands.forEach(brand => {
       const id = randomUUID();
-      this.brands.set(id, { ...brand, id, createdAt: new Date() });
+      this.brands.set(id, { ...brand, id, createdAt: new Date() } as Brand);
     });
 
     // Sample guides
@@ -196,7 +197,7 @@ export class MemStorage implements IStorage {
         id,
         publishedAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
         updatedAt: new Date(),
-      });
+      } as Guide);
     });
 
     // Sample blog posts
@@ -227,7 +228,7 @@ export class MemStorage implements IStorage {
         authorId: authorId, // Assign default author
         publishedAt: new Date(Date.now() - Math.random() * 60 * 24 * 60 * 60 * 1000),
         updatedAt: new Date(),
-      });
+      } as BlogPost);
     });
 
     // Sample rackets
@@ -498,7 +499,7 @@ export class MemStorage implements IStorage {
         overallRating,
         createdAt: now,
         updatedAt: now,
-      });
+      } as Racket);
     });
 
     // Add new comprehensive guides (2025) - after rackets are created
@@ -630,13 +631,26 @@ Padel rackets come in three main shapes: round, teardrop, and diamond. Each shap
 
 Round-shaped rackets are the best choice for beginners, and here's why:
 
-**Largest Sweet Spot**: Round rackets have the largest sweet spot of all three shapes. This means you have more room for error when making contact with the ball. Even if your timing isn't perfect, you'll still get decent results, which keeps you playing and learning.
+**Largest Sweet Spot**: Round rackets have the largest hitting surface of all three shapes, providing more room for contact with the ball.
 
 **Best Control and Forgiveness**: The round shape places the sweet spot higher on the racket face, making it easier to control your shots. You'll find it simpler to place the ball where you want it, even with developing technique.
 
-## Top Recommended Rackets for Beginners
+**Most Balanced Weight Distribution**: Weight is distributed more evenly throughout the racket, creating a balanced feel.
 
-Based on our analysis of beginner needs and current market offerings, here are our top recommended rackets for players just starting their padel journey.
+**Largest Sweet Spot Area**: The optimal hitting zone is larger than in other shapes, providing more forgiveness on off-center hits.
+
+### Performance Profile
+
+Round rackets excel in control and forgiveness while offering moderate power:
+
+- **Maximum Control (90-100 rating)**: The large sweet spot and balanced weight distribution make it easier to place shots accurately.
+- **Moderate Power (40-60 rating)**: While not the most powerful, round rackets make power generation easier with less effort required.
+- **Excellent Maneuverability (80-95 rating)**: The balanced weight and lower balance point make these rackets quick and easy to swing.
+- **Largest Sweet Spot (90-100 rating)**: The forgiving nature means even slightly imperfect contact produces good results.
+
+### Real Racket Examples
+
+The [Babolat Contact](/rackets/[BABOLAT-CONTACT-ID]) exemplifies round shape characteristics with its control rating of 92 and sweet spot rating of 88. Similarly, the [Head Zephyr Pro](/rackets/[HEAD-ZEPHYR-PRO-ID]) demonstrates how round shapes provide excellent maneuverability (88 rating) while maintaining high control (90 rating).
 
 ### Babolat Contact
 
@@ -824,7 +838,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
         id,
         publishedAt: new Date(),
         updatedAt: new Date(),
-      });
+      } as Guide);
     });
   }
 
@@ -920,6 +934,22 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       .sort((a, b) => b.overallRating - a.overallRating);
   }
 
+  async getBestOfRackets(category: string, limit: number): Promise<Racket[]> {
+    let filtered = Array.from(this.rackets.values()).filter(r => r.isPublished && r.inStock);
+    if (category === "power") {
+      filtered = filtered.filter(r => r.gameType?.toLowerCase() === "power" || r.shape?.toLowerCase() === "diamond");
+    } else if (category === "control") {
+      filtered = filtered.filter(r => r.gameType?.toLowerCase() === "control" || r.shape?.toLowerCase() === "round");
+    } else if (category === "beginner") {
+      filtered = filtered.filter(r => r.gameLevel?.toLowerCase() === "beginner" || r.gameLevel?.toLowerCase() === "intermediate");
+    } else if (category === "advanced") {
+      filtered = filtered.filter(r => r.gameLevel?.toLowerCase() === "advanced" || r.gameLevel?.toLowerCase() === "professional");
+    } else if (category === "budget") {
+      filtered = filtered.filter(r => Number(r.currentPrice) < 120);
+    }
+    return filtered.sort((a, b) => b.overallRating - a.overallRating).slice(0, limit);
+  }
+
   async createRacket(insertRacket: InsertRacket): Promise<Racket> {
     const id = randomUUID();
     const now = new Date();
@@ -933,50 +963,54 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       insertRacket.sweetSpotRating
     ) / 5);
 
-    const racket: Racket = {
+    const newRacket: Racket = {
       ...insertRacket,
       id,
       overallRating,
-      createdAt: now,
-      updatedAt: now,
-    };
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Racket;
 
-    this.rackets.set(id, racket);
-    return racket;
+    this.rackets.set(id, newRacket);
+    return newRacket;
   }
 
-  async updateRacket(id: string, updates: Partial<InsertRacket>): Promise<Racket | undefined> {
-    const racket = this.rackets.get(id);
-    if (!racket) return undefined;
+  async updateRacket(id: string, updates: Partial<InsertRacket> & { overallRating?: number }): Promise<Racket | undefined> {
+    const existing = this.rackets.get(id);
+    if (!existing) return undefined;
 
-    const updated: Racket = {
-      ...racket,
-      ...updates,
-      updatedAt: new Date(),
-    };
+    let updatedRacket = { ...existing } as any; // Cast as any to bypass strict check during merge
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        updatedRacket[key] = value;
+      }
+    }
 
+    // Explicit overallRating passed through Type definition override
+    if ((updates as any).overallRating !== undefined) {
+      updatedRacket.overallRating = (updates as any).overallRating;
+    }
     // Recalculate overall rating if sub-ratings changed but overallRating was NOT explicitly provided.
     // When overallRating is explicitly set (e.g. from AI estimation), respect it.
-    if (updates.overallRating !== undefined) {
-      updated.overallRating = updates.overallRating;
-    } else if (
+    else if (
       updates.powerRating !== undefined ||
       updates.controlRating !== undefined ||
       updates.reboundRating !== undefined ||
       updates.maneuverabilityRating !== undefined ||
       updates.sweetSpotRating !== undefined
     ) {
-      updated.overallRating = Math.round((
-        updated.powerRating +
-        updated.controlRating +
-        updated.reboundRating +
-        updated.maneuverabilityRating +
-        updated.sweetSpotRating
+      updatedRacket.overallRating = Math.round((
+        updatedRacket.powerRating +
+        updatedRacket.controlRating +
+        updatedRacket.reboundRating +
+        updatedRacket.maneuverabilityRating +
+        updatedRacket.sweetSpotRating
       ) / 5);
     }
 
-    this.rackets.set(id, updated);
-    return updated;
+    updatedRacket.updatedAt = new Date();
+    this.rackets.set(id, updatedRacket as Racket);
+    return updatedRacket as Racket;
   }
 
   async deleteRacket(id: string): Promise<boolean> {
@@ -992,7 +1026,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       // Only mark out of stock if racket has a feedProductId (came from CJ feed)
       // and it's not in the current feed
       if (racket.feedProductId && !feedProductIdSet.has(racket.feedProductId) && racket.inStock !== false) {
-        this.rackets.set(id, { ...racket, inStock: false, updatedAt: new Date() });
+        this.rackets.set(id, { ...racket, inStock: false, updatedAt: new Date() } as Racket);
         count++;
       }
     }
@@ -1031,12 +1065,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     const id = randomUUID();
     const now = new Date();
 
-    const guide: Guide = {
-      ...insertGuide,
-      id,
-      publishedAt: now,
-      updatedAt: now,
-    };
+    const guide: Guide = { ...insertGuide, id, publishedAt: new Date(), updatedAt: new Date() } as Guide;
 
     this.guides.set(id, guide);
     return guide;
@@ -1050,7 +1079,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       ...guide,
       ...updates,
       updatedAt: new Date(),
-    };
+    } as Guide;
 
     this.guides.set(id, updated);
     return updated;
@@ -1080,24 +1109,20 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       id,
       publishedAt: now,
       updatedAt: now,
-    };
+    } as BlogPost;
 
     this.blogPosts.set(id, post);
     return post;
   }
 
   async updateBlogPost(id: string, updates: Partial<InsertBlogPost>): Promise<BlogPost | undefined> {
-    const post = this.blogPosts.get(id);
-    if (!post) return undefined;
+    const existing = this.blogPosts.get(id);
+    if (!existing) return undefined;
 
-    const updated: BlogPost = {
-      ...post,
-      ...updates,
-      updatedAt: new Date(),
-    };
+    const updatedPost: BlogPost = { ...existing, ...updates, updatedAt: new Date() } as BlogPost;
 
-    this.blogPosts.set(id, updated);
-    return updated;
+    this.blogPosts.set(id, updatedPost);
+    return updatedPost;
   }
 
   // Brand methods
@@ -1118,11 +1143,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   async createBrand(insertBrand: InsertBrand): Promise<Brand> {
     const id = randomUUID();
 
-    const brand: Brand = {
-      ...insertBrand,
-      id,
-      createdAt: new Date(),
-    };
+    const brand: Brand = { ...insertBrand, id, createdAt: new Date() } as Brand;
 
     this.brands.set(id, brand);
     return brand;
@@ -1180,11 +1201,7 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   async createAuthor(insertAuthor: InsertAuthor): Promise<Author> {
     const id = randomUUID();
 
-    const author: Author = {
-      ...insertAuthor,
-      id,
-      createdAt: new Date(),
-    };
+    const author: Author = { ...insertAuthor, id, createdAt: new Date() } as Author;
 
     this.authors.set(id, author);
     return author;

@@ -110,58 +110,5 @@
       "empty": "Nenhum guia disponível ainda. Volte em breve!"
     }
   },
-  "racket": {
-    "seo": {
-      "title": "Avaliação {{brand}} {{model}} {{year}} - Análise de Especialistas e Melhor Preço",
-      "description": "Avaliação de especialista da raquete de padel {{brand}} {{model}} {{year}}. Classificações detalhadas de potência, controle e desempenho. Classificação geral: {{rating}}/100. Encontre o melhor preço com nossos links de afiliados.",
-      "defaultTitle": "Avaliação de Raquete de Padel",
-      "defaultDescription": "Avaliação de especialista de raquete de padel com classificações detalhadas e comparação de melhores preços"
-    },
-    "detail": {
-      "backToRackets": "Voltar às Raquetes",
-      "notFound": "Raquete não encontrada",
-      "noImage": "Imagem não disponível",
-      "reviewBy": "Avaliação por",
-      "reviewComingSoon": "Avaliação completa em breve para a",
-      "overallScore": "Pontuação Geral",
-      "outOf100": "de 100",
-      "previousPrice": "Preço anterior:",
-      "currentPrice": "Preço atual:",
-      "currentPriceShort": "Preço atual",
-      "save": "Economize {{percent}}%",
-      "buyFromPN": "Comprar no Padel Nuestro",
-      "buyFromPM": "Comprar no Padel Market",
-      "checkAvailability": "(Verificar Disponibilidade)",
-      "checkShort": "(Verificar)",
-      "notAvailable": "Indisponível",
-      "affiliateDisclaimer": "Ganhamos uma comissão pelas compras feitas através de links de afiliados sem custo adicional para você.",
-      "performanceMetrics": "Métricas de Desempenho",
-      "specifications": "Especificações",
-      "specs": {
-        "brand": "Marca",
-        "color": "Cor",
-        "balance": "Equilíbrio",
-        "surface": "Superfície",
-        "hardness": "Dureza",
-        "finish": "Acabamento",
-        "collection": "Coleção",
-        "core": "Núcleo",
-        "gameLevel": "Nível de Jogo",
-        "shape": "Forma",
-        "gameType": "Tipo de Jogo",
-        "player": "Jogador"
-      },
-      "helpfulGuides": "Guias Úteis",
-      "relatedRackets": "Raquetes Relacionadas",
-      "shape": "forma {{shape}}",
-      "tableOfContents": "Índice",
-      "radar": {
-        "power": "Potência",
-        "control": "Controle",
-        "rebound": "Rebote",
-        "maneuverability": "Manobrabilidade",
-        "sweetSpot": "Ponto Doce"
-      }
-    }
-  }
+  "racket": null
 }

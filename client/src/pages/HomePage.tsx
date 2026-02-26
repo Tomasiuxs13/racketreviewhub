@@ -249,6 +249,42 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Top Picks Categories */}
+        <section className="py-16 bg-muted/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-12">
+              <h2 className="font-heading font-semibold text-3xl md:text-4xl">
+                Top Picks by Category
+              </h2>
+              <p className="text-muted-foreground mt-4 max-w-2xl mx-auto">
+                Discover the best padel rackets tailored to your specific playing style and needs.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {[
+                { id: "power", name: "Power", icon: "⚡️", color: "from-orange-500 to-red-600" },
+                { id: "control", name: "Control", icon: "🎯", color: "from-blue-500 to-cyan-500" },
+                { id: "beginner", name: "Beginners", icon: "🌱", color: "from-green-500 to-emerald-600" },
+                { id: "budget", name: "Value", icon: "💰", color: "from-yellow-400 to-orange-500" },
+                { id: "overall", name: "Overall", icon: "🏆", color: "from-indigo-500 to-purple-600" },
+              ].map((cat) => (
+                <Link key={cat.id} href={`/best/${cat.id}`}>
+                  <div className="group relative overflow-hidden rounded-2xl p-6 cursor-pointer border border-border/50 bg-card shadow-sm hover:shadow-md transition-all h-full flex flex-col items-center text-center justify-center gap-4 hover:-translate-y-1">
+                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+                    <div className="text-4xl transform group-hover:scale-110 transition-transform duration-300">
+                      {cat.icon}
+                    </div>
+                    <h3 className="font-heading font-semibold text-lg text-foreground">
+                      Best {cat.name}
+                    </h3>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="py-16 bg-primary text-primary-foreground">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">

@@ -14,6 +14,7 @@ export interface SEOProps {
   modifiedTime?: string;
   noindex?: boolean;
   canonical?: string;
+  schemas?: Record<string, any>[];
 }
 
 const FALLBACK_SITE_NAME = "Padel Racket Reviews";
@@ -43,6 +44,7 @@ export function SEO({
   modifiedTime,
   noindex,
   canonical,
+  schemas = [],
 }: SEOProps) {
   const { locale, t } = useI18n();
   const siteName = t("common.brandName") || FALLBACK_SITE_NAME;
@@ -58,7 +60,7 @@ export function SEO({
   const imageUrl = absoluteUrl(image);
   const ogLocale = getOgLocale(locale);
   const ogAlternateLocales = SUPPORTED_LOCALES.filter((code) => code !== locale);
-  const alternateLinks = buildHrefLangAlternates(canonicalPath, SUPPORTED_LOCALES);
+  const alternateLinks = buildHrefLangAlternates(canonicalPath, [...SUPPORTED_LOCALES]);
   const xDefaultHref = absoluteUrl(canonicalPath);
 
   return (
@@ -104,6 +106,12 @@ export function SEO({
         <link key={`alt-${localeCode}`} rel="alternate" hrefLang={localeCode} href={href} />
       ))}
       <link rel="alternate" hrefLang="x-default" href={xDefaultHref} />
+
+      {schemas.map((schema, index) => (
+        <script key={`schema-${index}`} type="application/ld+json">
+          {JSON.stringify(schema)}
+        </script>
+      ))}
     </Helmet>
   );
 }

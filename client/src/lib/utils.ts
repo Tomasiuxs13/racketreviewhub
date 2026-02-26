@@ -114,3 +114,25 @@ export function isValidBrandName(name: string | null | undefined): boolean {
   if (!normalized) return false;
   return !NON_BRAND_VALUES.has(normalized);
 }
+
+/**
+ * Returns an optimized image URL that points to our local Express Sharp proxy.
+ * This converts external feed images to fast WebP format on the fly.
+ */
+export function getOptimizedImageUrl(rawUrl: string | null | undefined, width?: number): string {
+  if (!rawUrl) return "";
+
+  // If it's already a local asset, don't proxy it
+  if (rawUrl.startsWith("/") && !rawUrl.startsWith("/api/")) {
+    return rawUrl;
+  }
+
+  const encodedUrl = encodeURIComponent(rawUrl);
+  let proxyUrl = `/api/images/optimize?url=${encodedUrl}`;
+
+  if (width) {
+    proxyUrl += `&w=${width}`;
+  }
+
+  return proxyUrl;
+}

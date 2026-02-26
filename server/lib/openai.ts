@@ -693,24 +693,30 @@ The overallRating should be a comprehensive assessment considering all factors, 
 
     const ratings = JSON.parse(content) as RacketRatings;
 
-    // Validate ratings are within bounds
-    const validateRating = (value: number): number => {
-      return Math.max(0, Math.min(100, Math.round(value)));
+    // Validate ratings are within bounds and not NaN
+    const validateRating = (value: any, fallback = 80): number => {
+      const num = Number(value);
+      if (isNaN(num)) return fallback;
+      return Math.max(0, Math.min(100, Math.round(num)));
     };
 
+    const powerRating = validateRating(ratings.powerRating, 85);
+    const controlRating = validateRating(ratings.controlRating, 85);
+    const reboundRating = validateRating(ratings.reboundRating, 80);
+    const maneuverabilityRating = validateRating(ratings.maneuverabilityRating, 80);
+    const sweetSpotRating = validateRating(ratings.sweetSpotRating, 85);
+
     return {
-      powerRating: validateRating(ratings.powerRating),
-      controlRating: validateRating(ratings.controlRating),
-      reboundRating: validateRating(ratings.reboundRating),
-      maneuverabilityRating: validateRating(ratings.maneuverabilityRating),
-      sweetSpotRating: validateRating(ratings.sweetSpotRating),
-      overallRating: validateRating(ratings.overallRating || Math.round(
-        (ratings.powerRating +
-          ratings.controlRating +
-          ratings.reboundRating +
-          ratings.maneuverabilityRating +
-          ratings.sweetSpotRating) / 5
-      )), // Fallback to average if not provided
+      powerRating,
+      controlRating,
+      reboundRating,
+      maneuverabilityRating,
+      sweetSpotRating,
+      overallRating: validateRating(
+        ratings.overallRating !== undefined ? ratings.overallRating : Math.round(
+          (powerRating + controlRating + reboundRating + maneuverabilityRating + sweetSpotRating) / 5
+        ), 85
+      ),
     };
   } catch (error) {
     console.error("Error estimating ratings with OpenAI:", error);
@@ -989,63 +995,59 @@ export async function translateTextBatch(
     })),
   };
 
-  const completion = await openai.chat.completions.create({
-    model: OPENAI_TRANSLATION_MODEL,
-    temperature: 0.1,
-    response_format: { type: "json_object" },
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: `Translate the text_to_translate fields in the following entries.\n\nInput:\n${JSON.stringify(payload, null, 2)}\n\nCRITICAL: You MUST return ONLY a JSON object of this EXACT shape (do not include context fields in the output):\n{\n  "translations": {\n    "id_1": "translated text for id_1",\n    "id_2": "translated text for id_2"\n  }\n}`,
-      },
-    ],
-    max_tokens: 12000,
-  }, { timeout: 120000 }); // 2 minute hard timeout for batch translations
+  let retries = 0;
+  const maxRetries = 2;
 
-  // Detect truncation before attempting to parse
-  const finishReason = completion.choices[0]?.finish_reason;
-  if (finishReason === "length") {
-    console.warn(`Translation output truncated (finish_reason=length) for ${targetLocale}. Batch too large.`);
-    throw new Error(`Translation truncated for ${targetLocale}: output exceeded max_tokens. Reduce batch size or increase max_tokens.`);
-  }
-
-  let content = completion.choices[0]?.message?.content?.trim();
-
-  if (!content) {
-    throw new Error("OpenAI returned an empty translation response.");
-  }
-
-  content = content.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-
-  try {
-    const parsed = JSON.parse(content);
-    if (!parsed || typeof parsed !== "object" || typeof parsed.translations !== "object") {
-      throw new Error("Unexpected translation payload shape.");
-    }
-    return parsed.translations as Record<string, string>;
-  } catch (error) {
-    console.error("Failed to parse translation response:", content);
-    // Attempt to recover by escaping unescaped quotes inside strings
+  while (retries <= maxRetries) {
     try {
-      // Extremely basic fallback: if there's an unterminated string, it's often because of unescaped quotes.
-      // E.g., "id": "text with "quotes" inside" -> "id": "text with \"quotes\" inside"
-      // We can try to use a regex to fix some of these, but a safer fallback is to let the user know.
-      // But since replacing all quotes inside values is hard without writing a full parser,
-      // let's try a simpler fix for common issues: replacing newlines that might be unescaped.
-      const cleanedContent = content.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
-      // If it still fails, we throw the original error
-      const reparsed = JSON.parse(cleanedContent);
-      if (reparsed && typeof reparsed === "object" && typeof reparsed.translations === "object") {
-        console.log("Successfully recovered JSON parsing by escaping newlines.");
-        return reparsed.translations as Record<string, string>;
-      }
-    } catch (fallbackError) {
-      console.error("Fallback parsing also failed.");
-    }
+      const completion = await openai.chat.completions.create({
+        model: OPENAI_TRANSLATION_MODEL,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          {
+            role: "user",
+            content: `Translate the text_to_translate fields in the following entries.\n\nInput:\n${JSON.stringify(payload, null, 2)}\n\nCRITICAL: You MUST return ONLY a JSON object of this EXACT shape (do not include context fields in the output):\n{\n  "translations": {\n    "id_1": "translated text for id_1",\n    "id_2": "translated text for id_2"\n  }\n}`,
+          },
+        ],
+        max_tokens: 12000,
+      }, { timeout: 120000 }); // 2 minute hard timeout for batch translations
 
-    throw error;
+      // Detect truncation before attempting to parse
+      const finishReason = completion.choices[0]?.finish_reason;
+      if (finishReason === "length") {
+        console.warn(`Translation output truncated (finish_reason=length) for ${targetLocale}. Batch too large.`);
+        throw new Error(`Translation truncated for ${targetLocale}: output exceeded max_tokens. Reduce batch size or increase max_tokens.`);
+      }
+
+      let content = completion.choices[0]?.message?.content?.trim();
+
+      if (!content) {
+        throw new Error("OpenAI returned an empty translation response.");
+      }
+
+      content = content.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+
+      const parsed = JSON.parse(content);
+      if (!parsed || typeof parsed !== "object" || typeof parsed.translations !== "object") {
+        throw new Error("Unexpected translation payload shape.");
+      }
+      return parsed.translations as Record<string, string>;
+    } catch (error) {
+      console.error(`[Attempt ${retries + 1}/${maxRetries + 1}] Failed to translate/parse response for ${targetLocale}:`, error instanceof Error ? error.message : String(error));
+
+      retries++;
+      if (retries > maxRetries) {
+        throw error;
+      }
+
+      // Wait before retrying (exponential backoff)
+      await new Promise(resolve => setTimeout(resolve, 2000 * Math.pow(2, retries - 1)));
+    }
   }
+
+  return {};
 }
 
 

@@ -22,6 +22,7 @@ import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import ComparisonPage from "@/pages/ComparisonPage";
 import QuizPage from "@/pages/QuizPage";
+import BestOfPage from "@/pages/BestOfPage";
 import AboutPage from "@/pages/AboutPage";
 import MethodologyPage from "@/pages/MethodologyPage";
 import ContactPage from "@/pages/ContactPage";
@@ -48,6 +49,7 @@ function Router() {
       <Route path="/blog/:slug" component={BlogPostPage} />
       <Route path="/compare/:ids" component={ComparisonPage} />
       <Route path="/quiz" component={QuizPage} />
+      <Route path="/best/:category" component={BestOfPage} />
       <Route path="/authors/:slug" component={AuthorPage} />
       <Route path="/about" component={AboutPage} />
       <Route path="/methodology" component={MethodologyPage} />
@@ -82,6 +84,7 @@ function Router() {
         <Route key={`${locale}-post`} path={`/${locale}/blog/:slug`} component={BlogPostPage} />,
         <Route key={`${locale}-compare`} path={`/${locale}/compare/:ids`} component={ComparisonPage} />,
         <Route key={`${locale}-quiz`} path={`/${locale}/quiz`} component={QuizPage} />,
+        <Route key={`${locale}-best`} path={`/${locale}/best/:category`} component={BestOfPage} />,
         <Route key={`${locale}-author`} path={`/${locale}/authors/:slug`} component={AuthorPage} />,
         <Route key={`${locale}-about`} path={`/${locale}/about`} component={AboutPage} />,
         <Route key={`${locale}-methodology`} path={`/${locale}/methodology`} component={MethodologyPage} />,

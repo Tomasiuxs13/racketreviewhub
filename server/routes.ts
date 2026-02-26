@@ -1,6 +1,7 @@
 import type { Express, Response } from "express";
 import { createServer, type Server } from "http";
 import crypto from "crypto";
+import sharp from "sharp";
 import { storage } from "./storage";
 import type { Racket } from "@shared/schema";
 import { requireAuth, requireAdmin, type AuthenticatedRequest } from "./middleware/jwtAuth.js";
@@ -161,6 +162,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.send(content);
   });
 
+  // Image Optimization Proxy
+  app.get("/api/images/optimize", async (req, res) => {
+    try {
+      const url = req.query.url as string;
+      const width = parseInt(req.query.w as string, 10);
+
+      if (!url) {
+        return res.status(400).json({ error: "Missing url parameter" });
+      }
+
+      // Fetch the original image
+      const fetchReq = await fetch(url);
+      if (!fetchReq.ok) {
+        throw new Error(`Failed to fetch image: ${fetchReq.statusText}`);
+      }
+
+      const arrayBuffer = await fetchReq.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      // Process with Sharp
+      let pipeline = sharp(buffer);
+      if (width && !isNaN(width)) {
+        pipeline = pipeline.resize({ width, withoutEnlargement: true });
+      }
+
+      // Convert to WebP
+      const optimizedBuffer = await pipeline.webp({ quality: 80 }).toBuffer();
+
+      // Send the response with caching headers
+      res.set("Content-Type", "image/webp");
+      res.set("Cache-Control", "public, max-age=31536000, immutable"); // Cache for 1 year since feed URLs are essentially immutable
+      res.send(optimizedBuffer);
+    } catch (error) {
+      console.error("Image optimization error:", error);
+      // Fallback: redirect to original URL if processing fails
+      const url = req.query.url as string;
+      if (url) {
+        return res.redirect(302, url);
+      }
+      res.status(500).json({ error: "Failed to optimize image" });
+    }
+  });
+
   // Authentication endpoints (JWT-based)
   app.post("/api/auth/login", async (req, res) => {
     try {
@@ -243,6 +287,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Rackets endpoints
+  app.get("/api/rackets/best/:category", async (req, res) => {
+    try {
+      const category = req.params.category;
+      const limit = parseInt(req.query.limit as string) || 10;
+
+      const rackets = await storage.getBestOfRackets(category, limit);
+
+      const locale = req.query.lang as string;
+      let responseRackets = rackets;
+      if (locale && locale !== "en") {
+        responseRackets = await applyTranslationsToEntities(
+          rackets,
+          "racket",
+          locale,
+          RACKET_REVIEW_TRANSLATABLE_FIELDS as any
+        ) as any;
+      }
+
+      setCacheHeaders(res, CACHE_SHORT);
+      res.json(responseRackets);
+    } catch (error) {
+      console.error("Error fetching best of rackets:", error);
+      res.status(500).json({ error: "Failed to fetch best of rackets" });
+    }
+  });
+
   app.get("/api/rackets", async (req, res) => {
     try {
       // Support compact mode to exclude reviewContent for list views

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RatingMetrics } from "./RatingBar";
 import { ExternalLink, CheckCircle, GitCompareArrows } from "lucide-react";
 import type { Racket } from "@shared/schema";
-import { getRacketSlug } from "@/lib/utils";
+import { getRacketSlug, getOptimizedImageUrl } from "@/lib/utils";
 import { openAffiliateLink } from "@/lib/analytics";
 import { useCompare } from "@/hooks/useCompare";
 
@@ -39,7 +39,9 @@ export function RacketCard({ racket }: RacketCardProps) {
             <div className="absolute inset-0 flex items-center justify-center p-6 mix-blend-multiply dark:mix-blend-normal">
               {racket.imageUrl ? (
                 <img
-                  src={racket.imageUrl}
+                  src={getOptimizedImageUrl(racket.imageUrl, 400)}
+                  srcSet={`${getOptimizedImageUrl(racket.imageUrl, 200)} 200w, ${getOptimizedImageUrl(racket.imageUrl, 400)} 400w`}
+                  sizes="(max-width: 640px) 200px, 400px"
                   alt={`${racket.brand} ${racket.model}`}
                   className="w-full h-full object-contain group-hover:scale-110 drop-shadow-xl transition-transform duration-700 ease-out"
                   loading="lazy"

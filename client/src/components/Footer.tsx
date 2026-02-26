@@ -8,7 +8,7 @@ export function Footer() {
   return (
     <footer className="border-t bg-card mt-16 sm:mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-12">
           {/* About */}
           <div>
             <h3 className="font-heading font-semibold text-lg mb-4">
@@ -44,6 +44,30 @@ export function Footer() {
                 <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer" data-testid="footer-link-blog">
                   {t("footer.quickLinks.blog")}
                 </span>
+              </Link>
+            </nav>
+          </div>
+
+          {/* Top Picks */}
+          <div>
+            <h3 className="font-heading font-semibold text-lg mb-4">
+              Top Picks {currentYear}
+            </h3>
+            <nav className="flex flex-col gap-2">
+              <Link href="/best/power">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Best Power Rackets</span>
+              </Link>
+              <Link href="/best/control">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Best Control Rackets</span>
+              </Link>
+              <Link href="/best/beginner">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Best for Beginners</span>
+              </Link>
+              <Link href="/best/budget">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Best Under €120</span>
+              </Link>
+              <Link href="/best/overall">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Best Overall</span>
               </Link>
             </nav>
           </div>

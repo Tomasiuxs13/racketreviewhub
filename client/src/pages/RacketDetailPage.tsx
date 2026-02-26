@@ -21,6 +21,8 @@ import { PriceHistoryChart } from "@/components/PriceHistoryChart";
 import { ShareButtons } from "@/components/ShareButtons";
 import { TableOfContents } from "@/components/TableOfContents";
 import { upscaleProductserveUrl } from "@shared/utils";
+import { useCompare } from "@/hooks/useCompare";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -29,6 +31,7 @@ function isUuid(value: string | undefined): boolean {
 
 export default function RacketDetailPage() {
   const [location, setLocation] = useLocation();
+  const { addToCompare, isInCompare, removeFromCompare } = useCompare();
   // Extract the racket id/slug from the path, supporting both /rackets/:id and /:locale/rackets/:id
   const racketIdMatch = location.match(/\/rackets\/([^/?#]+)/);
   const routeParam = racketIdMatch ? decodeURIComponent(racketIdMatch[1]) : undefined;
@@ -99,6 +102,51 @@ export default function RacketDetailPage() {
     }) || `Expert review of the ${racket.brand} ${racket.model} ${racket.year || ""} padel racket. Detailed ratings for power, control, and performance. Overall rating: ${racket.overallRating}/100. Find the best price with our affiliate links.`
     : t("racket.seo.defaultDescription") || "Expert padel racket review with detailed ratings and best price comparison";
   const canonicalPath = racket ? `/rackets/${getRacketSlug(racket)}` : "/rackets";
+
+  const schemas: any[] = [];
+  if (racket) {
+    schemas.push({
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      name: `${racket.brand} ${racket.model}`,
+      image: racket.imageUrl ? [racket.imageUrl] : [],
+      description: seoDescription,
+      brand: {
+        "@type": "Brand",
+        name: racket.brand
+      },
+      offers: {
+        "@type": "Offer",
+        url: `https://www.padelracketreviews.com${canonicalPath}`,
+        priceCurrency: "EUR",
+        price: Number(racket.currentPrice).toFixed(2),
+        availability: racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+        seller: {
+          "@type": "Organization",
+          name: "Padel Racket Reviews"
+        }
+      },
+      review: {
+        "@type": "Review",
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: (racket.overallRating / 20).toFixed(1), // Convert from 0-100 to 0-5
+          bestRating: "5"
+        },
+        author: {
+          "@type": "Person",
+          name: author?.name || "Expert Reviewer"
+        },
+        reviewBody: seoDescription
+      },
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: (racket.overallRating / 20).toFixed(1), // Convert from 0-100 to 0-5
+        reviewCount: "1"
+      }
+    });
+  }
+
   const seoData = {
     title: seoTitle,
     description: seoDescription,
@@ -106,6 +154,7 @@ export default function RacketDetailPage() {
     url: canonicalPath,
     canonical: canonicalPath,
     type: "article" as const,
+    schemas: schemas,
   };
 
   const seoElement = <SEO {...seoData} />;
@@ -182,12 +231,25 @@ export default function RacketDetailPage() {
                 {t("racket.detail.backToRackets")}
               </Button>
             </Link>
-            <Link href={`/rackets?compare=${racket.id}`}>
-              <Button variant="outline" className="border-primary/20 hover:bg-primary/5 text-primary">
+            {isInCompare(racket?.id || "") ? (
+              <Button
+                variant="outline"
+                className="border-primary/20 bg-primary/10 text-primary"
+                onClick={() => removeFromCompare(racket?.id || "")}
+              >
+                <Scale className="mr-2 h-4 w-4" />
+                Remove from Compare
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="border-primary/20 hover:bg-primary/5 text-primary"
+                onClick={() => addToCompare(racket?.id || "")}
+              >
                 <Scale className="mr-2 h-4 w-4" />
                 {t("racket.detail.compareButton")}
               </Button>
-            </Link>
+            )}
           </div>
 
           {/* Main Content */}
@@ -200,12 +262,12 @@ export default function RacketDetailPage() {
                   <div className="aspect-square flex items-center justify-center mix-blend-multiply dark:mix-blend-normal">
                     {racket.imageUrl ? (
                       <img
-                        src={upscaleProductserveUrl(racket.imageUrl) ?? racket.imageUrl}
-                        alt={`${racket.brand} ${racket.model} ${racket.year || ""} ${racket.shape || "padel"} padel racket`}
-                        className="max-w-full max-h-full object-contain drop-shadow-2xl"
-                        loading="eager"
+                        src={getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 800)}
+                        srcSet={`${getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 400)} 400w, ${getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 800)} 800w`}
+                        sizes="(max-width: 768px) 100vw, 800px"
+                        alt={`${racket.brand} ${racket.model}`}
+                        className="max-w-[80%] max-h-[80%] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
                         fetchPriority="high"
-                        decoding="async"
                         data-testid="img-racket-detail"
                       />
                     ) : (

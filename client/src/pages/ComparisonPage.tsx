@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ArrowLeft, ExternalLink } from "lucide-react";
 import { RatingBar } from "@/components/RatingBar";
 import type { Racket } from "@shared/schema";
-import { getRacketSlug } from "@/lib/utils";
+import { getRacketSlug, getOptimizedImageUrl } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { trackAffiliateClick } from "@/lib/analytics";
@@ -124,7 +124,9 @@ export default function ComparisonPage() {
                   <div className="aspect-square mb-3 flex items-center justify-center max-h-48">
                     {racket.imageUrl ? (
                       <img
-                        src={racket.imageUrl}
+                        src={getOptimizedImageUrl(racket.imageUrl, 400)}
+                        srcSet={`${getOptimizedImageUrl(racket.imageUrl, 200)} 200w, ${getOptimizedImageUrl(racket.imageUrl, 400)} 400w`}
+                        sizes="(max-width: 640px) 200px, 400px"
                         alt={`${racket.brand} ${racket.model}`}
                         className="max-w-full max-h-full object-contain"
                       />
