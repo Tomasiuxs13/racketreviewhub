@@ -31,7 +31,7 @@ function isUuid(value: string | undefined): boolean {
 
 export default function RacketDetailPage() {
   const [location, setLocation] = useLocation();
-  const { addToCompare, isInCompare, removeFromCompare } = useCompare();
+  const { addToCompare, isInCompare, removeFromCompare, compareIds } = useCompare();
   // Extract the racket id/slug from the path, supporting both /rackets/:id and /:locale/rackets/:id
   const racketIdMatch = location.match(/\/rackets\/([^/?#]+)/);
   const routeParam = racketIdMatch ? decodeURIComponent(racketIdMatch[1]) : undefined;
@@ -244,7 +244,14 @@ export default function RacketDetailPage() {
               <Button
                 variant="outline"
                 className="border-primary/20 hover:bg-primary/5 text-primary"
-                onClick={() => addToCompare(racket?.id || "")}
+                onClick={() => {
+                  const id = racket?.id;
+                  if (!id) return;
+                  addToCompare(id);
+                  const newIds = compareIds.includes(id) ? compareIds : [...compareIds, id];
+                  const localePrefix = location.match(/^\/[a-z]{2}(?=\/|$)/)?.[0] || "";
+                  setLocation(`${localePrefix}/compare/${newIds.join(",")}`);
+                }}
               >
                 <Scale className="mr-2 h-4 w-4" />
                 {t("racket.detail.compareButton")}

@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, ExternalLink } from "lucide-react";
+import { ArrowLeft, ExternalLink, Scale } from "lucide-react";
 import { RatingBar } from "@/components/RatingBar";
 import type { Racket } from "@shared/schema";
 import { getRacketSlug, getOptimizedImageUrl } from "@/lib/utils";
@@ -54,7 +54,7 @@ export default function ComparisonPage() {
     );
   }
 
-  if (rackets.length < 2) {
+  if (rackets.length === 0) {
     return (
       <>
         <SEO {...seoData} />
@@ -113,11 +113,13 @@ export default function ComparisonPage() {
           </Link>
 
           <h1 className="font-heading font-bold text-2xl sm:text-3xl mb-8">
-            {rackets[0].brand} {rackets[0].model} vs {rackets[1].brand} {rackets[1].model}
+            {rackets.length >= 2
+              ? `${rackets[0].brand} ${rackets[0].model} vs ${rackets[1].brand} ${rackets[1].model}`
+              : `Compare ${rackets[0].brand} ${rackets[0].model}`}
           </h1>
 
           {/* Header Row - Images & Basic Info */}
-          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${rackets.length}, 1fr)` }}>
+          <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(2, rackets.length)}, 1fr)` }}>
             {rackets.map((racket) => (
               <Card key={racket.id}>
                 <CardContent className="p-4 text-center">
@@ -171,6 +173,18 @@ export default function ComparisonPage() {
                 </CardContent>
               </Card>
             ))}
+            {rackets.length === 1 && (
+              <Card className="flex flex-col items-center justify-center p-6 text-center border-dashed min-h-[400px]">
+                <div className="rounded-full bg-muted p-4 mb-4">
+                  <Scale className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="font-bold mb-2">Add another racket</h3>
+                <p className="text-sm text-muted-foreground mb-4">Select a second racket to compare side-by-side.</p>
+                <Link href="/rackets">
+                  <Button variant="outline">Browse Rackets</Button>
+                </Link>
+              </Card>
+            )}
           </div>
 
           {/* Ratings Comparison */}
@@ -184,7 +198,7 @@ export default function ComparisonPage() {
                   return (
                     <div key={field.key}>
                       <p className="text-sm font-medium text-muted-foreground mb-1">{field.label}</p>
-                      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${rackets.length}, 1fr)` }}>
+                      <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${Math.max(2, rackets.length)}, 1fr)` }}>
                         {rackets.map((racket, i) => {
                           const val = values[i];
                           const isBest = val === maxVal && values.filter((v) => v === maxVal).length === 1;
@@ -199,6 +213,11 @@ export default function ComparisonPage() {
                             </div>
                           );
                         })}
+                        {rackets.length === 1 && (
+                          <div className="flex items-center justify-center opacity-50">
+                            <span className="text-sm text-muted-foreground">-</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -213,13 +232,16 @@ export default function ComparisonPage() {
               <h3 className="font-semibold text-lg mb-4">Specifications</h3>
               <div className="divide-y">
                 {specFields.map((field) => (
-                  <div key={field.key} className="grid py-3 items-center" style={{ gridTemplateColumns: `8rem repeat(${rackets.length}, 1fr)` }}>
+                  <div key={field.key} className="grid py-3 items-center" style={{ gridTemplateColumns: `8rem repeat(${Math.max(2, rackets.length)}, 1fr)` }}>
                     <span className="text-sm font-medium text-muted-foreground">{field.label}</span>
                     {rackets.map((racket) => (
                       <span key={racket.id} className="text-sm capitalize">
                         {(racket as any)[field.key] || "-"}
                       </span>
                     ))}
+                    {rackets.length === 1 && (
+                      <span className="text-sm text-center text-muted-foreground">-</span>
+                    )}
                   </div>
                 ))}
               </div>
