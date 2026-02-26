@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { Slider } from "@/components/ui/slider";
 import { X, SlidersHorizontal, ChevronLeft, ChevronRight, PackageCheck } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
 import type { Racket } from "@shared/schema";
@@ -38,6 +39,8 @@ export default function RacketsPage() {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedShapes, setSelectedShapes] = useState<string[]>([]);
   const [selectedGenders, setSelectedGenders] = useState<string[]>([]);
+  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
+  const [priceRange, setPriceRange] = useState<number[]>([0, 500]);
   const [minRating, setMinRating] = useState<number>(0);
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<string>("rating");
@@ -61,6 +64,8 @@ export default function RacketsPage() {
     return acc;
   }, {} as Record<string, number>) || {};
 
+  const gameLevels = ["Beginner", "Intermediate", "Advanced", "Professional"];
+
   const topShapes = Object.entries(shapeCounts)
     .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
@@ -72,16 +77,31 @@ export default function RacketsPage() {
       if (selectedBrands.length > 0 && !selectedBrands.includes(racket.brand)) return false;
       if (selectedShapes.length > 0 && !selectedShapes.includes(racket.shape?.toLowerCase())) return false;
       if (selectedGenders.length > 0) {
-        let racketGender = racket.player?.toLowerCase() || "";
+        let racketGender = racket.player?.toLowerCase().trim() || "";
 
-        if (["both", "man and woman", "men and women"].includes(racketGender)) {
+        if (
+          racketGender === "both" ||
+          racketGender === "unisex" ||
+          racketGender.includes("and") ||
+          racketGender.includes("&")
+        ) {
           racketGender = "unisex";
+        } else if (racketGender.includes("woman") || racketGender.includes("women") || racketGender === "female") {
+          racketGender = "woman";
+        } else if (racketGender.includes("man") || racketGender.includes("men") || racketGender === "male") {
+          racketGender = "man";
         }
 
         if (!racketGender || !selectedGenders.includes(racketGender)) {
           return false;
         }
       }
+      if (selectedLevels.length > 0) {
+        if (!racket.gameLevel || !selectedLevels.includes(racket.gameLevel)) return false;
+      }
+      const price = Number(racket.currentPrice) || 0;
+      if (price < priceRange[0] || price > priceRange[1]) return false;
+
       if (racket.overallRating < minRating) return false;
       if (inStockOnly && !(racket.inStock || racket.padelMarketInStock)) return false;
       return true;
@@ -115,7 +135,7 @@ export default function RacketsPage() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedBrands, selectedShapes, selectedGenders, minRating, inStockOnly, sortBy]);
+  }, [selectedBrands, selectedShapes, selectedGenders, selectedLevels, priceRange, minRating, inStockOnly, sortBy]);
 
   const toggleBrand = (brand: string) => {
     setSelectedBrands((prev) =>
@@ -135,15 +155,23 @@ export default function RacketsPage() {
     );
   };
 
+  const toggleLevel = (level: string) => {
+    setSelectedLevels((prev) =>
+      prev.includes(level) ? prev.filter((l) => l !== level) : [...prev, level]
+    );
+  };
+
   const clearFilters = () => {
     setSelectedBrands([]);
     setSelectedShapes([]);
     setSelectedGenders([]);
+    setSelectedLevels([]);
+    setPriceRange([0, 500]);
     setMinRating(0);
     setInStockOnly(false);
   };
 
-  const hasActiveFilters = selectedBrands.length > 0 || selectedShapes.length > 0 || selectedGenders.length > 0 || minRating > 0 || inStockOnly;
+  const hasActiveFilters = selectedBrands.length > 0 || selectedShapes.length > 0 || selectedGenders.length > 0 || selectedLevels.length > 0 || minRating > 0 || inStockOnly || priceRange[0] > 0 || priceRange[1] < 500;
 
   const seoData = {
     title: "Padel Racket Reviews - Compare Expert Ratings & Find Best Prices",
@@ -247,6 +275,24 @@ export default function RacketsPage() {
         </div>
       </div>
 
+      {/* Price Filter */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">Price</h3>
+          <span className="text-sm text-muted-foreground">
+            €{priceRange[0]} - €{priceRange[1]}
+          </span>
+        </div>
+        <Slider
+          min={0}
+          max={500}
+          step={10}
+          value={priceRange}
+          onValueChange={setPriceRange}
+          className="my-4"
+        />
+      </div>
+
       {/* Gender Filter */}
       <div>
         <h3 className="font-semibold mb-3">Gender</h3>
@@ -281,6 +327,26 @@ export default function RacketsPage() {
               />
               <Label htmlFor={`shape-${shape}`} className="capitalize cursor-pointer">
                 {shape}
+              </Label>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Game Level Filter */}
+      <div>
+        <h3 className="font-semibold mb-3">Level</h3>
+        <div className="space-y-2">
+          {gameLevels.map((level) => (
+            <div key={level} className="flex items-center gap-2">
+              <Checkbox
+                id={`level-${level}`}
+                checked={selectedLevels.includes(level)}
+                onCheckedChange={() => toggleLevel(level)}
+                data-testid={`checkbox-level-${level}`}
+              />
+              <Label htmlFor={`level-${level}`} className="cursor-pointer">
+                {level}
               </Label>
             </div>
           ))}
@@ -381,7 +447,7 @@ export default function RacketsPage() {
                         Filters
                         {hasActiveFilters && (
                           <Badge variant="secondary" className="ml-2">
-                            {selectedBrands.length + selectedShapes.length + selectedGenders.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0)}
+                            {selectedBrands.length + selectedShapes.length + selectedGenders.length + selectedLevels.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0) + ((priceRange[0] > 0 || priceRange[1] < 500) ? 1 : 0)}
                           </Badge>
                         )}
                       </Button>
@@ -421,6 +487,22 @@ export default function RacketsPage() {
                       </button>
                     </Badge>
                   ))}
+                  {selectedLevels.map((level) => (
+                    <Badge key={level} variant="secondary" className="gap-1" data-testid={`badge-filter-level-${level}`}>
+                      {level}
+                      <button onClick={() => toggleLevel(level)} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                  {(priceRange[0] > 0 || priceRange[1] < 500) && (
+                    <Badge variant="secondary" className="gap-1" data-testid="badge-filter-price">
+                      €{priceRange[0]} - €{priceRange[1]}
+                      <button onClick={() => setPriceRange([0, 500])} className="ml-1 hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  )}
                   {minRating > 0 && (
                     <Badge variant="secondary" className="gap-1" data-testid="badge-filter-rating">
                       Rating {minRating}+

@@ -1026,6 +1026,24 @@ export async function translateTextBatch(
     return parsed.translations as Record<string, string>;
   } catch (error) {
     console.error("Failed to parse translation response:", content);
+    // Attempt to recover by escaping unescaped quotes inside strings
+    try {
+      // Extremely basic fallback: if there's an unterminated string, it's often because of unescaped quotes.
+      // E.g., "id": "text with "quotes" inside" -> "id": "text with \"quotes\" inside"
+      // We can try to use a regex to fix some of these, but a safer fallback is to let the user know.
+      // But since replacing all quotes inside values is hard without writing a full parser,
+      // let's try a simpler fix for common issues: replacing newlines that might be unescaped.
+      const cleanedContent = content.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+      // If it still fails, we throw the original error
+      const reparsed = JSON.parse(cleanedContent);
+      if (reparsed && typeof reparsed === "object" && typeof reparsed.translations === "object") {
+        console.log("Successfully recovered JSON parsing by escaping newlines.");
+        return reparsed.translations as Record<string, string>;
+      }
+    } catch (fallbackError) {
+      console.error("Fallback parsing also failed.");
+    }
+
     throw error;
   }
 }
