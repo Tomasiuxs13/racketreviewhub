@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Star, TrendingUp, Shield } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
-import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Racket, Guide } from "@shared/schema";
 import heroImage from "@assets/generated_images/Padel_court_hero_background_fd7eb556.png";
@@ -285,12 +284,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Newsletter Section */}
-        <section className="py-12 bg-muted/50">
-          <div className="max-w-xl mx-auto px-4 sm:px-6">
-            <NewsletterSignup source="homepage" />
-          </div>
-        </section>
 
         {/* Recent Guides Section */}
         <section className="py-16 bg-background">

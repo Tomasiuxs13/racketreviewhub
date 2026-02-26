@@ -1,6 +1,5 @@
 import { Link } from "wouter";
 import { useI18n } from "@/i18n/useI18n";
-import { NewsletterSignup } from "./NewsletterSignup";
 
 export function Footer() {
   const { t } = useI18n();
@@ -73,16 +72,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Newsletter Signup */}
-          <div>
-            <h3 className="font-heading font-semibold text-lg mb-4">
-              Stay Updated
-            </h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Get notified about price drops and new reviews.
-            </p>
-            <NewsletterSignup source="footer" compact />
-          </div>
         </div>
 
         {/* Bottom Section */}
