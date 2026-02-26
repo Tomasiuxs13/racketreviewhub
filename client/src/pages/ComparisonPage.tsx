@@ -50,22 +50,57 @@ export default function ComparisonPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Sync URL state to useCompare hook storage
+  // Sync URL state to useCompare hook storage and migrate UUIDs to slugs
   useEffect(() => {
+    if (!allRackets) return;
+
+    // 1. Sync URL IDs to storage
     if (urlIds.length > 0) {
       urlIds.forEach(id => {
-        if (!storedIds.includes(id)) {
-          addToCompare(id);
+        // If it's a UUID, try to find the slug and add that instead
+        const racket = allRackets.find(r => r.id === id);
+        const slugToAdd = racket ? getRacketSlug(racket) : id;
+
+        if (!storedIds.includes(slugToAdd)) {
+          addToCompare(slugToAdd);
         }
       });
     }
-  }, [urlIds, storedIds, addToCompare]);
+
+    // 2. Local migration: if storage has UUIDs, convert them to slugs
+    storedIds.forEach(id => {
+      // Very simple UUID check
+      if (id.length === 36 && id.includes('-')) {
+        const racket = allRackets.find(r => r.id === id);
+        if (racket) {
+          removeFromCompare(id);
+          addToCompare(getRacketSlug(racket));
+        }
+      }
+    });
+  }, [urlIds, storedIds, addToCompare, removeFromCompare, allRackets]);
 
   // Find rackets by slug from the comma-separated URL param
   const rackets = useMemo(() => {
     if (!allRackets) return [];
-    // Only match by slug to avoid duplication when both UUID and slug appear
-    return allRackets.filter((r) => ids.includes(getRacketSlug(r)));
+
+    const result: Racket[] = [];
+    const seenSlugs = new Set<string>();
+
+    // We iterate through ids to maintain the order the user expects
+    ids.forEach(id => {
+      // Find the best match for this ID (slug or UUID)
+      const match = allRackets.find(r => getRacketSlug(r) === id || r.id === id);
+      if (match) {
+        const slug = getRacketSlug(match);
+        if (!seenSlugs.has(slug)) {
+          seenSlugs.add(slug);
+          result.push(match);
+        }
+      }
+    });
+
+    return result;
   }, [allRackets, ids]);
 
   const searchResults = useMemo(() => {

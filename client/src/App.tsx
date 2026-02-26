@@ -30,6 +30,7 @@ import LegalPage from "@/pages/LegalPage";
 import NotFound from "@/pages/not-found";
 import { AuthGuard } from "@/components/AuthGuard";
 import { CompareBar } from "@/components/CompareBar";
+import { CompareProvider } from "@/hooks/useCompare";
 import { SUPPORTED_LOCALES } from "@/i18n/I18nProvider";
 
 
@@ -112,15 +113,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="flex flex-col min-h-screen">
-          <Header />
-          <main className="flex-1">
-            <Router />
-          </main>
-          <Footer />
-          <CompareBar />
-        </div>
-        <Toaster />
+        <CompareProvider>
+          <div className="flex flex-col min-h-screen">
+            <Header />
+            <main className="flex-1">
+              <Router />
+            </main>
+            <Footer />
+            <CompareBar />
+          </div>
+          <Toaster />
+        </CompareProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

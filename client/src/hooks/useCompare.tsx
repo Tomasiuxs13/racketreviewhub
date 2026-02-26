@@ -1,9 +1,21 @@
-import { useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 
 const STORAGE_KEY = "compareRackets";
 const MAX_COMPARE = 4;
 
-export function useCompare() {
+interface CompareContextType {
+  compareIds: string[];
+  addToCompare: (slug: string) => void;
+  removeFromCompare: (slug: string) => void;
+  clearCompare: () => void;
+  isInCompare: (slug: string) => boolean;
+  compareCount: number;
+  compareUrl: string | null;
+}
+
+const CompareContext = createContext<CompareContextType | undefined>(undefined);
+
+export function CompareProvider({ children }: { children: React.ReactNode }) {
   const [compareIds, setCompareIds] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
@@ -37,7 +49,7 @@ export function useCompare() {
     [compareIds],
   );
 
-  return {
+  const value = {
     compareIds,
     addToCompare,
     removeFromCompare,
@@ -46,4 +58,22 @@ export function useCompare() {
     compareCount: compareIds.length,
     compareUrl: compareIds.length > 0 ? `/compare/${compareIds.join(",")}` : "/compare",
   };
+
+  return (
+    <CompareContext.Provider value= { value } >
+    { children }
+    </CompareContext.Provider>
+  );
+}
+
+export function useCompare() {
+  const context = useContext(CompareContext);
+  if (context === undefined) {
+    // Fallback for cases where it's used outside Provider (though we'll wrap App)
+    console.warn("useCompare used outside of CompareProvider. This may cause sync issues.");
+    // Return a dummy object if needed, or throw error.
+    // Let's throw error to be strict.
+    throw new Error("useCompare must be used within a CompareProvider");
+  }
+  return context;
 }
