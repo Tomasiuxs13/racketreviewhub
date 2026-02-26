@@ -22,6 +22,10 @@ import LoginPage from "@/pages/LoginPage";
 import SignupPage from "@/pages/SignupPage";
 import ComparisonPage from "@/pages/ComparisonPage";
 import QuizPage from "@/pages/QuizPage";
+import AboutPage from "@/pages/AboutPage";
+import MethodologyPage from "@/pages/MethodologyPage";
+import ContactPage from "@/pages/ContactPage";
+import LegalPage from "@/pages/LegalPage";
 import NotFound from "@/pages/not-found";
 import { AuthGuard } from "@/components/AuthGuard";
 import { CompareBar } from "@/components/CompareBar";
@@ -45,6 +49,18 @@ function Router() {
       <Route path="/compare/:ids" component={ComparisonPage} />
       <Route path="/quiz" component={QuizPage} />
       <Route path="/authors/:slug" component={AuthorPage} />
+      <Route path="/about" component={AboutPage} />
+      <Route path="/methodology" component={MethodologyPage} />
+      <Route path="/contact" component={ContactPage} />
+      <Route path="/privacy">
+        <LegalPage type="privacy" />
+      </Route>
+      <Route path="/terms">
+        <LegalPage type="terms" />
+      </Route>
+      <Route path="/disclosure">
+        <LegalPage type="disclosure" />
+      </Route>
       <Route path="/login" component={LoginPage} />
       <Route path="/signup" component={SignupPage} />
       <Route path="/admin">
@@ -66,7 +82,19 @@ function Router() {
         <Route key={`${locale}-post`} path={`/${locale}/blog/:slug`} component={BlogPostPage} />,
         <Route key={`${locale}-compare`} path={`/${locale}/compare/:ids`} component={ComparisonPage} />,
         <Route key={`${locale}-quiz`} path={`/${locale}/quiz`} component={QuizPage} />,
-        <Route key={`${locale}-author`} path={`/${locale}/authors/:slug`} component={AuthorPage} />
+        <Route key={`${locale}-author`} path={`/${locale}/authors/:slug`} component={AuthorPage} />,
+        <Route key={`${locale}-about`} path={`/${locale}/about`} component={AboutPage} />,
+        <Route key={`${locale}-methodology`} path={`/${locale}/methodology`} component={MethodologyPage} />,
+        <Route key={`${locale}-contact`} path={`/${locale}/contact`} component={ContactPage} />,
+        <Route key={`${locale}-privacy`} path={`/${locale}/privacy`}>
+          <LegalPage type="privacy" />
+        </Route>,
+        <Route key={`${locale}-terms`} path={`/${locale}/terms`}>
+          <LegalPage type="terms" />
+        </Route>,
+        <Route key={`${locale}-disclosure`} path={`/${locale}/disclosure`}>
+          <LegalPage type="disclosure" />
+        </Route>
       ])}
 
       {/* Fallback for invalid routes */}

@@ -169,5 +169,76 @@
         }
       }
     }
+  },
+  "about": {
+    "title": "About Us",
+    "seoTitle": "About Padel Racket Reviews - Our Story & Experts",
+    "seoDescription": "Learn about the team behind Padel Racket Reviews. We are passionate padel players dedicated to providing honest, data-driven racket reviews and buying advice.",
+    "heroTitle": "Passionate About Padel",
+    "heroSubtitle": "We are a team of dedicated padel players and equipment nerds on a mission to help you find your perfect racket.",
+    "storyTitle": "Our Story",
+    "storyBody1": "Padel Racket Reviews started from a simple frustration: it was too hard to find honest, comprehensive information about padel rackets online. Most stores just copy-pasted manufacturer descriptions, and independent reviews were scattered across different languages and platforms.",
+    "storyBody2": "We decided to change that by creating a central hub for padel players of all levels. Our goal is to provide unbiased, data-backed insights into how different rackets actually perform on the court, not just what their marketing materials claim.",
+    "teamTitle": "Our Expertise",
+    "teamBody": "Our testing team consists of players ranging from enthusiastic advanced amateurs to former professional competitors. With decades of combined racket sports experience, we know what separates a good racket from a great one.",
+    "missionTitle": "Our Mission",
+    "missionBody": "To empower padel players worldwide with the knowledge they need to make confident equipment choices and improve their game."
+  },
+  "methodology": {
+    "title": "How We Review",
+    "seoTitle": "Our Racket Testing & Review Methodology",
+    "seoDescription": "Discover how we test and rate padel rackets. Learn about our rigorous on-court testing process and data-driven approach to evaluating power, control, and performance.",
+    "heroTitle": "Our Testing Methodology",
+    "heroSubtitle": "How we turn hours of on-court play into the numbers and reviews you trust.",
+    "processTitle": "The Testing Process",
+    "processSteps": {
+      "step1Title": "1. Initial Inspection",
+      "step1Body": "Before hitting the court, we weigh and measure each racket, checking the balance point, face texture, and overall build quality against the manufacturer's specs.",
+      "step2Title": "2. On-Court Testing",
+      "step2Body": "Every racket is tested for a minimum of 10 hours of active play across different court conditions (indoor/outdoor) by at least two different testers of varying playstyles.",
+      "step3Title": "3. Metric Evaluation",
+      "step3Body": "We score the racket across five key metrics: Power, Control, Rebound, Maneuverability, and Sweet Spot, carefully comparing it against benchmark rackets in its category.",
+      "step4Title": "4. Final Review & Rating",
+      "step4Body": "We aggregate the testers' notes and scores to generate a comprehensive review, highlighting the specific type of player the racket is best suited for."
+    },
+    "metricsTitle": "Understanding Our Metrics",
+    "metricsIntro": "Our 1-10 rating system is designed to provide clear, comparative data. Here is what each metric means:",
+    "metricsDescriptions": {
+      "power": "How much natural pace the racket generates on attacking shots like smashes and aggressive volleys.",
+      "control": "The precision and predictability of the racket, especially when placing the ball or defending.",
+      "rebound": "Also known as ball output (salida de bola). How much the ball bounces off the face with minimal swing effort, crucial for blocking and baseline defense.",
+      "maneuverability": "How easy the racket is to move quickly, particularly in fast net exchanges. Directly related to weight and balance.",
+      "sweetSpot": "The size and forgiveness of the optimal hitting area. A high score means fewer mishits."
+    }
+  },
+  "contact": {
+    "title": "Contact Us",
+    "seoTitle": "Contact Padel Racket Reviews",
+    "seoDescription": "Get in touch with the Padel Racket Reviews team. Have a question about a racket or a business inquiry? We'd love to hear from you.",
+    "heroTitle": "Get in Touch",
+    "heroSubtitle": "Have a question, suggestion, or partnership inquiry? We are here to help.",
+    "emailUs": "Email Us",
+    "emailDescription": "For all general inquiries, please reach out to us at:",
+    "emailAddress": "hello@padelracketreviews.com",
+    "responseNote": "We try to respond to all inquiries within 24-48 hours."
+  },
+  "legal": {
+    "privacy": {
+      "title": "Privacy Policy",
+      "seoTitle": "Privacy Policy - Padel Racket Reviews",
+      "lastUpdated": "Last Updated: February 2026",
+      "content": "Privacy policy content goes here..."
+    },
+    "terms": {
+      "title": "Terms of Service",
+      "seoTitle": "Terms of Service - Padel Racket Reviews",
+      "lastUpdated": "Last Updated: February 2026",
+      "content": "Terms of service content goes here..."
+    },
+    "disclosure": {
+      "title": "Affiliate Disclosure",
+      "seoTitle": "Affiliate Disclosure - Padel Racket Reviews",
+      "lastUpdated": "Last Updated: February 2026"
+    }
   }
 }

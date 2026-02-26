@@ -48,6 +48,33 @@ export function Footer() {
             </nav>
           </div>
 
+          {/* Legal & Trust */}
+          <div>
+            <h3 className="font-heading font-semibold text-lg mb-4">
+              Our Site
+            </h3>
+            <nav className="flex flex-col gap-2">
+              <Link href="/about">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">About Us</span>
+              </Link>
+              <Link href="/methodology">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">How We Review</span>
+              </Link>
+              <Link href="/contact">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Contact Us</span>
+              </Link>
+              <Link href="/privacy">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Privacy Policy</span>
+              </Link>
+              <Link href="/terms">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Terms of Service</span>
+              </Link>
+              <Link href="/disclosure">
+                <span className="text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer">Affiliate Disclosure</span>
+              </Link>
+            </nav>
+          </div>
+
           {/* Popular Brands */}
           <div>
             <h3 className="font-heading font-semibold text-lg mb-4">

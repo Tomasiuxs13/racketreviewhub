@@ -245,6 +245,40 @@ export default function RacketDetailPage() {
                         data-testid="text-review-content"
                         className="prose-headings:font-heading prose-headings:font-bold prose-h2:text-2xl prose-h3:text-xl prose-p:leading-relaxed prose-a:text-primary hover:prose-a:text-primary/80"
                       />
+
+                      {/* Author Bio Widget */}
+                      {author && (
+                        <div className="mt-12 pt-8 border-t border-border/50 not-prose">
+                          <div className="bg-muted/30 rounded-2xl p-6 sm:p-8 flex flex-col sm:flex-row gap-6 items-center sm:items-start text-center sm:text-left">
+                            <div className="h-24 w-24 shrink-0 rounded-full bg-primary/10 flex items-center justify-center text-primary overflow-hidden border-2 border-primary/20">
+                              {author.avatarUrl ? (
+                                <img src={author.avatarUrl} alt={author.name} className="w-full h-full object-cover" />
+                              ) : (
+                                <User className="h-10 w-10" />
+                              )}
+                            </div>
+                            <div className="flex-grow">
+                              <h3 className="font-heading font-bold text-xl mb-2 flex items-center justify-center sm:justify-start gap-2">
+                                {author.name}
+                                <span className="text-xs font-normal tracking-widest uppercase bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                                  Expert Reviewer
+                                </span>
+                              </h3>
+                              {author.bio && (
+                                <p className="text-muted-foreground text-sm leading-relaxed mb-4">
+                                  {author.bio}
+                                </p>
+                              )}
+                              <Button asChild variant="outline" size="sm" className="rounded-full">
+                                <Link href={`/authors/${author.slug}`}>
+                                  Read Full Profile
+                                </Link>
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                     </div>
                   ) : (
                     <div className="text-center py-10">
