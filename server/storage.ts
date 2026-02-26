@@ -102,10 +102,10 @@ export class MemStorage implements IStorage {
   private seedData() {
     // Sample author - a padel expert
     const defaultAuthor: InsertAuthor = {
-      name: "Carlos Rodrigues",
-      slug: "carlos-rodrigues",
-      bio: "Carlos Rodrigues is a professional padel player and coach with over 15 years of technical experience. Known for his deep understanding of racket materials and power dynamics, he has tested hundreds of rackets to provide the most honest, performance-driven reviews in the industry.",
-      avatarUrl: "/assets/authors/carlos-rodrigues-avatar.png",
+      name: "Carlos Rodriguez",
+      slug: "carlos-rodriguez",
+      bio: "Carlos Rodriguez is a professional padel player and coach with over 15 years of technical experience. Known for his deep understanding of racket materials and power dynamics, he has tested hundreds of rackets to provide the most honest, performance-driven reviews in the industry.",
+      avatarUrl: "/assets/authors/carlos-rodriguez-avatar.png",
     };
     const authorId = randomUUID();
     this.authors.set(authorId, { ...defaultAuthor, id: authorId, createdAt: new Date() } as Author);
