@@ -74,6 +74,7 @@ export const rackets = pgTable("rackets", {
   padelMarketFeedLastUpdated: timestamp("padel_market_feed_last_updated"), // timestamp of last Padel Market feed sync
   // AI Pipeline Storage
   researchBrief: text("research_brief"), // stores Perplexity/web search analysis
+  audioSummaryUrl: text("audio_summary_url"), // URL to the generated audio summary
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

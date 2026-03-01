@@ -456,7 +456,7 @@ export default function RacketsPage() {
                       <SheetHeader>
                         <SheetTitle>Filters</SheetTitle>
                       </SheetHeader>
-                      <div className="mt-6 pb-6 overflow-y-auto">
+                      <div className="mt-6 pb-6 overflow-y-auto h-[calc(100vh-5rem)]">
                         <FilterContent />
                       </div>
                     </SheetContent>

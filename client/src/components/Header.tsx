@@ -312,6 +312,17 @@ export function Header() {
               )}
             </nav>
 
+            {/* Quiz CTA */}
+            <Link href="/quiz">
+              <div
+                className="px-4 py-3 rounded-md text-sm font-semibold transition-colors hover-elevate cursor-pointer flex items-center gap-2 text-primary border border-primary/20 bg-primary/5"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Star className="h-4 w-4 fill-primary/20" />
+                {t("header.quizButton")}
+              </div>
+            </Link>
+
             <LanguageSwitcher variant="select" className="pt-2" />
           </div>
         )}

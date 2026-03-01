@@ -148,7 +148,7 @@ export default function ComparisonPage() {
       <div className="min-h-screen bg-background">
         <div className="max-w-7xl mx-auto px-4 py-8">
           <Skeleton className="h-10 w-48 mb-8" />
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <Skeleton className="h-96" />
             <Skeleton className="h-96" />
           </div>
@@ -262,7 +262,7 @@ export default function ComparisonPage() {
           </div>
 
           <div className="overflow-x-auto pb-8 -mx-4 px-4 sm:mx-0 sm:px-0 no-scrollbar">
-            <div className="min-w-[1000px] grid gap-1">
+            <div className="min-w-[640px] grid gap-1">
               {/* Header Grid */}
               <div className="grid items-stretch" style={{ gridTemplateColumns: gridTemplate }}>
                 {/* Spacer for label column */}
