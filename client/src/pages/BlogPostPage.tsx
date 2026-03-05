@@ -39,8 +39,12 @@ export default function BlogPostPage() {
   const canonicalPath = post ? `/blog/${post.slug}` : "/blog";
   const seoData = {
     title: post?.title,
-    description: post?.excerpt,
-    image: post?.featuredImage,
+    description: post
+      ? (post.excerpt && post.excerpt.length > 30 && !/^author:\s/i.test(post.excerpt)
+        ? post.excerpt
+        : `${post.title}. In-depth padel article with expert analysis and practical advice.`)
+      : "Latest padel news, tips, and expert advice",
+    image: post?.featuredImage || undefined,
     url: canonicalPath,
     canonical: canonicalPath,
     type: "article" as const,

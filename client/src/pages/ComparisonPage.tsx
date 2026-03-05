@@ -206,7 +206,7 @@ export default function ComparisonPage() {
               <div className="font-black text-xs uppercase text-primary tracking-widest pl-4 border-r mr-6 h-full flex items-center">Compare</div>
               {rackets.map(r => (
                 <div key={r.id} className="flex items-center gap-3 px-4 min-w-[200px] border-r border-border/30 last:border-r-0">
-                  <img src={getOptimizedImageUrl(r.imageUrl || "", 80)} className="w-8 h-8 object-contain" alt="" />
+                  <img src={getOptimizedImageUrl(r.imageUrl || "", 80)} className="w-8 h-8 object-contain" alt={`${r.brand} ${r.model}`} />
                   <div className="min-w-0">
                     <p className="font-bold text-xs truncate uppercase tracking-tighter leading-none mb-1">{r.model}</p>
                     <p className="text-[10px] font-black text-primary bg-primary/10 rounded px-1 w-fit">SCORE: {r.overallRating}</p>
@@ -341,7 +341,7 @@ export default function ComparisonPage() {
                               onClick={() => handleAddRacket(getRacketSlug(r))}
                               className="w-full flex items-center gap-3 p-2 rounded hover:bg-primary/5 transition-colors text-xs font-bold"
                             >
-                              <img src={getOptimizedImageUrl(r.imageUrl || "", 100)} className="w-6 h-6 object-contain" alt="" />
+                              <img src={getOptimizedImageUrl(r.imageUrl || "", 100)} className="w-6 h-6 object-contain" alt={`${r.brand} ${r.model}`} />
                               <span className="truncate">{r.brand} {r.model}</span>
                             </button>
                           ))}

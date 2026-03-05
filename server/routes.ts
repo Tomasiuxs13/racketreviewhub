@@ -154,6 +154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "Allow: /",
       "Disallow: /api/",
       "Disallow: /admin",
+      "Disallow: /login",
+      "Disallow: /signup",
       "",
       `Sitemap: ${siteUrl}/sitemap.xml`,
     ].join("\n");

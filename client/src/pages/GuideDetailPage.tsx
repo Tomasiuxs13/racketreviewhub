@@ -38,7 +38,11 @@ export default function GuideDetailPage() {
   const canonicalPath = guide ? `/guides/${guide.slug}` : "/guides";
   const seoData = {
     title: guide ? guide.title : "Padel Racket Guide",
-    description: guide ? guide.excerpt : "Expert padel racket buying guides and advice",
+    description: guide
+      ? (guide.excerpt && guide.excerpt.length > 30 && !/^author:\s/i.test(guide.excerpt)
+        ? guide.excerpt
+        : `${guide.title}. Expert padel guide with tips and buying advice for all levels.`)
+      : "Expert padel racket buying guides and advice",
     image: guide?.featuredImage || undefined,
     url: canonicalPath,
     canonical: canonicalPath,

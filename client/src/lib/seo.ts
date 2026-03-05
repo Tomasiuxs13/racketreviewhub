@@ -36,13 +36,12 @@ export function getOgLocale(locale: string): string {
 }
 
 export function localizedUrl(path = "", locale = "en"): string {
-  const url = new URL(absoluteUrl(path || "/"));
+  // Use path-prefix format (/es/rackets/slug) to match sitemap and server-side seoInjector
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
   if (locale === "en") {
-    url.searchParams.delete("lang");
-  } else {
-    url.searchParams.set("lang", locale);
+    return absoluteUrl(cleanPath);
   }
-  return url.toString();
+  return absoluteUrl(`/${locale}${cleanPath}`);
 }
 
 export function buildHrefLangAlternates(path = "", locales: string[]) {

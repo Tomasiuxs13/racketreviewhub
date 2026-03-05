@@ -93,6 +93,38 @@ function escapeAttr(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
+/** Known generic/fallback descriptions that should not be reused as page-specific meta descriptions */
+const GENERIC_DESCRIPTIONS = [
+  "expert padel racket reviews with detailed ratings, best prices, and buying guides for players of all levels.",
+  "expert padel racket reviews with detailed ratings, performance analysis, and the best prices. compare top rackets from leading brands and find your perfect match.",
+  "expert padel racket buying guides and advice",
+  "expert padel racket reviews, comparisons, and buying guides. find the best padel racket for your playing style and skill level.",
+];
+
+/** Check whether an excerpt is usable as a unique meta description */
+function isUsableExcerpt(excerpt: string | null | undefined): boolean {
+  if (!excerpt || excerpt.trim().length < 30) return false;
+  const lower = excerpt.trim().toLowerCase();
+  // Reject known generic fallbacks
+  if (GENERIC_DESCRIPTIONS.some(g => lower === g || lower.startsWith(g))) return false;
+  // Reject "Author: ..." strings
+  if (/^author:\s/i.test(excerpt.trim())) return false;
+  return true;
+}
+
+/** Generate a fallback meta description for a guide page */
+function buildGuideDescription(guide: { title: string; category?: string | null }): string {
+  const category = guide.category ? ` covering ${guide.category}` : "";
+  const base = `${guide.title}${category}. Expert padel guide with tips and buying advice for all levels.`;
+  return base.length > 160 ? base.slice(0, 157) + "..." : base;
+}
+
+/** Generate a fallback meta description for a blog post */
+function buildBlogDescription(post: { title: string }): string {
+  const base = `${post.title}. In-depth padel article with expert analysis and practical advice.`;
+  return base.length > 160 ? base.slice(0, 157) + "..." : base;
+}
+
 function buildRacketSlug(brand: string, model: string): string {
   const lower = model.toLowerCase();
   const brandLower = brand.toLowerCase();
@@ -435,9 +467,12 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
       if (guide) {
         const guideCanonicalPath = `/guides/${guide.slug}`;
         const guideUrl = locale === "en" ? `${SITE_URL}${guideCanonicalPath}` : `${SITE_URL}/${locale}${guideCanonicalPath}`;
+        const guideDescription = isUsableExcerpt(guide.excerpt)
+          ? guide.excerpt
+          : buildGuideDescription(guide);
         return {
           title: `${guide.title} - Padel Racket Reviews`,
-          description: guide.excerpt,
+          description: guideDescription,
           canonical: guideUrl,
           ogType: "article",
           ogImage: guide.featuredImage || undefined,
@@ -454,9 +489,12 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
       if (post) {
         const blogCanonicalPath = `/blog/${post.slug}`;
         const blogUrl = locale === "en" ? `${SITE_URL}${blogCanonicalPath}` : `${SITE_URL}/${locale}${blogCanonicalPath}`;
+        const blogDescription = isUsableExcerpt(post.excerpt)
+          ? post.excerpt
+          : buildBlogDescription(post);
         return {
           title: `${post.title} - Padel Racket Reviews`,
-          description: post.excerpt,
+          description: blogDescription,
           canonical: blogUrl,
           ogType: "article",
           ogImage: post.featuredImage || undefined,
@@ -515,6 +553,92 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
         ogType: "website",
         hreflangTags: buildHreflangTags("/quiz"),
       };
+    }
+
+    if (resourcePath === "/blog") {
+      return {
+        title: "Padel Blog - News, Tips & Insights",
+        description: "Latest news, tips, and insights from the padel world. Expert advice, equipment reviews, and buying guides to help you improve your game.",
+        canonical: locale === "en" ? `${SITE_URL}/blog` : `${SITE_URL}/${locale}/blog`,
+        ogType: "website",
+        hreflangTags: buildHreflangTags("/blog"),
+      };
+    }
+
+    if (resourcePath === "/about") {
+      return {
+        title: "About Padel Racket Reviews - Our Mission & Methodology",
+        description: "Learn about Padel Racket Reviews — our mission to provide unbiased, data-driven racket reviews and help players find the perfect racket.",
+        canonical: locale === "en" ? `${SITE_URL}/about` : `${SITE_URL}/${locale}/about`,
+        ogType: "website",
+        hreflangTags: buildHreflangTags("/about"),
+      };
+    }
+
+    if (resourcePath === "/contact") {
+      return {
+        title: "Contact Us - Padel Racket Reviews",
+        description: "Get in touch with the Padel Racket Reviews team. Questions about rackets, reviews, partnerships, or feedback — we'd love to hear from you.",
+        canonical: locale === "en" ? `${SITE_URL}/contact` : `${SITE_URL}/${locale}/contact`,
+        ogType: "website",
+        hreflangTags: buildHreflangTags("/contact"),
+      };
+    }
+
+    if (resourcePath === "/methodology") {
+      return {
+        title: "Our Review Methodology - Padel Racket Reviews",
+        description: "How we test and rate padel rackets. Our transparent methodology covers power, control, maneuverability, sweet spot, and rebound ratings.",
+        canonical: locale === "en" ? `${SITE_URL}/methodology` : `${SITE_URL}/${locale}/methodology`,
+        ogType: "website",
+        hreflangTags: buildHreflangTags("/methodology"),
+      };
+    }
+
+    // Legal pages
+    const legalMatch = resourcePath.match(/^\/(disclaimer|cookie-policy|privacy-policy|terms)$/);
+    if (legalMatch) {
+      const legalPage = legalMatch[1];
+      const legalTitles: Record<string, string> = {
+        "disclaimer": "Disclaimer - Padel Racket Reviews",
+        "cookie-policy": "Cookie Policy - Padel Racket Reviews",
+        "privacy-policy": "Privacy Policy - Padel Racket Reviews",
+        "terms": "Terms of Service - Padel Racket Reviews",
+      };
+      const legalDescriptions: Record<string, string> = {
+        "disclaimer": "Important disclaimers regarding affiliate links, health information, and accuracy of content on Padel Racket Reviews.",
+        "cookie-policy": "How Padel Racket Reviews uses cookies and similar technologies. Manage your preferences and learn about our data practices.",
+        "privacy-policy": "Privacy policy for Padel Racket Reviews. Learn how we collect, use, and protect your personal data.",
+        "terms": "Terms of service governing the use of Padel Racket Reviews website and services.",
+      };
+      const legalCanonicalPath = `/${legalPage}`;
+      return {
+        title: legalTitles[legalPage] || `${legalPage} - Padel Racket Reviews`,
+        description: legalDescriptions[legalPage] || `Legal information for Padel Racket Reviews.`,
+        canonical: locale === "en" ? `${SITE_URL}${legalCanonicalPath}` : `${SITE_URL}/${locale}${legalCanonicalPath}`,
+        ogType: "website",
+        hreflangTags: buildHreflangTags(legalCanonicalPath),
+      };
+    }
+
+    // Author detail page: /authors/:slug
+    const authorMatch = resourcePath.match(/^\/authors\/([^/]+)$/);
+    if (authorMatch) {
+      const author = await storage.getAuthor(authorMatch[1]);
+      if (author) {
+        const authorCanonicalPath = `/authors/${author.slug}`;
+        const authorUrl = locale === "en" ? `${SITE_URL}${authorCanonicalPath}` : `${SITE_URL}/${locale}${authorCanonicalPath}`;
+        return {
+          title: `${author.name} - Author at Padel Racket Reviews`,
+          description: author.bio
+            ? (author.bio.length > 160 ? author.bio.slice(0, 157) + "..." : author.bio)
+            : `Read expert padel articles and reviews by ${author.name} on Padel Racket Reviews.`,
+          canonical: authorUrl,
+          ogType: "article",
+          ogImage: author.avatarUrl || undefined,
+          hreflangTags: buildHreflangTags(authorCanonicalPath),
+        };
+      }
     }
 
     return null;

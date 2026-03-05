@@ -62,7 +62,11 @@ export async function setupVite(app: Express, server: Server) {
 
       // Inject server-side SEO meta tags for crawlers
       const urlPath = url.split("?")[0];
-      const seoMeta = await resolveSeoMeta(urlPath);
+      // Support ?lang= query param by converting to path prefix for resolveSeoMeta
+      const urlParams = new URLSearchParams(url.split("?")[1] || "");
+      const langParam = urlParams.get("lang");
+      const seoPath = langParam && langParam !== "en" ? `/${langParam}${urlPath}` : urlPath;
+      const seoMeta = await resolveSeoMeta(seoPath);
       if (seoMeta) {
         template = injectSeoMeta(template, seoMeta);
       }
@@ -112,7 +116,11 @@ export function serveStatic(app: Express) {
   app.use("*", async (req, res) => {
     try {
       const urlPath = req.originalUrl.split("?")[0];
-      const seoMeta = await resolveSeoMeta(urlPath);
+      // Support ?lang= query param by converting to path prefix for resolveSeoMeta
+      const urlParams = new URLSearchParams(req.originalUrl.split("?")[1] || "");
+      const langParam = urlParams.get("lang");
+      const seoPath = langParam && langParam !== "en" ? `/${langParam}${urlPath}` : urlPath;
+      const seoMeta = await resolveSeoMeta(seoPath);
       const headers = {
         "Content-Type": "text/html",
         "Cache-Control": "no-cache, no-store, must-revalidate",
