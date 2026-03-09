@@ -163,6 +163,7 @@ function hasChanged(oldValue: string | null | undefined, newValue: string | null
  */
 async function processProduct(
   product: CjFeedProduct,
+  processedRackets: Map<string, number>,
   options: { generateRatings?: boolean; generateReviews?: boolean } = {}
 ): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; feedProductId?: string; error?: string }> {
   const { generateRatings = true, generateReviews = true } = options;
@@ -241,6 +242,22 @@ async function processProduct(
       // Check if racket needs feed_product_id linked (important for stock tracking)
       const needsFeedIdLink = !existingRacket.feedProductId && feedProductId;
 
+      // Check if we already processed this racket in THIS sync run
+      const previousBestPriceStr = processedRackets.get(existingRacket.id);
+      const isFirstTimeThisRun = previousBestPriceStr === undefined;
+      const previousBestPrice = previousBestPriceStr ?? Infinity;
+      const isBetterPriceThisRun = currentPrice > 0 && currentPrice < previousBestPrice;
+
+      if (!isFirstTimeThisRun && !isBetterPriceThisRun) {
+        // We already processed a cheaper/equal variant of this racket during this sync.
+        // Skip updating link and price, but we don't want to skip stock updates.
+        // If the ONLY things that changed were price/link, then do nothing.
+        if (!originalPriceChanged && !shouldUpdateImage && !wasOutOfStock && !needsFeedIdLink) {
+          console.log(`[CJ-Processor] Skipped variant: "${product.TITLE}" (€${newCurrentPrice}) - already found better/equal variant this run.`);
+          return { action: "unchanged", feedProductId };
+        }
+      }
+
       // If nothing has changed and already in stock and has feed_product_id, skip the update entirely
       if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage && !wasOutOfStock && !needsFeedIdLink) {
         console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - DB Price: €${normalizePrice(existingRacket.currentPrice)}, Feed Price: €${newCurrentPrice} (no update needed)`);
@@ -265,25 +282,24 @@ async function processProduct(
         changes.push(`feed product ID linked`);
       }
 
-      // Only update price if CJ price is lower than or equal to existing (respect "lowest price wins")
-      const newPriceNum = parseFloat(newCurrentPrice);
-      const existingPriceNum = parseFloat(normalizePrice(existingRacket.currentPrice)) || 0;
-      if (priceChanged && (existingPriceNum === 0 || newPriceNum <= existingPriceNum)) {
-        updateData.currentPrice = newCurrentPrice;
-        changes.push(`price: €${normalizePrice(existingRacket.currentPrice)} → €${newCurrentPrice}`);
-      } else if (priceChanged && newPriceNum > existingPriceNum) {
-        console.log(`[CJ-Processor] Price skipped for ${brand} ${model}: CJ price €${newCurrentPrice} is higher than current price €${normalizePrice(existingRacket.currentPrice)}`);
-      }
+      // Only apply price/link updates if it's the best variant we've seen this run
+      if (isFirstTimeThisRun || isBetterPriceThisRun) {
+        if (currentPrice > 0) processedRackets.set(existingRacket.id, currentPrice);
 
-      if (originalPriceChanged && newOriginalPrice) {
-        updateData.originalPrice = newOriginalPrice;
-        changes.push(`original price updated`);
-      }
+        if (priceChanged) {
+          updateData.currentPrice = newCurrentPrice;
+          changes.push(`price: €${normalizePrice(existingRacket.currentPrice)} → €${newCurrentPrice}`);
+        }
 
-      // Always update affiliate link from feed to keep it fresh (links change over time)
-      if (linkChanged) {
-        updateData.affiliateLink = newAffiliateLink;
-        changes.push(`affiliate link updated`);
+        if (originalPriceChanged && newOriginalPrice) {
+          updateData.originalPrice = newOriginalPrice;
+          changes.push(`original price updated`);
+        }
+
+        if (linkChanged) {
+          updateData.affiliateLink = newAffiliateLink;
+          changes.push(`affiliate link updated`);
+        }
       }
 
       if (feedProductIdChanged) {
@@ -457,6 +473,9 @@ export async function processCjFeed(
   // Track all feed product IDs that were successfully processed
   const processedFeedProductIds: string[] = [];
 
+  // Map to track the best (lowest) price we've seen for each racket ID during this sync run
+  const processedRackets = new Map<string, number>();
+
   console.log(`[CJ-Processor] Starting to process ${products.length} products...`);
 
   // Process in batches to avoid overwhelming the API
@@ -465,7 +484,7 @@ export async function processCjFeed(
 
     for (const product of batch) {
       try {
-        const { action, feedProductId, error } = await processProduct(product, { generateRatings, generateReviews });
+        const { action, feedProductId, error } = await processProduct(product, processedRackets, { generateRatings, generateReviews });
         result.totalProcessed++;
 
         // Track successfully processed feed product IDs

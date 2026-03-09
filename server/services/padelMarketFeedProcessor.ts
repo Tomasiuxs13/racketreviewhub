@@ -118,7 +118,8 @@ function getDefaultRatings(brand: string): {
  * Process a single Padel Market feed product
  */
 async function processProduct(
-  product: PadelMarketFeedProduct
+  product: PadelMarketFeedProduct,
+  processedRackets: Map<string, number>
 ): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; error?: string }> {
   try {
     // Extract brand, model, and year from product name
@@ -251,7 +252,7 @@ async function processProduct(
 
     const now = new Date();
     const feedProductId = product.aw_product_id || product.merchant_product_id || "";
-    const price = parsePadelMarketPrice(product.store_price || product.search_price || "0");
+    const price = parsePadelMarketPrice(product.store_price || product.search_price || "0") ?? 0;
 
     // Helper function to parse current price from racket
     const parseCurrentPrice = (priceStr: string | null | undefined): number => {
@@ -261,8 +262,10 @@ async function processProduct(
     };
 
     if (existingRacket) {
-      // UPDATE EXISTING RACKET: Only update affiliate link and price (never delete)
-      // Preserve existing affiliate link if it was manually set
+      // Log which feed product matched which DB racket
+      console.log(`[PadelMarket-Processor] Matched: "${product.product_name}" (€${price.toFixed(2)}) → DB racket: ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year}`);
+
+      // UPDATE EXISTING RACKET
       const updateData: {
         padelMarketAffiliateLink?: string;
         padelMarketInStock: boolean;
@@ -276,11 +279,27 @@ async function processProduct(
         padelMarketFeedLastUpdated: now,
       };
 
-      // Only update price if:
-      // 1. Padel Market has a valid price (> 0), AND
-      // 2. Either the racket has no price (0 or null/undefined), OR Padel Market price is lower
+      // Check if we already processed this racket in THIS sync run
+      const previousBestPriceStr = processedRackets.get(existingRacket.id);
+      const isFirstTimeThisRun = previousBestPriceStr === undefined;
+      const previousBestPrice = previousBestPriceStr ?? Infinity;
+      const isBetterPriceThisRun = price > 0 && price < previousBestPrice;
+
+      if (!isFirstTimeThisRun && !isBetterPriceThisRun) {
+        // We already processed a cheaper/equal variant of this racket during this sync.
+        // Skip updating link and price to avoid overwriting with a worse variant.
+        console.log(`[PadelMarket-Processor] Skipped variant: "${product.product_name}" (€${price.toFixed(2)}) - already found better/equal variant this run.`);
+        return { action: "unchanged" };
+      }
+
+      // Record this price as the best for this run
+      if (price > 0) {
+        processedRackets.set(existingRacket.id, price);
+      }
+
+      // Always update price to current feed price (keep it fresh and accurate)
       const currentPriceValue = parseCurrentPrice(existingRacket.currentPrice);
-      if (price > 0 && (currentPriceValue === 0 || price < currentPriceValue)) {
+      if (price > 0) {
         updateData.currentPrice = price.toFixed(2);
 
         // Also set originalPrice from Padel Market feed (rrp_price or product_price_old) if available
@@ -294,7 +313,7 @@ async function processProduct(
         }
       }
 
-      // Always update affiliate link from feed to keep it fresh (Awin deep links change regularly)
+      // Always update link to this one since we proved above it's the best seen this run
       updateData.padelMarketAffiliateLink = product.aw_deep_link;
 
       // Check if anything actually changed
@@ -325,13 +344,9 @@ async function processProduct(
       }
 
       const changes = [];
-      if (updateData.padelMarketAffiliateLink) changes.push("link added");
+      if (updateData.padelMarketAffiliateLink) changes.push("link updated");
       if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) {
-        const oldPrice = parseCurrentPrice(existingRacket.currentPrice);
-        changes.push(`price: €${oldPrice.toFixed(2)} → €${price.toFixed(2)} (lower price from Padel Market)`);
-      } else if (price > 0 && currentPriceValue > 0 && price >= currentPriceValue) {
-        // Log when price is skipped because it's higher
-        console.log(`[PadelMarket-Processor] Price skipped for ${existingRacket.brand} ${existingRacket.model} ${existingRacket.year}: Padel Market price €${price.toFixed(2)} is higher than current price €${currentPriceValue.toFixed(2)}`);
+        changes.push(`price: €${currentPriceValue.toFixed(2)} → €${price.toFixed(2)}`);
       }
       if (existingRacket.padelMarketInStock !== updateData.padelMarketInStock) changes.push("stock status updated");
 
@@ -351,7 +366,8 @@ async function processProduct(
 
       if (potentialDuplicate) {
         // Found a potential duplicate, update it instead
-        // Preserve existing affiliate link if it was manually set
+        console.log(`[PadelMarket-Processor] Matched (dup-check): "${product.product_name}" (€${price.toFixed(2)}) → DB racket: ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}`);
+
         const updateData: {
           padelMarketAffiliateLink?: string;
           padelMarketInStock: boolean;
@@ -365,11 +381,24 @@ async function processProduct(
           padelMarketFeedLastUpdated: now,
         };
 
-        // Only update price if:
-        // 1. Padel Market has a valid price (> 0), AND
-        // 2. Either the racket has no price (0 or null/undefined), OR Padel Market price is lower
+        // Track that we processed this duplicate
+        const previousBestPriceStr = processedRackets.get(potentialDuplicate.id);
+        const isFirstTimeThisRun = previousBestPriceStr === undefined;
+        const previousBestPrice = previousBestPriceStr ?? Infinity;
+        const isBetterPriceThisRun = price > 0 && price < previousBestPrice;
+
+        if (!isFirstTimeThisRun && !isBetterPriceThisRun) {
+          console.log(`[PadelMarket-Processor] Skipped dup variant: "${product.product_name}" (€${price.toFixed(2)})`);
+          return { action: "unchanged" };
+        }
+
+        if (price > 0) {
+          processedRackets.set(potentialDuplicate.id, price);
+        }
+
+        // Always update price to current feed price
         const currentPriceValue = parseCurrentPrice(potentialDuplicate.currentPrice);
-        if (price > 0 && (currentPriceValue === 0 || price < currentPriceValue)) {
+        if (price > 0) {
           updateData.currentPrice = price.toFixed(2);
 
           // Also set originalPrice from Padel Market feed if available
@@ -383,7 +412,7 @@ async function processProduct(
           }
         }
 
-        // Always update affiliate link from feed to keep it fresh
+        // Always update link (proved best this run)
         updateData.padelMarketAffiliateLink = product.aw_deep_link;
 
         await storage.updateRacket(potentialDuplicate.id, updateData);
@@ -402,18 +431,13 @@ async function processProduct(
         }
 
         const duplicateChanges = [];
-        if (updateData.padelMarketAffiliateLink) duplicateChanges.push("link added");
+        if (updateData.padelMarketAffiliateLink) duplicateChanges.push("link updated");
         if (updateData.currentPrice && potentialDuplicate.currentPrice !== updateData.currentPrice) {
-          const oldPrice = parseCurrentPrice(potentialDuplicate.currentPrice);
-          duplicateChanges.push(`price: €${oldPrice.toFixed(2)} → €${price.toFixed(2)} (lower price from Padel Market)`);
-        } else if (price > 0 && currentPriceValue > 0 && price >= currentPriceValue) {
-          console.log(`[PadelMarket-Processor] Price skipped for ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}: Padel Market price €${price.toFixed(2)} is higher than current price €${currentPriceValue.toFixed(2)}`);
+          duplicateChanges.push(`price: €${currentPriceValue.toFixed(2)} → €${price.toFixed(2)}`);
         }
 
         if (duplicateChanges.length > 0) {
-          console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year} - ${duplicateChanges.join(", ")}`);
-        } else {
-          console.log(`[PadelMarket-Processor] Updated (duplicate check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year}`);
+          console.log(`[PadelMarket-Processor] Updated (dup-check): ${potentialDuplicate.brand} ${potentialDuplicate.model} ${potentialDuplicate.year} - ${duplicateChanges.join(", ")}`);
         }
         return { action: "updated" };
       }
@@ -501,8 +525,8 @@ function deduplicateProducts(products: PadelMarketFeedProduct[]): PadelMarketFee
       // Pick the one with lowest price
       // If prices are similar, prefer the one without "EXCLUSIVE", "EDITION", "SPECIAL" in name
       const sorted = group.sort((a, b) => {
-        const priceA = parsePadelMarketPrice(a.store_price || a.search_price || "0");
-        const priceB = parsePadelMarketPrice(b.store_price || b.search_price || "0");
+        const priceA = parsePadelMarketPrice(a.store_price || a.search_price || "0") ?? 0;
+        const priceB = parsePadelMarketPrice(b.store_price || b.search_price || "0") ?? 0;
 
         // First sort by price (lowest first)
         if (priceA !== priceB) {
@@ -568,10 +592,13 @@ export async function processPadelMarketFeed(
 
   console.log(`[PadelMarket-Processor] Starting to process ${deduplicatedProducts.length} products...`);
 
+  // Map to track the best (lowest) price we've seen for each racket ID during this sync run
+  const processedRackets = new Map<string, number>();
+
   // Process products
   for (const product of deduplicatedProducts) {
     try {
-      const { action, error } = await processProduct(product);
+      const { action, error } = await processProduct(product, processedRackets);
       result.totalProcessed++;
 
       // Track successfully processed feed product IDs
