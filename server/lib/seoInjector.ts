@@ -283,9 +283,10 @@ function buildBlogCrawlableHtml(post: any): string {
 /**
  * Resolve SEO metadata for a given URL path.
  * Handles both English paths (/rackets/:slug) and locale-prefixed paths (/es/rackets/:slug).
+ * Returns { is404: true } if the requested item is not found in the database.
  * Returns null if no special SEO data is needed (uses default HTML).
  */
-export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
+export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: true } | null> {
   try {
     // Detect and strip locale prefix from path
     const locale = extractLocaleFromPath(path) ?? "en";
@@ -436,6 +437,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           ],
         };
       }
+      return { is404: true };
     }
 
     // Brand detail page: /brands/:slug
@@ -458,6 +460,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           hreflangTags: buildHreflangTags(brandCanonicalPath),
         };
       }
+      return { is404: true };
     }
 
     // Guide detail page: /guides/:slug
@@ -480,6 +483,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           hreflangTags: buildHreflangTags(guideCanonicalPath),
         };
       }
+      return { is404: true };
     }
 
     // Blog post page: /blog/:slug
@@ -502,6 +506,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           hreflangTags: buildHreflangTags(blogCanonicalPath),
         };
       }
+      return { is404: true };
     }
 
     // Static pages
@@ -639,6 +644,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | null> {
           hreflangTags: buildHreflangTags(authorCanonicalPath),
         };
       }
+      return { is404: true };
     }
 
     return null;

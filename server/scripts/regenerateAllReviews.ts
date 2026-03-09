@@ -2,6 +2,16 @@ import "dotenv/config";
 import { storage } from "../storage.js";
 import { performRacketResearch, estimateRacketRatings, generateRacketReview } from "../lib/openai.js";
 import { checkPublishQualityGates } from "../lib/qualityGates.js";
+import type { Racket } from "@shared/schema";
+
+// Helper to build URL-friendly slugs for rackets
+function getRacketSlug(racket: Pick<Racket, "brand" | "model">): string {
+    const brandLower = racket.brand.toLowerCase();
+    const modelLower = racket.model.toLowerCase();
+    const modelStartsWithBrand = modelLower.startsWith(brandLower);
+    const base = modelStartsWithBrand ? modelLower : `${brandLower} ${modelLower}`;
+    return base.replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
 
 const DELAY_BETWEEN_RACKETS_MS = 5000; // 5 seconds between rackets
 
@@ -189,15 +199,27 @@ async function run() {
                     })
                     .filter(s => s.score > 0)
                     .sort((a, b) => b.score - a.score);
-                const competitors = scored.slice(0, 2).map(s => `${s.racket.brand} ${s.racket.model}`);
+                // Fetch recent guides for internal linking
+                const recentGuides = await storage.getRecentGuides(3);
+                const internalLinks = recentGuides.map(
+                    guide => `<a href="/guides/${guide.slug}">${guide.title}</a>`
+                );
+
+                const competitors = scored.slice(0, 2).map(s =>
+                    `<a href="/rackets/${getRacketSlug(s.racket)}">${s.racket.brand} ${s.racket.model}</a>`
+                );
 
                 if (competitors.length > 0) {
-                    console.log(`   Found competitors for comparison: ${competitors.join(", ")}`);
+                    console.log(`   Found competitors for comparison: ${scored.slice(0, 2).map(s => `${s.racket.brand} ${s.racket.model}`).join(", ")}`);
+                }
+                if (internalLinks.length > 0) {
+                    console.log(`   Found ${internalLinks.length} internal links to guides.`);
                 }
 
                 console.log("   (Waiting for OpenRouter LLM Review Generation & Translations...)");
                 const reviewResult = await withRetry(() => generateRacketReview(perfectlyUpdatedRacket, {
                     competitors,
+                    internalLinks,
                     keywords: researchKeywords,
                     targetLocales: ["es", "pt", "it", "fr"]
                 }));

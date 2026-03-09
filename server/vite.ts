@@ -67,12 +67,18 @@ export async function setupVite(app: Express, server: Server) {
       const langParam = urlParams.get("lang");
       const seoPath = langParam && langParam !== "en" ? `/${langParam}${urlPath}` : urlPath;
       const seoMeta = await resolveSeoMeta(seoPath);
+      let statusCode = 200;
+
       if (seoMeta) {
-        template = injectSeoMeta(template, seoMeta);
+        if ("is404" in seoMeta && seoMeta.is404) {
+          statusCode = 404;
+        } else {
+          template = injectSeoMeta(template, seoMeta as Extract<typeof seoMeta, { title: string }>);
+        }
       }
 
       const page = await vite.transformIndexHtml(url, template);
-      res.status(200).set({ "Content-Type": "text/html" }).end(page);
+      res.status(statusCode).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
       next(e);
@@ -121,17 +127,25 @@ export function serveStatic(app: Express) {
       const langParam = urlParams.get("lang");
       const seoPath = langParam && langParam !== "en" ? `/${langParam}${urlPath}` : urlPath;
       const seoMeta = await resolveSeoMeta(seoPath);
+      let statusCode = 200;
+
       const headers = {
         "Content-Type": "text/html",
         "Cache-Control": "no-cache, no-store, must-revalidate",
         "Pragma": "no-cache",
         "Expires": "0",
       };
+
       if (seoMeta) {
-        const html = injectSeoMeta(indexHtml, seoMeta);
-        res.status(200).set(headers).end(html);
+        if ("is404" in seoMeta && seoMeta.is404) {
+          statusCode = 404;
+          res.status(statusCode).set(headers).end(indexHtml);
+        } else {
+          const html = injectSeoMeta(indexHtml, seoMeta as Extract<typeof seoMeta, { title: string }>);
+          res.status(statusCode).set(headers).end(html);
+        }
       } else {
-        res.status(200).set(headers).end(indexHtml);
+        res.status(statusCode).set(headers).end(indexHtml);
       }
     } catch {
       res.status(200).set({

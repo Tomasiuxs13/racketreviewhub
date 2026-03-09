@@ -313,10 +313,8 @@ function buildReviewTemplate(racket: Partial<Racket>, racketInfo: string, option
 <p>Be highly specific. Avoid vague statements like "great for players who value control". Instead: "If you are a recreational player who plays twice a week and is still developing your vibora, this racket's forgiving sweet spot will save you more points than a diamond-shaped power racket ever could."</p>`;
 
   const comparisonSection = options?.competitors?.length
-    ? `<h2>How It Compares</h2>
-<p>Provide an authoritative market comparison. Discuss where this racket sits in the ${racket.brand} lineup and the broader ${tier} market segment. You MUST directly compare it against these specific alternatives: ${options.competitors.join(", ")}. What does THIS racket do better than its direct competitors? What might competing options do better?</p>`
-    : `<h2>How It Compares</h2>
-<p>Provide an authoritative market comparison. Discuss where this racket sits within the broader ${tier} market segment. You MUST name 1 or 2 specific equivalent rackets from other major brands that an online shopper might also be considering. What does THIS racket do better than its direct competitors?</p>`;
+    ? `<h2>How It Compares</h2>\n<p>Provide an authoritative market comparison. Discuss where this racket sits in the ${racket.brand} lineup and the broader ${tier} market segment. You MUST directly compare it against these specific alternatives: ${options.competitors.join(", ")}. Use exactly the HTML link provided for each competitor when mentioning it. What does THIS racket do better than its direct competitors? What might competing options do better?</p>`
+    : `<h2>How It Compares</h2>\n<p>Provide an authoritative market comparison. Discuss where this racket sits within the broader ${tier} market segment. You MUST name 1 or 2 specific equivalent rackets from other major brands that an online shopper might also be considering. What does THIS racket do better than its direct competitors?</p>`;
 
   const faqSection = `<h2>Frequently Asked Questions</h2>
 <p>Answer exactly 4 questions using this EXACT HTML format for every Q&A pair:</p>
@@ -347,7 +345,11 @@ SEO OPTIMIZATION REQUIREMENTS:
   * "Is this racket better for power, control, or all-around play?"
   * "How does it compare against other ${tier} ${shape} rackets?"
 - Use natural language that would make this review a strong candidate for Google featured snippets.
-- Keep keyword usage natural and readable – never repeat phrases unnaturally just for SEO.`;
+- Keep keyword usage natural and readable – never repeat phrases unnaturally just for SEO.
+${options?.internalLinks?.length ? `\nINTERNAL LINKING REQUIREMENT:
+You MUST integrate the following exact HTML anchor tags naturally within your review (e.g., in the introduction, performance, or FAQ sections). Place them where they contextually make sense, substituting plain text mentions with these exact links:
+${options.internalLinks.map(link => `- ${link}`).join("\n")}
+` : ""}`;
 
   return `You are an expert, highly opinionated padel racket reviewer writing for an enthusiast audience. Write a unique, focused review article using ONLY the HTML structure provided below.
 
@@ -426,6 +428,7 @@ export interface ReviewGenerationOptions {
   targetLocales?: string[];
   skipTranslations?: boolean;
   competitors?: string[];
+  internalLinks?: string[];
   keywords?: string[];
 }
 
