@@ -221,10 +221,32 @@ async function processProduct(
       const newAffiliateLink = product.LINK;
       const newImageUrl = product.IMAGE_LINK || null;
 
+      // Find latest prices in history
+      const history = await storage.getPriceHistory(existingRacket.id);
+      let latestCjPrice = Infinity;
+      let latestPmPrice = Infinity;
+
+      for (let j = history.length - 1; j >= 0; j--) {
+        if (latestCjPrice === Infinity && history[j].source === "cj_feed") {
+          latestCjPrice = Number(history[j].price);
+        }
+        if (latestPmPrice === Infinity && history[j].source === "padel_market_feed") {
+          latestPmPrice = Number(history[j].price);
+        }
+        if (latestCjPrice !== Infinity && latestPmPrice !== Infinity) break;
+      }
+
+      const cjFeedPriceChanged = latestCjPrice === Infinity || Math.abs(latestCjPrice - currentPrice) > 0.01;
+
+      // Determine best overall price (ignoring out-of-stock sources)
+      const pmActivePrice = existingRacket.padelMarketInStock && latestPmPrice !== Infinity ? latestPmPrice : Infinity;
+      const bestAvailablePriceValue = Math.min(currentPrice, pmActivePrice);
+      const bestAvailablePriceStr = isFinite(bestAvailablePriceValue) ? bestAvailablePriceValue.toFixed(2) : existingRacket.currentPrice;
+
       // Check what has actually changed
       const priceChanged = hasChanged(
         normalizePrice(existingRacket.currentPrice),
-        newCurrentPrice
+        bestAvailablePriceStr
       );
       const originalPriceChanged = hasChanged(
         normalizePrice(existingRacket.originalPrice),
@@ -259,7 +281,7 @@ async function processProduct(
       }
 
       // If nothing has changed and already in stock and has feed_product_id, skip the update entirely
-      if (!priceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage && !wasOutOfStock && !needsFeedIdLink) {
+      if (!priceChanged && !cjFeedPriceChanged && !originalPriceChanged && !linkChanged && !feedProductIdChanged && !shouldUpdateImage && !wasOutOfStock && !needsFeedIdLink) {
         console.log(`[CJ-Processor] Unchanged: ${brand} ${model} - DB Price: €${normalizePrice(existingRacket.currentPrice)}, Feed Price: €${newCurrentPrice} (no update needed)`);
         return { action: "unchanged", feedProductId };
       }
@@ -287,8 +309,8 @@ async function processProduct(
         if (currentPrice > 0) processedRackets.set(existingRacket.id, currentPrice);
 
         if (priceChanged) {
-          updateData.currentPrice = newCurrentPrice;
-          changes.push(`price: €${normalizePrice(existingRacket.currentPrice)} → €${newCurrentPrice}`);
+          updateData.currentPrice = bestAvailablePriceStr;
+          changes.push(`price: €${normalizePrice(existingRacket.currentPrice)} → €${bestAvailablePriceStr}`);
         }
 
         if (originalPriceChanged && newOriginalPrice) {
@@ -314,12 +336,12 @@ async function processProduct(
 
       await storage.updateRacket(existingRacket.id, updateData);
 
-      // Record price history when price changes
-      if (priceChanged && updateData.currentPrice) {
+      // Record price history when feed price changes
+      if (cjFeedPriceChanged || (isFirstTimeThisRun && !priceChanged && cjFeedPriceChanged)) {
         try {
           await storage.createPriceHistoryEntry({
             racketId: existingRacket.id,
-            price: updateData.currentPrice,
+            price: newCurrentPrice,
             source: "cj_feed",
           });
         } catch (e) {

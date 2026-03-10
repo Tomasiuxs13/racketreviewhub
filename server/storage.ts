@@ -1018,14 +1018,11 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   }
 
   async markOutOfStockExcept(feedProductIds: string[]): Promise<number> {
-    // Mark all rackets with feedProductId that are NOT in the provided list as out of stock
     const feedProductIdSet = new Set(feedProductIds);
     let count = 0;
 
     for (const [id, racket] of this.rackets.entries()) {
-      // Only mark out of stock if racket has a feedProductId (came from CJ feed)
-      // and it's not in the current feed
-      if (racket.feedProductId && !feedProductIdSet.has(racket.feedProductId) && racket.inStock !== false) {
+      if ((!racket.feedProductId || !feedProductIdSet.has(racket.feedProductId)) && racket.inStock !== false) {
         this.rackets.set(id, { ...racket, inStock: false, updatedAt: new Date() } as Racket);
         count++;
       }

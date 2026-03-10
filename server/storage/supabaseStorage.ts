@@ -95,6 +95,7 @@ export class SupabaseStorage implements IStorage {
         padelMarketFeedProductId: rackets.padelMarketFeedProductId,
         padelMarketFeedLastUpdated: rackets.padelMarketFeedLastUpdated,
         researchBrief: rackets.researchBrief,
+        audioSummaryUrl: rackets.audioSummaryUrl,
         createdAt: rackets.createdAt,
         updatedAt: rackets.updatedAt,
       })
@@ -345,27 +346,25 @@ export class SupabaseStorage implements IStorage {
   }
 
   async markOutOfStockExcept(feedProductIds: string[]): Promise<number> {
-    // Mark all rackets with feedProductId that are NOT in the provided list as out of stock
     if (feedProductIds.length === 0) {
-      // If no products in feed, mark all feed-linked rackets as out of stock
+      // If no products in feed, mark all rackets as out of stock for this feed provider
       const result = await db
         .update(rackets)
         .set({ inStock: false, updatedAt: new Date() })
-        .where(and(
-          sql`${rackets.feedProductId} IS NOT NULL`,
-          eq(rackets.inStock, true)
-        ))
+        .where(eq(rackets.inStock, true))
         .returning();
       return result.length;
     }
 
-    // Mark rackets with feedProductId not in the list as out of stock
+    // Mark rackets with feedProductId not in the list (or without one) as out of stock
     const result = await db
       .update(rackets)
       .set({ inStock: false, updatedAt: new Date() })
       .where(and(
-        sql`${rackets.feedProductId} IS NOT NULL`,
-        sql`${rackets.feedProductId} NOT IN (${sql.join(feedProductIds.map(id => sql`${id}`), sql`, `)})`,
+        or(
+          sql`${rackets.feedProductId} IS NULL`,
+          sql`${rackets.feedProductId} NOT IN (${sql.join(feedProductIds.map(id => sql`${id}`), sql`, `)})`
+        ),
         eq(rackets.inStock, true)
       ))
       .returning();

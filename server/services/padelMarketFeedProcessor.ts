@@ -297,10 +297,29 @@ async function processProduct(
         processedRackets.set(existingRacket.id, price);
       }
 
+      // Find latest prices to determine overall minimum currentPrice
+      const history = await storage.getPriceHistory(existingRacket.id);
+      let latestCjPrice = Infinity;
+      let latestPmPrice = Infinity;
+
+      for (let j = history.length - 1; j >= 0; j--) {
+        if (latestCjPrice === Infinity && history[j].source === "cj_feed") {
+          latestCjPrice = Number(history[j].price);
+        }
+        if (latestPmPrice === Infinity && history[j].source === "padel_market_feed") {
+          latestPmPrice = Number(history[j].price);
+        }
+        if (latestCjPrice !== Infinity && latestPmPrice !== Infinity) break;
+      }
+
+      const pmFeedPriceChanged = latestPmPrice === Infinity || Math.abs(latestPmPrice - price) > 0.01;
+      const cjActivePrice = existingRacket.inStock && latestCjPrice !== Infinity ? latestCjPrice : Infinity;
+
       // Always update price to current feed price (keep it fresh and accurate)
       const currentPriceValue = parseCurrentPrice(existingRacket.currentPrice);
       if (price > 0) {
-        updateData.currentPrice = price.toFixed(2);
+        const bestAvailablePriceValue = Math.min(price, cjActivePrice);
+        updateData.currentPrice = isFinite(bestAvailablePriceValue) ? bestAvailablePriceValue.toFixed(2) : price.toFixed(2);
 
         // Also set originalPrice from Padel Market feed (rrp_price or product_price_old) if available
         const rrpPrice = parsePadelMarketPrice(product.rrp_price);
@@ -321,7 +340,8 @@ async function processProduct(
         (updateData.padelMarketAffiliateLink && existingRacket.padelMarketAffiliateLink !== updateData.padelMarketAffiliateLink) ||
         existingRacket.padelMarketInStock !== updateData.padelMarketInStock ||
         existingRacket.padelMarketFeedProductId !== updateData.padelMarketFeedProductId ||
-        (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice);
+        (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) ||
+        pmFeedPriceChanged;
 
       if (!hasChanged) {
         return { action: "unchanged" };
@@ -330,12 +350,12 @@ async function processProduct(
       // Update the racket (only Padel Market fields and price - never delete or modify other fields)
       await storage.updateRacket(existingRacket.id, updateData);
 
-      // Record price history when price changes
-      if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) {
+      // Record price history when pm feed price changes
+      if (price > 0 && pmFeedPriceChanged) {
         try {
           await storage.createPriceHistoryEntry({
             racketId: existingRacket.id,
-            price: updateData.currentPrice,
+            price: price.toFixed(2),
             source: "padel_market_feed",
           });
         } catch (e) {
@@ -346,7 +366,7 @@ async function processProduct(
       const changes = [];
       if (updateData.padelMarketAffiliateLink) changes.push("link updated");
       if (updateData.currentPrice && existingRacket.currentPrice !== updateData.currentPrice) {
-        changes.push(`price: €${currentPriceValue.toFixed(2)} → €${price.toFixed(2)}`);
+        changes.push(`price: €${currentPriceValue.toFixed(2)} → €${updateData.currentPrice}`);
       }
       if (existingRacket.padelMarketInStock !== updateData.padelMarketInStock) changes.push("stock status updated");
 
@@ -396,10 +416,29 @@ async function processProduct(
           processedRackets.set(potentialDuplicate.id, price);
         }
 
-        // Always update price to current feed price
+        // Find latest prices
+        const historyDuplicate = await storage.getPriceHistory(potentialDuplicate.id);
+        let latestCjPriceDuplicate = Infinity;
+        let latestPmPriceDuplicate = Infinity;
+
+        for (let j = historyDuplicate.length - 1; j >= 0; j--) {
+          if (latestCjPriceDuplicate === Infinity && historyDuplicate[j].source === "cj_feed") {
+            latestCjPriceDuplicate = Number(historyDuplicate[j].price);
+          }
+          if (latestPmPriceDuplicate === Infinity && historyDuplicate[j].source === "padel_market_feed") {
+            latestPmPriceDuplicate = Number(historyDuplicate[j].price);
+          }
+          if (latestCjPriceDuplicate !== Infinity && latestPmPriceDuplicate !== Infinity) break;
+        }
+
+        const cjActivePriceDuplicate = potentialDuplicate.inStock && latestCjPriceDuplicate !== Infinity ? latestCjPriceDuplicate : Infinity;
+        const pmFeedPriceChangedDuplicate = latestPmPriceDuplicate === Infinity || Math.abs(latestPmPriceDuplicate - price) > 0.01;
+
+        // Always update price to minimum of active feeds
         const currentPriceValue = parseCurrentPrice(potentialDuplicate.currentPrice);
         if (price > 0) {
-          updateData.currentPrice = price.toFixed(2);
+          const bestAvailablePriceValue = Math.min(price, cjActivePriceDuplicate);
+          updateData.currentPrice = isFinite(bestAvailablePriceValue) ? bestAvailablePriceValue.toFixed(2) : price.toFixed(2);
 
           // Also set originalPrice from Padel Market feed if available
           const rrpPrice = parsePadelMarketPrice(product.rrp_price);
@@ -417,12 +456,12 @@ async function processProduct(
 
         await storage.updateRacket(potentialDuplicate.id, updateData);
 
-        // Record price history when price changes
-        if (updateData.currentPrice && potentialDuplicate.currentPrice !== updateData.currentPrice) {
+        // Record price history when pm feed price changes
+        if (price > 0 && pmFeedPriceChangedDuplicate) {
           try {
             await storage.createPriceHistoryEntry({
               racketId: potentialDuplicate.id,
-              price: updateData.currentPrice,
+              price: price.toFixed(2),
               source: "padel_market_feed",
             });
           } catch (e) {
@@ -433,7 +472,7 @@ async function processProduct(
         const duplicateChanges = [];
         if (updateData.padelMarketAffiliateLink) duplicateChanges.push("link updated");
         if (updateData.currentPrice && potentialDuplicate.currentPrice !== updateData.currentPrice) {
-          duplicateChanges.push(`price: €${currentPriceValue.toFixed(2)} → €${price.toFixed(2)}`);
+          duplicateChanges.push(`price: €${currentPriceValue.toFixed(2)} → €${updateData.currentPrice}`);
         }
 
         if (duplicateChanges.length > 0) {
