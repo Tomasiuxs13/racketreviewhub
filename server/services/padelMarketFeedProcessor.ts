@@ -126,10 +126,18 @@ async function processProduct(
     // Use brand_name from feed if available (more reliable)
     const extracted = extractBrandModelYear(product.product_name, product.brand_name);
 
-    // Skip pickleball rackets
+    // Skip pickleball rackets and accessories
     const textToCheck = `${product.product_name} ${product.description || ""} ${product.product_short_description || ""}`.toLowerCase();
-    if (textToCheck.includes('pickleball')) {
-      return { action: "skipped", error: "Pickleball racket ignored" };
+    const titleLower = product.product_name.toLowerCase();
+
+    if (
+      textToCheck.includes('pickleball') ||
+      titleLower.includes('bag') || titleLower.includes('backpack') || titleLower.includes('grip') ||
+      titleLower.includes('overgrip') || titleLower.includes('protector') || titleLower.includes('shirt') ||
+      titleLower.includes('short') || titleLower.includes('shoe') || titleLower.includes('socks') ||
+      titleLower.includes('balls') || titleLower.includes('cap') || titleLower.includes('wristband') || titleLower.includes('pelotas') || titleLower.includes('zapatillas') || titleLower.includes('mochila') || titleLower.includes('paletero') || titleLower.includes('calcetines') || titleLower.includes('camiseta') || titleLower.includes('pantalon')
+    ) {
+      return { action: "skipped", error: "Non-racket item ignored based on keywords" };
     }
 
     if (!extracted.brand || !extracted.model) {
@@ -253,6 +261,11 @@ async function processProduct(
     const now = new Date();
     const feedProductId = product.aw_product_id || product.merchant_product_id || "";
     const price = parsePadelMarketPrice(product.store_price || product.search_price || "0") ?? 0;
+
+    // Skip cheap items that are definitely not padel rackets (e.g. accessories that missed keyword check)
+    if (price > 0 && price < 40) {
+      return { action: "skipped", error: `Item too cheap to be a racket (€${price})` };
+    }
 
     // Helper function to parse current price from racket
     const parseCurrentPrice = (priceStr: string | null | undefined): number => {

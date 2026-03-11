@@ -49,7 +49,11 @@ export class SupabaseStorage implements IStorage {
     const result = await db
       .select()
       .from(rackets)
-      .where(eq(rackets.isPublished, true))
+      .where(and(
+        eq(rackets.isPublished, true),
+        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
+        sql`CAST(${rackets.currentPrice} as numeric) >= 40`
+      ))
       .orderBy(desc(rackets.createdAt));
     return result;
   }
@@ -100,7 +104,11 @@ export class SupabaseStorage implements IStorage {
         updatedAt: rackets.updatedAt,
       })
       .from(rackets)
-      .where(eq(rackets.isPublished, true))
+      .where(and(
+        eq(rackets.isPublished, true),
+        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
+        sql`CAST(${rackets.currentPrice} as numeric) >= 40`
+      ))
       .orderBy(desc(rackets.createdAt));
     return result;
   }
@@ -129,16 +137,16 @@ export class SupabaseStorage implements IStorage {
         and(
           eq(rackets.isPublished, true),
           sql`regexp_replace(
-            regexp_replace(
-              CASE 
+          regexp_replace(
+            CASE 
                 WHEN lower(${rackets.model}) LIKE lower(${rackets.brand}) || '%' 
                 THEN lower(${rackets.model})
                 ELSE lower(${rackets.brand} || ' ' || ${rackets.model})
               END,
-              '[^a-z0-9]+', '-', 'g'
-            ),
-            '^-+|-+$', '', 'g'
-          ) = ${slug}`
+            '[^a-z0-9]+', '-', 'g'
+          ),
+          '^-+|-+$', '', 'g'
+        ) = ${slug}`
         )
       )
       .limit(1);
@@ -197,7 +205,8 @@ export class SupabaseStorage implements IStorage {
       .where(
         and(
           eq(rackets.isPublished, true),
-          eq(rackets.inStock, true),
+          or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
+          sql`CAST(${rackets.currentPrice} as numeric) >= 40`,
           sql`LOWER(${rackets.model}) NOT LIKE '%pickleball%'`
         )
       )
@@ -219,7 +228,8 @@ export class SupabaseStorage implements IStorage {
         eq(rackets.brand, racket.brand),
         ne(rackets.id, racketId),
         eq(rackets.isPublished, true),
-        eq(rackets.inStock, true)
+        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
+        sql`CAST(${rackets.currentPrice} as numeric) >= 40`
       ))
       .orderBy(desc(rackets.overallRating))
       .limit(limit);
@@ -233,7 +243,8 @@ export class SupabaseStorage implements IStorage {
       .where(and(
         eq(rackets.brand, brand),
         eq(rackets.isPublished, true),
-        eq(rackets.inStock, true)
+        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
+        sql`CAST(${rackets.currentPrice} as numeric) >= 40`
       ))
       .orderBy(desc(rackets.overallRating));
     return result;
@@ -242,7 +253,8 @@ export class SupabaseStorage implements IStorage {
   async getBestOfRackets(category: string, limit: number): Promise<Racket[]> {
     const conditions = [
       eq(rackets.isPublished, true),
-      eq(rackets.inStock, true)
+      or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
+      sql`CAST(${rackets.currentPrice} as numeric) >= 40`
     ];
 
     if (category === "power") {
@@ -363,7 +375,7 @@ export class SupabaseStorage implements IStorage {
       .where(and(
         or(
           sql`${rackets.feedProductId} IS NULL`,
-          sql`${rackets.feedProductId} NOT IN (${sql.join(feedProductIds.map(id => sql`${id}`), sql`, `)})`
+          sql`${rackets.feedProductId} NOT IN(${sql.join(feedProductIds.map(id => sql`${id}`), sql`, `)})`
         ),
         eq(rackets.inStock, true)
       ))

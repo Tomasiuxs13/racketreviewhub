@@ -173,10 +173,18 @@ async function processProduct(
     const brand = product.BRAND;
     const model = extractModelFromTitle(product.TITLE, brand);
 
-    // Skip pickleball rackets
-    if (product.TITLE.toLowerCase().includes('pickleball') ||
-      (product.DESCRIPTION && product.DESCRIPTION.toLowerCase().includes('pickleball'))) {
-      return { action: "skipped", feedProductId, error: "Pickleball racket ignored" };
+    // Skip pickleball rackets and accessories
+    const titleLower = product.TITLE.toLowerCase();
+    const descLower = (product.DESCRIPTION || "").toLowerCase();
+
+    if (
+      titleLower.includes('pickleball') || descLower.includes('pickleball') ||
+      titleLower.includes('bag') || titleLower.includes('backpack') || titleLower.includes('grip') ||
+      titleLower.includes('overgrip') || titleLower.includes('protector') || titleLower.includes('shirt') ||
+      titleLower.includes('short') || titleLower.includes('shoe') || titleLower.includes('socks') ||
+      titleLower.includes('balls') || titleLower.includes('cap') || titleLower.includes('wristband') || titleLower.includes('pelotas') || titleLower.includes('zapatillas') || titleLower.includes('mochila') || titleLower.includes('paletero') || titleLower.includes('calcetines') || titleLower.includes('camiseta') || titleLower.includes('pantalon')
+    ) {
+      return { action: "skipped", feedProductId, error: "Non-racket item ignored based on keywords" };
     }
 
     const currentPrice = parseCjPrice(product.SALE_PRICE) || parseCjPrice(product.PRICE);
@@ -184,6 +192,11 @@ async function processProduct(
 
     if (!currentPrice) {
       return { action: "skipped", feedProductId, error: `No valid price found for ${product.ID}` };
+    }
+
+    // Skip cheap items that are definitely not padel rackets (e.g. accessories that missed keyword check)
+    if (currentPrice < 40) {
+      return { action: "skipped", feedProductId, error: `Item too cheap to be a racket (€${currentPrice})` };
     }
 
     // Try to find existing racket
