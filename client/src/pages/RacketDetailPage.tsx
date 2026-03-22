@@ -14,7 +14,6 @@ import type { Racket, Author, Guide } from "@shared/schema";
 import SEO from "@/components/SEO";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { useEffect } from "react";
-import { SITE_URL } from "@/lib/seo";
 import { useI18n } from "@/i18n/useI18n";
 import { trackAffiliateClick } from "@/lib/analytics";
 import { PriceHistoryChart } from "@/components/PriceHistoryChart";
@@ -103,49 +102,9 @@ export default function RacketDetailPage() {
     : t("racket.seo.defaultDescription") || "Expert padel racket review with detailed ratings and best price comparison";
   const canonicalPath = racket ? `/rackets/${getRacketSlug(racket)}` : "/rackets";
 
-  const schemas: any[] = [];
-  if (racket) {
-    schemas.push({
-      "@context": "https://schema.org/",
-      "@type": "Product",
-      name: `${racket.brand} ${racket.model}`,
-      image: racket.imageUrl ? [racket.imageUrl] : [],
-      description: seoDescription,
-      brand: {
-        "@type": "Brand",
-        name: racket.brand
-      },
-      offers: {
-        "@type": "Offer",
-        url: `https://www.padelracketreviews.com${canonicalPath}`,
-        priceCurrency: "EUR",
-        price: Number(racket.currentPrice).toFixed(2),
-        availability: racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
-        seller: {
-          "@type": "Organization",
-          name: "Padel Racket Reviews"
-        }
-      },
-      review: {
-        "@type": "Review",
-        reviewRating: {
-          "@type": "Rating",
-          ratingValue: (racket.overallRating / 20).toFixed(1), // Convert from 0-100 to 0-5
-          bestRating: "5"
-        },
-        author: {
-          "@type": "Person",
-          name: author?.name || "Expert Reviewer"
-        },
-        reviewBody: seoDescription
-      },
-      aggregateRating: {
-        "@type": "AggregateRating",
-        ratingValue: (racket.overallRating / 20).toFixed(1), // Convert from 0-100 to 0-5
-        reviewCount: "1"
-      }
-    });
-  }
+  // Structured data is handled server-side by seoInjector.ts to avoid
+  // duplicate schemas in the DOM. The server injects comprehensive Product,
+  // Review, and Offer schemas with correct rating scales.
 
   const seoData = {
     title: seoTitle,
@@ -154,7 +113,6 @@ export default function RacketDetailPage() {
     url: canonicalPath,
     canonical: canonicalPath,
     type: "article" as const,
-    schemas: schemas,
   };
 
   const seoElement = <SEO {...seoData} />;

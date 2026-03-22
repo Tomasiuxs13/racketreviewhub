@@ -2,7 +2,7 @@
 const SITE_CONFIG = {
   name: "Padel Racket Review Hub",
   description: "Expert reviews, comparisons, and buying guides for padel rackets",
-  url: "https://yourdomain.com",
+  url: "https://racketreviewhub.com",
   author: "Padel Racket Review Hub"
 };
 

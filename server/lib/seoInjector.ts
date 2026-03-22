@@ -49,6 +49,7 @@ function buildMetaTags(meta: SeoMeta): string {
   const tags: string[] = [];
 
   tags.push(`<title>${escapeHtml(meta.title)}</title>`);
+  tags.push(`<meta name="robots" content="index, follow">`);
   tags.push(`<meta name="description" content="${escapeAttr(meta.description)}">`);
   tags.push(`<link rel="canonical" href="${escapeAttr(meta.canonical)}">`);
 
@@ -567,6 +568,40 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         canonical: locale === "en" ? `${SITE_URL}/blog` : `${SITE_URL}/${locale}/blog`,
         ogType: "website",
         hreflangTags: buildHreflangTags("/blog"),
+      };
+    }
+
+    // Best of category pages: /best/:category
+    const bestMatch = resourcePath.match(/^\/best\/([^/]+)$/);
+    if (bestMatch) {
+      const category = bestMatch[1].toLowerCase();
+      const year = new Date().getFullYear();
+      const categoryTitles: Record<string, string> = {
+        "power": "Best Power Padel Rackets",
+        "control": "Best Control Padel Rackets",
+        "beginner": "Best Beginner Padel Rackets",
+        "advanced": "Best Advanced Padel Rackets",
+        "budget": "Best Budget Padel Rackets",
+        "overall": "Best Overall Padel Rackets",
+      };
+      const categoryDescriptions: Record<string, string> = {
+        "power": "Dominate the court with maximum explosive power and aggressive smash capabilities.",
+        "control": "Pinpoint accuracy and defensive stability for the tactical, precise player.",
+        "beginner": "Forgiving, easy-to-play rackets with large sweet spots, perfect for starting out.",
+        "advanced": "Premium technological marvels built for competition-level performance.",
+        "budget": "Incredible value for money without sacrificing build quality or playability.",
+        "overall": "Our top-rated rackets combining power, control, maneuverability, and value.",
+      };
+      const catTitle = categoryTitles[category] || `Best ${category.charAt(0).toUpperCase() + category.slice(1)} Padel Rackets`;
+      const catDesc = categoryDescriptions[category] || `Discover the best ${category} padel rackets.`;
+      const bestCanonicalPath = `/best/${category}`;
+      const bestUrl = locale === "en" ? `${SITE_URL}${bestCanonicalPath}` : `${SITE_URL}/${locale}${bestCanonicalPath}`;
+      return {
+        title: `${catTitle} of ${year} - Expert Reviews`,
+        description: `Discover the ${catTitle.toLowerCase()} for ${year}. ${catDesc} Read our comprehensive, hands-on expert reviews and comparisons.`,
+        canonical: bestUrl,
+        ogType: "website",
+        hreflangTags: buildHreflangTags(bestCanonicalPath),
       };
     }
 

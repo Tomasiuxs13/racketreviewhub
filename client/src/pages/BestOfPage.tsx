@@ -36,7 +36,8 @@ export default function BestOfPage() {
             <SEO
                 title={pageTitle}
                 description={pageDescription}
-                image="/social-card.jpg"
+                canonical={`/best/${categoryName}`}
+                url={`/best/${categoryName}`}
             />
 
             {/* Premium Hero Section */}

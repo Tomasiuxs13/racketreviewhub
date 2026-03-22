@@ -125,6 +125,8 @@ const RACKET_REVIEW_TRANSLATABLE_FIELDS = [
 ] as const;
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  const SITE_URL = process.env.SITE_URL || "https://racketreviewhub.com";
+
   // Normalize legacy racket slugs that duplicated the brand prefix
   const normalizeRacketSlug = (slug: string): string => {
     const lower = slug.toLowerCase().replace(/^-+|-+$/g, "");
@@ -945,7 +947,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sitemap index - points to sub-sitemaps
   app.get("/sitemap.xml", async (req, res) => {
     try {
-      const baseUrl = req.protocol + "://" + req.get("host");
+      const baseUrl = SITE_URL;
       const now = new Date().toISOString().split('T')[0];
       let index = '<?xml version="1.0" encoding="UTF-8"?>\n';
       index += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
@@ -964,13 +966,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sub-sitemap: static pages
   app.get("/sitemap-pages.xml", async (req, res) => {
     sendCachedSitemap(res, 'pages', async () => {
-      const baseUrl = req.protocol + "://" + req.get("host");
+      const baseUrl = SITE_URL;
       let xml = urlsetHeader();
       xml += buildUrlEntry(baseUrl, '/', 'daily', '1.0');
       xml += buildUrlEntry(baseUrl, '/rackets', 'daily', '0.9');
       xml += buildUrlEntry(baseUrl, '/brands', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/guides', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/blog', 'daily', '0.8');
+      xml += buildUrlEntry(baseUrl, '/best/power', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/best/control', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/best/beginner', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/best/budget', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/best/overall', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/quiz', 'monthly', '0.6');
+      xml += buildUrlEntry(baseUrl, '/about', 'monthly', '0.5');
+      xml += buildUrlEntry(baseUrl, '/methodology', 'monthly', '0.5');
+      xml += buildUrlEntry(baseUrl, '/contact', 'monthly', '0.4');
       xml += '</urlset>';
       return xml;
     });
@@ -979,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sub-sitemap: rackets
   app.get("/sitemap-rackets.xml", async (req, res) => {
     sendCachedSitemap(res, 'rackets', async () => {
-      const baseUrl = req.protocol + "://" + req.get("host");
+      const baseUrl = SITE_URL;
       const allRackets = await storage.getPublishedRackets();
       let xml = urlsetHeader();
       for (const racket of allRackets) {
@@ -995,7 +1006,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sub-sitemap: brands
   app.get("/sitemap-brands.xml", async (req, res) => {
     sendCachedSitemap(res, 'brands', async () => {
-      const baseUrl = req.protocol + "://" + req.get("host");
+      const baseUrl = SITE_URL;
       const allBrands = await storage.getAllBrands();
       let xml = urlsetHeader();
       for (const brand of allBrands) {
@@ -1010,7 +1021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sub-sitemap: guides
   app.get("/sitemap-guides.xml", async (req, res) => {
     sendCachedSitemap(res, 'guides', async () => {
-      const baseUrl = req.protocol + "://" + req.get("host");
+      const baseUrl = SITE_URL;
       const allGuides = await storage.getAllGuides();
       let xml = urlsetHeader();
       for (const guide of allGuides) {
@@ -1025,7 +1036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sub-sitemap: blog posts
   app.get("/sitemap-blog.xml", async (req, res) => {
     sendCachedSitemap(res, 'blog', async () => {
-      const baseUrl = req.protocol + "://" + req.get("host");
+      const baseUrl = SITE_URL;
       const allPosts = await storage.getAllBlogPosts();
       let xml = urlsetHeader();
       for (const post of allPosts) {
