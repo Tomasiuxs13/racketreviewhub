@@ -1,11 +1,11 @@
 {
   "common": {
-    "brandName": "Recensioni di Racchette da Padel",
+    "brandName": "Recensioni Racchette Padel",
     "actions": {
-      "viewAll": "Visualizza Tutto",
-      "browseRackets": "Sfoglia Tutte le Racchette",
-      "buyingGuides": "Guide all'Acquisto",
-      "beginnerGuide": "Le Migliori Racchette per Principianti"
+      "viewAll": "Vedi tutto",
+      "browseRackets": "Sfoglia tutte le racchette",
+      "buyingGuides": "Guide all'acquisto",
+      "beginnerGuide": "Migliori racchette per principianti"
     },
     "language": {
       "label": "Lingua",
@@ -35,18 +35,18 @@
     },
     "trustBadge": "Quiz Racchetta",
     "auth": {
-      "logout": "Disconnetti",
+      "logout": "Logout",
       "userPlaceholder": "Utente"
     }
   },
   "footer": {
     "about": {
-      "title": "Informazioni sulle Recensioni di Racchette da Padel",
-      "body": "Recensioni esperte di racchette da padel con valutazioni dettagliate, confronti onesti e i migliori prezzi. Aiutiamo i giocatori a trovare la racchetta perfetta dal 2024."
+      "title": "Informazioni su Recensioni Racchette Padel",
+      "body": "Recensioni esperte di racchette da padel con valutazioni dettagliate, confronti onesti e i migliori prezzi. Aiutiamo i giocatori a trovare la loro racchetta perfetta dal 2024."
     },
     "quickLinks": {
-      "title": "Link Veloci",
-      "rackets": "Tutte le racchette",
+      "title": "Link Rapidi",
+      "rackets": "Tutte le Racchette",
       "guides": "Guide all'acquisto",
       "brands": "Marche",
       "blog": "Blog"
@@ -63,11 +63,11 @@
     },
     "gettingStarted": {
       "title": "Iniziare",
-      "body": "Sei nuovo nel padel? Scopri le migliori racchette per principianti con la nostra guida all'acquisto completa."
+      "body": "Nuovo nel padel? Scopri le migliori racchette per principianti con la nostra guida all'acquisto completa."
     },
     "legal": {
-      "rights": "© {{year}} Recensioni Racchette Padel. Tutti i diritti riservati.",
-      "disclaimer": "Guadagniamo una commissione dagli acquisti effettuati tramite i link di affiliazione senza costi aggiuntivi per te."
+      "rights": "© {{year}} Padel Racket Reviews. Tutti i diritti riservati.",
+      "disclaimer": "Guadagniamo una commissione sugli acquisti effettuati tramite link di affiliazione senza alcun costo aggiuntivo per te."
     },
     "social": {
       "facebook": "Facebook",
@@ -81,35 +81,50 @@
   },
   "home": {
     "seo": {
-      "title": "Recensioni Racchette Padel - Recensioni Esperte & Confronti dei Migliori Prezzi",
-      "description": "Recensioni esperte di racchette padel con valutazioni dettagliate, analisi delle prestazioni e i migliori prezzi. Confronta le migliori racchette delle marche leader e trova la tua corrispondenza perfetta."
+      "title": "Recensioni Racchette Padel - Recensioni Esperte e Confronto Migliori Prezzi",
+      "description": "Recensioni esperte di racchette da padel con valutazioni dettagliate, analisi delle prestazioni e i migliori prezzi. Confronta le migliori racchette delle marche leader e trova la tua compagna perfetta."
     },
     "hero": {
-      "title": "Trova la tua racchetta padel perfetta",
+      "title": "Trova la Tua Racchetta da Padel Perfetta",
       "subtitle": "Recensioni esperte, valutazioni dettagliate e i migliori prezzi per giocatori di tutti i livelli",
-      "primaryCta": "Sfoglia tutte le racchette",
-      "secondaryCta": "Guide all'acquisto",
+      "primaryCta": "Sfoglia Tutte le Racchette",
+      "secondaryCta": "Guide all'Acquisto",
       "trust": {
         "reviews": "Quiz Racchetta",
         "updates": "Aggiornato quotidianamente",
-        "experts": "Analisi esperta"
+        "experts": "Analisi degli esperti"
       }
     },
     "recentReviews": {
-      "title": "Ultime recensioni delle racchette",
-      "subtitle": "Le nostre ultime recensioni e valutazioni degli esperti",
-      "empty": "Nessuna racchetta disponibile al momento. Torna presto!"
+      "title": "Ultime recensioni di racchette",
+      "subtitle": "Le nostre più recenti recensioni e valutazioni degli esperti",
+      "empty": "Nessuna racchetta disponibile. Torna presto!"
     },
     "cta": {
-      "title": "Iniziare con il Padel?",
-      "subtitle": "Scopri le migliori racchette per principianti con la nostra guida all'acquisto completa. Scopri cosa cercare e trova la racchetta perfetta per il tuo livello di abilità.",
+      "title": "Inizi con il Padel?",
+      "subtitle": "Scopri le migliori racchette per principianti con la nostra guida all'acquisto completa. Impara cosa cercare e trova la racchetta perfetta per il tuo livello di abilità.",
       "button": "Migliori racchette per principianti"
     },
     "recentGuides": {
       "title": "Ultime guide all'acquisto",
       "subtitle": "Consigli esperti per aiutarti a scegliere la racchetta giusta",
-      "empty": "Nessuna guida disponibile al momento. Torna presto!"
+      "empty": "Nessuna guida disponibile. Torna presto!"
     }
   },
-  "racket": null
+  "racket": {
+    "seo": {
+      "title": "Recensione della Racchetta da Padel {{brand}} {{model}} {{year}} - Analisi e miglior prezzo",
+      "description": "Recensione esperta della racchetta da padel {{brand}} {{model}} {{year}}. Valutazioni dettagliate per potenza, controllo e prestazioni. Voto complessivo: {{rating}}/100. Trova il miglior prezzo.",
+      "defaultTitle": "Recensione Racchetta Padel",
+      "defaultDescription": "Recensione esperta di racchetta da padel con valutazioni dettagliate e confronto del miglior prezzo"
+    }
+  },
+  "about": {
+    "seoTitle": "Informazioni su Padel Racket Reviews - La nostra storia e gli esperti",
+    "seoDescription": "Scopri il team dietro Padel Racket Reviews. Siamo giocatori appassionati di padel dedicati a fornire recensioni oneste basate sui dati."
+  },
+  "methodology": {
+    "seoTitle": "La nostra metodologia di test e recensione delle racchette",
+    "seoDescription": "Scopri come testiamo e valutiamo le racchette da padel. Un processo rigoroso in campo incentrato su potenza e controllo."
+  }
 }

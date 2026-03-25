@@ -51,7 +51,6 @@ export class SupabaseStorage implements IStorage {
       .from(rackets)
       .where(and(
         eq(rackets.isPublished, true),
-        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
         sql`CAST(${rackets.currentPrice} as numeric) >= 40`
       ))
       .orderBy(desc(rackets.createdAt));
@@ -106,7 +105,6 @@ export class SupabaseStorage implements IStorage {
       .from(rackets)
       .where(and(
         eq(rackets.isPublished, true),
-        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
         sql`CAST(${rackets.currentPrice} as numeric) >= 40`
       ))
       .orderBy(desc(rackets.createdAt));
@@ -205,7 +203,6 @@ export class SupabaseStorage implements IStorage {
       .where(
         and(
           eq(rackets.isPublished, true),
-          or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
           sql`CAST(${rackets.currentPrice} as numeric) >= 40`,
           sql`LOWER(${rackets.model}) NOT LIKE '%pickleball%'`
         )
@@ -228,7 +225,6 @@ export class SupabaseStorage implements IStorage {
         eq(rackets.brand, racket.brand),
         ne(rackets.id, racketId),
         eq(rackets.isPublished, true),
-        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
         sql`CAST(${rackets.currentPrice} as numeric) >= 40`
       ))
       .orderBy(desc(rackets.overallRating))
@@ -243,7 +239,6 @@ export class SupabaseStorage implements IStorage {
       .where(and(
         eq(rackets.brand, brand),
         eq(rackets.isPublished, true),
-        or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
         sql`CAST(${rackets.currentPrice} as numeric) >= 40`
       ))
       .orderBy(desc(rackets.overallRating));
@@ -253,7 +248,6 @@ export class SupabaseStorage implements IStorage {
   async getBestOfRackets(category: string, limit: number): Promise<Racket[]> {
     const conditions = [
       eq(rackets.isPublished, true),
-      or(eq(rackets.inStock, true), eq(rackets.padelMarketInStock, true)),
       sql`CAST(${rackets.currentPrice} as numeric) >= 40`
     ];
 

@@ -111,5 +111,20 @@
       "empty": "No hay guías disponibles aún. ¡Vuelve pronto!"
     }
   },
-  "racket": null
+  "racket": {
+    "seo": {
+      "title": "Reseña de la Pala de Pádel {{brand}} {{model}} {{year}} - Análisis y Mejor Precio",
+      "description": "Reseña experta de la pala de pádel {{brand}} {{model}} {{year}}. Calificaciones detalladas de potencia, control y rendimiento. Puntuación total: {{rating}}/100. Encuentra el mejor precio.",
+      "defaultTitle": "Reseña de Pala de Pádel",
+      "defaultDescription": "Reseña experta de pala de pádel con calificaciones detalladas y comparación del mejor precio"
+    }
+  },
+  "about": {
+    "seoTitle": "Acerca de Reseñas de Palas de Padel - Nuestra Historia y Expertos",
+    "seoDescription": "Conoce al equipo detrás de Reseñas de Palas de Padel. Somos entusiastas del pádel dedicados a proporcionar reseñas honestas y guías de compra basadas en datos."
+  },
+  "methodology": {
+    "seoTitle": "Nuestra Metodología de Prueba y Reseña de Palas",
+    "seoDescription": "Descubre cómo probamos y calificamos las palas de pádel. Proceso riguroso en pista centrado en potencia, control y rendimiento."
+  }
 }

@@ -923,19 +923,19 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
     if (!racket) return [];
 
     return Array.from(this.rackets.values())
-      .filter(r => r.id !== racketId && r.brand === racket.brand && r.isPublished !== false && r.inStock !== false)
+      .filter(r => r.id !== racketId && r.brand === racket.brand && r.isPublished !== false)
       .sort((a, b) => b.overallRating - a.overallRating)
       .slice(0, limit);
   }
 
   async getRacketsByBrand(brand: string): Promise<Racket[]> {
     return Array.from(this.rackets.values())
-      .filter(r => r.brand.toLowerCase() === brand.toLowerCase() && r.isPublished !== false && r.inStock !== false)
+      .filter(r => r.brand.toLowerCase() === brand.toLowerCase() && r.isPublished !== false)
       .sort((a, b) => b.overallRating - a.overallRating);
   }
 
   async getBestOfRackets(category: string, limit: number): Promise<Racket[]> {
-    let filtered = Array.from(this.rackets.values()).filter(r => r.isPublished && r.inStock);
+    let filtered = Array.from(this.rackets.values()).filter(r => r.isPublished);
     if (category === "power") {
       filtered = filtered.filter(r => r.gameType?.toLowerCase() === "power" || r.shape?.toLowerCase() === "diamond");
     } else if (category === "control") {
