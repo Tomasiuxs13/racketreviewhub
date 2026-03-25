@@ -27,7 +27,8 @@ app.use(express.urlencoded({ extended: false }));
 // Handle SEO redirects for legacy ?lang= parameter
 const SUPPORTED_LOCALES = ["en", "es", "pt", "it", "fr"];
 app.use((req, res, next) => {
-  if (req.method === 'GET' && req.query.lang) {
+  // Only redirect page requests, not API calls — API routes handle ?lang= themselves
+  if (req.method === 'GET' && req.query.lang && !req.path.startsWith('/api/')) {
     const lang = req.query.lang as string;
 
     if (SUPPORTED_LOCALES.includes(lang)) {

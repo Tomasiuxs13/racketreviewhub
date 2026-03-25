@@ -138,14 +138,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Redirect legacy duplicated-brand racket URLs to the canonical slug
+  // Supports both /rackets/xxx-xxx-... and /:locale/rackets/xxx-xxx-...
   app.use((req, res, next) => {
     if (req.method !== "GET") return next();
-    const match = req.path.match(/^\/rackets\/([a-z0-9]+)-\1-(.+)$/i);
+    const match = req.path.match(/^(\/[a-z]{2})?\/rackets\/([a-z0-9]+)-\2-(.+)$/i);
     if (!match) return next();
 
-    const normalizedSlug = normalizeRacketSlug(`${match[1]}-${match[2]}`);
+    const localePrefix = match[1] || "";
+    const normalizedSlug = normalizeRacketSlug(`${match[2]}-${match[3]}`);
     const query = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
-    return res.redirect(301, `/rackets/${normalizedSlug}${query}`);
+    return res.redirect(301, `${localePrefix}/rackets/${normalizedSlug}${query}`);
   });
 
   // robots.txt - directs crawlers away from API/admin routes and points to sitemap
@@ -976,6 +978,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       xml += buildUrlEntry(baseUrl, '/best/power', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/best/control', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/best/beginner', 'weekly', '0.8');
+      xml += buildUrlEntry(baseUrl, '/best/advanced', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/best/budget', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/best/overall', 'weekly', '0.8');
       xml += buildUrlEntry(baseUrl, '/quiz', 'monthly', '0.6');
