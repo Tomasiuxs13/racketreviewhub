@@ -160,6 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       "Disallow: /admin",
       "Disallow: /login",
       "Disallow: /signup",
+      "Disallow: /compare",
       "",
       `Sitemap: ${siteUrl}/sitemap.xml`,
     ].join("\n");
@@ -953,7 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date().toISOString().split('T')[0];
       let index = '<?xml version="1.0" encoding="UTF-8"?>\n';
       index += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-      for (const type of ['pages', 'rackets', 'brands', 'guides', 'blog']) {
+      for (const type of ['pages', 'rackets', 'brands', 'guides', 'blog', 'authors']) {
         index += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${type}.xml</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>\n`;
       }
       index += '</sitemapindex>';
@@ -985,6 +986,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       xml += buildUrlEntry(baseUrl, '/about', 'monthly', '0.5');
       xml += buildUrlEntry(baseUrl, '/methodology', 'monthly', '0.5');
       xml += buildUrlEntry(baseUrl, '/contact', 'monthly', '0.4');
+      xml += buildUrlEntry(baseUrl, '/privacy', 'yearly', '0.2');
+      xml += buildUrlEntry(baseUrl, '/terms', 'yearly', '0.2');
+      xml += buildUrlEntry(baseUrl, '/disclosure', 'yearly', '0.2');
       xml += '</urlset>';
       return xml;
     });
@@ -1045,6 +1049,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       for (const post of allPosts) {
         const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         xml += buildUrlEntry(baseUrl, `/blog/${post.slug}`, 'monthly', '0.7', lastmod);
+      }
+      xml += '</urlset>';
+      return xml;
+    });
+  });
+
+  // Sub-sitemap: authors
+  app.get("/sitemap-authors.xml", async (req, res) => {
+    sendCachedSitemap(res, 'authors', async () => {
+      const baseUrl = SITE_URL;
+      const allAuthors = await storage.getAllAuthors();
+      let xml = urlsetHeader();
+      for (const author of allAuthors) {
+        xml += buildUrlEntry(baseUrl, `/authors/${author.slug}`, 'monthly', '0.5');
       }
       xml += '</urlset>';
       return xml;

@@ -776,21 +776,25 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
       };
     }
 
-    // Legal pages
-    const legalMatch = resourcePath.match(/^\/(disclaimer|cookie-policy|privacy-policy|terms)$/);
+    // Legal pages (match actual client routes: /privacy, /terms, /disclosure)
+    const legalMatch = resourcePath.match(/^\/(privacy|terms|disclosure|disclaimer|cookie-policy|privacy-policy)$/);
     if (legalMatch) {
       const legalPage = legalMatch[1];
       const legalTitles: Record<string, string> = {
-        "disclaimer": "Disclaimer - Padel Racket Reviews",
-        "cookie-policy": "Cookie Policy - Padel Racket Reviews",
+        "privacy": "Privacy Policy - Padel Racket Reviews",
         "privacy-policy": "Privacy Policy - Padel Racket Reviews",
         "terms": "Terms of Service - Padel Racket Reviews",
+        "disclosure": "Affiliate Disclosure - Padel Racket Reviews",
+        "disclaimer": "Disclaimer - Padel Racket Reviews",
+        "cookie-policy": "Cookie Policy - Padel Racket Reviews",
       };
       const legalDescriptions: Record<string, string> = {
-        "disclaimer": "Important disclaimers regarding affiliate links, health information, and accuracy of content on Padel Racket Reviews.",
-        "cookie-policy": "How Padel Racket Reviews uses cookies and similar technologies. Manage your preferences and learn about our data practices.",
+        "privacy": "Privacy policy for Padel Racket Reviews. Learn how we collect, use, and protect your personal data.",
         "privacy-policy": "Privacy policy for Padel Racket Reviews. Learn how we collect, use, and protect your personal data.",
         "terms": "Terms of service governing the use of Padel Racket Reviews website and services.",
+        "disclosure": "Affiliate disclosure for Padel Racket Reviews. Learn how we earn commissions through affiliate partnerships.",
+        "disclaimer": "Important disclaimers regarding affiliate links, health information, and accuracy of content on Padel Racket Reviews.",
+        "cookie-policy": "How Padel Racket Reviews uses cookies and similar technologies. Manage your preferences and learn about our data practices.",
       };
       const legalCanonicalPath = `/${legalPage}`;
       return {
@@ -830,6 +834,27 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
   }
 }
 
+/** Build site-wide navigation HTML for crawlers to discover all major sections */
+function buildCrawlerNav(locale: string): string {
+  const loc = locale === "en" ? "" : `/${locale}`;
+  const links = [
+    { href: `${loc}/`, label: t(locale, "header.menu.home") || "Home" },
+    { href: `${loc}/rackets`, label: t(locale, "header.menu.rackets") || "Rackets" },
+    { href: `${loc}/brands`, label: t(locale, "header.menu.brands") || "Brands" },
+    { href: `${loc}/guides`, label: t(locale, "header.menu.guides") || "Guides" },
+    { href: `${loc}/blog`, label: t(locale, "header.menu.blog") || "Blog" },
+    { href: `${loc}/best/power`, label: "Best Power Rackets" },
+    { href: `${loc}/best/control`, label: "Best Control Rackets" },
+    { href: `${loc}/best/beginner`, label: "Best Beginner Rackets" },
+    { href: `${loc}/quiz`, label: t(locale, "header.quizButton") || "Racket Quiz" },
+    { href: `${loc}/about`, label: t(locale, "footer.about") || "About" },
+    { href: `${loc}/methodology`, label: t(locale, "footer.methodology") || "Methodology" },
+    { href: `${loc}/contact`, label: t(locale, "footer.contact") || "Contact" },
+  ];
+  const items = links.map(l => `<li><a href="${l.href}">${escapeHtml(l.label)}</a></li>`).join("\n");
+  return `<nav aria-label="Site navigation"><ul>${items}</ul></nav>`;
+}
+
 /**
  * Inject SEO meta tags into the HTML template.
  * Replaces the default <title> and adds meta tags in <head>.
@@ -854,10 +879,17 @@ export function injectSeoMeta(html: string, meta: SeoMeta): string {
 
   // Inject crawlable content inside <div id="root"> for search engine crawlers.
   // React's createRoot will replace this content on client-side hydration.
-  if (meta.crawlableContent) {
+  // Also inject site-wide nav links so crawlers can discover all major sections.
+  {
+    const localeFromCanonical = meta.canonical.replace(SITE_URL, "").match(/^\/([a-z]{2})(\/|$)/);
+    const locale = localeFromCanonical && SUPPORTED_LOCALES.includes(localeFromCanonical[1] as SupportedLocale) && localeFromCanonical[1] !== "en"
+      ? localeFromCanonical[1]
+      : "en";
+    const navHtml = buildCrawlerNav(locale);
+    const content = meta.crawlableContent ? `${navHtml}${meta.crawlableContent}` : navHtml;
     html = html.replace(
       '<div id="root"></div>',
-      `<div id="root">${meta.crawlableContent}</div>`,
+      `<div id="root">${content}</div>`,
     );
   }
 
