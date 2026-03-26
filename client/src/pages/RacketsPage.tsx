@@ -248,35 +248,24 @@ export default function RacketsPage() {
 
   const FilterContent = () => (
     <div className="space-y-8">
-      {/* Brand Filter — Pill Chips */}
+      {/* Brand Filter — Dropdown */}
       <div className="space-y-3">
         <label className="ds-label">Brand</label>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => setSelectedBrands([])}
-            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-              selectedBrands.length === 0
-                ? "bg-ds-primary text-white"
-                : "bg-ds-surface-highest text-ds-on-surface hover:bg-ds-surface-high"
-            }`}
-          >
-            All
-          </button>
+        <select
+          multiple
+          value={selectedBrands}
+          onChange={(e) => setSelectedBrands(Array.from(e.target.selectedOptions, option => option.value))}
+          className="w-full bg-white border border-ds-outline-variant/20 rounded-xl text-xs font-medium py-2 px-3 focus:ring-2 focus:ring-ds-primary-container cursor-pointer text-ds-on-surface"
+          size={Math.min(6, brands.length + 1)}
+          data-testid="select-brands"
+        >
+          <option value="">-- All Brands --</option>
           {brands.map((brand) => (
-            <button
-              key={brand}
-              onClick={() => toggleBrand(brand)}
-              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
-                selectedBrands.includes(brand)
-                  ? "bg-ds-primary text-white"
-                  : "bg-ds-surface-highest text-ds-on-surface hover:bg-ds-surface-high"
-              }`}
-              data-testid={`checkbox-brand-${brand}`}
-            >
+            <option key={brand} value={brand} data-testid={`option-brand-${brand}`}>
               {brand}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
       </div>
 
       {/* Price Range */}
