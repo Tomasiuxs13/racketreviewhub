@@ -889,7 +889,7 @@ export function injectSeoMeta(html: string, meta: SeoMeta): string {
     const content = meta.crawlableContent ? `${navHtml}${meta.crawlableContent}` : navHtml;
     html = html.replace(
       '<div id="root"></div>',
-      `<div id="root">${content}</div>`,
+      `<div id="root"><div style="display:none">${content}</div></div>`,
     );
   }
 
