@@ -287,6 +287,108 @@
     inset: -1px;
   }
 
+  /* Editorial Design System Utilities */
+  .ds-card {
+    @apply bg-white rounded-3xl overflow-hidden flex flex-col;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .ds-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 20px 40px -15px rgba(21, 28, 39, 0.1);
+  }
+
+  .ds-label {
+    @apply font-bold uppercase tracking-[0.15em] text-ds-secondary;
+    font-size: 10px;
+  }
+
+  .ds-bar-track {
+    @apply h-1.5 w-full rounded-full overflow-hidden;
+    background: rgba(220, 226, 243, 0.3);
+  }
+
+  .ds-bar-fill {
+    @apply h-full rounded-full;
+    background: #10b981;
+  }
+
+  .ds-stat-chip {
+    @apply p-2 rounded-xl text-center;
+    background: rgba(240, 243, 255, 0.5);
+  }
+
+  .ds-badge-new {
+    @apply px-3 py-1.5 text-white font-black uppercase shadow-md;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    background: #006c49;
+    border-radius: 2px;
+  }
+
+  .ds-badge-stock {
+    @apply px-3 py-1.5 text-white font-black uppercase shadow-md;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    background: #151c27;
+    border-radius: 2px;
+  }
+
+  .ds-btn-primary {
+    @apply text-white font-bold uppercase px-6 py-3 rounded-xl;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    background: #006c49;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 14px rgba(0, 108, 73, 0.2);
+  }
+
+  .ds-btn-primary:hover {
+    filter: brightness(1.1);
+  }
+
+  .ds-btn-primary:active {
+    transform: scale(0.95);
+  }
+
+  .ds-btn-secondary {
+    @apply font-bold uppercase px-6 py-3 rounded-xl border;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    background: transparent;
+    color: #006c49;
+    border-color: #006c49;
+    transition: all 0.2s ease;
+  }
+
+  .ds-btn-secondary:hover {
+    background: rgba(0, 108, 73, 0.05);
+  }
+
+  .ds-score {
+    @apply text-sm font-black px-2 py-1 rounded-lg;
+    color: #006c49;
+    background: rgba(0, 108, 73, 0.05);
+  }
+
+  .ds-compare-btn {
+    @apply px-3 py-1.5 rounded-full flex items-center gap-1 shadow-sm;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    transition: all 0.2s ease;
+  }
+
+  .ds-compare-btn:hover {
+    background: #006c49;
+    color: white;
+  }
+
+  .ds-compare-btn.active {
+    background: #006c49;
+    color: white;
+    box-shadow: 0 4px 14px rgba(0, 108, 73, 0.25);
+  }
+
   /* Premium Utilities */
   .glass {
     @apply bg-white/70 backdrop-blur-lg border border-white/20 dark:bg-black/50 dark:border-white/10;

@@ -1,14 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { X, SlidersHorizontal, ChevronLeft, ChevronRight, PackageCheck } from "lucide-react";
+import { X, SlidersHorizontal, ChevronLeft, ChevronRight, PackageCheck, Circle, Diamond, Droplet } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
 import type { Racket } from "@shared/schema";
 import {
@@ -18,15 +11,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationEllipsis,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
 import { isValidBrandName, getRacketSlug } from "@/lib/utils";
 import SEO from "@/components/SEO";
 import { StructuredData } from "@/components/StructuredData";
@@ -34,6 +18,12 @@ import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { SITE_URL } from "@/lib/seo";
 
 const ITEMS_PER_PAGE = 12;
+
+const SHAPE_ICONS: Record<string, React.ReactNode> = {
+  round: <Circle className="h-3.5 w-3.5" />,
+  diamond: <Diamond className="h-3.5 w-3.5" />,
+  teardrop: <Droplet className="h-3.5 w-3.5" />,
+};
 
 export default function RacketsPage() {
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
@@ -186,7 +176,6 @@ export default function RacketsPage() {
     const siteUrl = SITE_URL;
     const schemas = [];
 
-    // CollectionPage schema
     schemas.push({
       "@context": "https://schema.org",
       "@type": "CollectionPage",
@@ -195,7 +184,6 @@ export default function RacketsPage() {
       "url": seoData.canonical,
     });
 
-    // ItemList schema for racket listings
     if (filteredRackets && filteredRackets.length > 0) {
       schemas.push({
         "@context": "https://schema.org",
@@ -231,7 +219,6 @@ export default function RacketsPage() {
       });
     }
 
-    // BreadcrumbList schema
     schemas.push({
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
@@ -257,403 +244,434 @@ export default function RacketsPage() {
   // Count in-stock rackets for display
   const inStockCount = rackets?.filter(r => r.inStock || r.padelMarketInStock).length || 0;
 
+  const activeFilterCount = selectedBrands.length + selectedShapes.length + selectedGenders.length + selectedLevels.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0) + ((priceRange[0] > 0 || priceRange[1] < 500) ? 1 : 0);
+
   const FilterContent = () => (
-    <div className="space-y-6">
-      {/* In Stock Filter */}
-      <div>
-        <div className="flex items-center gap-2">
-          <Checkbox
-            id="in-stock-only"
-            checked={inStockOnly}
-            onCheckedChange={(checked) => setInStockOnly(checked === true)}
-          />
-          <Label htmlFor="in-stock-only" className="cursor-pointer flex items-center gap-1.5">
-            <PackageCheck className="h-4 w-4 text-green-600" />
-            In Stock Only
-            <span className="text-xs text-muted-foreground">({inStockCount})</span>
-          </Label>
+    <div className="space-y-8">
+      {/* Brand Filter — Pill Chips */}
+      <div className="space-y-3">
+        <label className="ds-label">Brand</label>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSelectedBrands([])}
+            className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+              selectedBrands.length === 0
+                ? "bg-ds-primary text-white"
+                : "bg-ds-surface-highest text-ds-on-surface hover:bg-ds-surface-high"
+            }`}
+          >
+            All
+          </button>
+          {brands.map((brand) => (
+            <button
+              key={brand}
+              onClick={() => toggleBrand(brand)}
+              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                selectedBrands.includes(brand)
+                  ? "bg-ds-primary text-white"
+                  : "bg-ds-surface-highest text-ds-on-surface hover:bg-ds-surface-high"
+              }`}
+              data-testid={`checkbox-brand-${brand}`}
+            >
+              {brand}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* Price Filter */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-semibold">Price</h3>
-          <span className="text-sm text-muted-foreground">
-            €{priceRange[0]} - €{priceRange[1]}
-          </span>
+      {/* Price Range */}
+      <div className="space-y-3">
+        <label className="ds-label">Price Range</label>
+        <div className="px-2">
+          <Slider
+            min={0}
+            max={500}
+            step={10}
+            value={priceRange}
+            onValueChange={setPriceRange}
+            className="my-2"
+          />
+          <div className="flex justify-between mt-2 text-[11px] text-ds-on-surface-variant font-medium">
+            <span>€{priceRange[0]}</span>
+            <span>€{priceRange[1]}+</span>
+          </div>
         </div>
-        <Slider
-          min={0}
-          max={500}
-          step={10}
-          value={priceRange}
-          onValueChange={setPriceRange}
-          className="my-4"
-        />
+      </div>
+
+      {/* Racket Shape — Icon Buttons */}
+      <div className="space-y-3">
+        <label className="ds-label">Racket Shape</label>
+        <div className="grid grid-cols-2 gap-2">
+          {topShapes.map((shape) => (
+            <button
+              key={shape}
+              onClick={() => toggleShape(shape)}
+              className={`flex items-center gap-2 p-2.5 rounded-xl text-xs font-medium transition-all ${
+                selectedShapes.includes(shape)
+                  ? "bg-ds-primary text-white"
+                  : "bg-white border border-ds-outline-variant/20 hover:border-ds-primary-container text-ds-on-surface"
+              }`}
+              data-testid={`checkbox-shape-${shape}`}
+            >
+              {SHAPE_ICONS[shape] || <Circle className="h-3.5 w-3.5" />}
+              <span className="capitalize">{shape}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Player Level — Checkboxes */}
+      <div className="space-y-3">
+        <label className="ds-label">Level</label>
+        <div className="space-y-2.5">
+          {gameLevels.map((level) => (
+            <label key={level} className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={selectedLevels.includes(level)}
+                onChange={() => toggleLevel(level)}
+                className="rounded-sm border-ds-outline-variant text-ds-primary focus:ring-ds-primary-container h-3.5 w-3.5"
+                data-testid={`checkbox-level-${level}`}
+              />
+              <span className="text-xs text-ds-on-surface-variant group-hover:text-ds-on-surface transition-colors">
+                {level}
+              </span>
+            </label>
+          ))}
+        </div>
       </div>
 
       {/* Gender Filter */}
-      <div>
-        <h3 className="font-semibold mb-3">Gender</h3>
-        <div className="space-y-2">
+      <div className="space-y-3">
+        <label className="ds-label">Gender</label>
+        <div className="space-y-2.5">
           {["man", "woman", "unisex"].map((gender) => (
-            <div key={gender} className="flex items-center gap-2">
-              <Checkbox
-                id={`gender-${gender}`}
+            <label key={gender} className="flex items-center gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
                 checked={selectedGenders.includes(gender)}
-                onCheckedChange={() => toggleGender(gender)}
+                onChange={() => toggleGender(gender)}
+                className="rounded-sm border-ds-outline-variant text-ds-primary focus:ring-ds-primary-container h-3.5 w-3.5"
                 data-testid={`checkbox-gender-${gender}`}
               />
-              <Label htmlFor={`gender-${gender}`} className="capitalize cursor-pointer">
+              <span className="text-xs text-ds-on-surface-variant group-hover:text-ds-on-surface transition-colors capitalize">
                 {gender}
-              </Label>
-            </div>
+              </span>
+            </label>
           ))}
         </div>
       </div>
 
-      {/* Shape Filter */}
-      <div>
-        <h3 className="font-semibold mb-3">Shape</h3>
-        <div className="space-y-2">
-          {topShapes.map((shape) => (
-            <div key={shape} className="flex items-center gap-2">
-              <Checkbox
-                id={`shape-${shape}`}
-                checked={selectedShapes.includes(shape)}
-                onCheckedChange={() => toggleShape(shape)}
-                data-testid={`checkbox-shape-${shape}`}
-              />
-              <Label htmlFor={`shape-${shape}`} className="capitalize cursor-pointer">
-                {shape}
-              </Label>
-            </div>
+      {/* Minimum Rating */}
+      <div className="space-y-3">
+        <label className="ds-label">Minimum Rating</label>
+        <div className="flex flex-wrap gap-2">
+          {[0, 75, 80, 85, 90].map((rating) => (
+            <button
+              key={rating}
+              onClick={() => setMinRating(rating)}
+              className={`px-3 py-1 text-xs rounded-full font-medium transition-colors ${
+                minRating === rating
+                  ? "bg-ds-primary text-white"
+                  : "bg-ds-surface-highest text-ds-on-surface hover:bg-ds-surface-high"
+              }`}
+              data-testid={rating === 0 ? "select-rating-all" : `select-rating-${rating}`}
+            >
+              {rating === 0 ? "All" : `${rating}+`}
+            </button>
           ))}
         </div>
       </div>
 
-      {/* Game Level Filter */}
-      <div>
-        <h3 className="font-semibold mb-3">Level</h3>
-        <div className="space-y-2">
-          {gameLevels.map((level) => (
-            <div key={level} className="flex items-center gap-2">
-              <Checkbox
-                id={`level-${level}`}
-                checked={selectedLevels.includes(level)}
-                onCheckedChange={() => toggleLevel(level)}
-                data-testid={`checkbox-level-${level}`}
-              />
-              <Label htmlFor={`level-${level}`} className="cursor-pointer">
-                {level}
-              </Label>
-            </div>
-          ))}
-        </div>
+      {/* In Stock Toggle */}
+      <div className="space-y-3">
+        <label className="ds-label">Availability</label>
+        <button
+          onClick={() => setInStockOnly(!inStockOnly)}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all w-full ${
+            inStockOnly
+              ? "bg-ds-primary text-white"
+              : "bg-white border border-ds-outline-variant/20 hover:border-ds-primary-container text-ds-on-surface"
+          }`}
+        >
+          <PackageCheck className="h-3.5 w-3.5" />
+          In Stock Only
+          <span className={`ml-auto text-[10px] ${inStockOnly ? "text-white/70" : "text-ds-secondary"}`}>
+            ({inStockCount})
+          </span>
+        </button>
       </div>
 
-      {/* Rating Filter */}
-      <div>
-        <h3 className="font-semibold mb-3">Minimum Rating</h3>
-        <Select value={minRating.toString()} onValueChange={(v) => setMinRating(Number(v))}>
-          <SelectTrigger data-testid="select-min-rating">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0" data-testid="select-rating-all">All Ratings</SelectItem>
-            <SelectItem value="75" data-testid="select-rating-75">75+</SelectItem>
-            <SelectItem value="80" data-testid="select-rating-80">80+</SelectItem>
-            <SelectItem value="85" data-testid="select-rating-85">85+</SelectItem>
-            <SelectItem value="90" data-testid="select-rating-90">90+</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Brand Filter */}
-      <div>
-        <h3 className="font-semibold mb-3">Brand</h3>
-        <div className="space-y-2 max-h-64 overflow-y-auto">
-          {brands.map((brand) => (
-            <div key={brand} className="flex items-center gap-2">
-              <Checkbox
-                id={`brand-${brand}`}
-                checked={selectedBrands.includes(brand)}
-                onCheckedChange={() => toggleBrand(brand)}
-                data-testid={`checkbox-brand-${brand}`}
-              />
-              <Label htmlFor={`brand-${brand}`} className="cursor-pointer">
-                {brand}
-              </Label>
-            </div>
-          ))}
-        </div>
-      </div>
+      {/* Reset Filters */}
+      {hasActiveFilters && (
+        <button
+          onClick={clearFilters}
+          className="w-full py-3 bg-ds-inverse-surface text-ds-inverse-on-surface rounded-xl font-bold text-xs uppercase tracking-[0.15em] hover:opacity-90 transition-opacity"
+          data-testid="button-clear-filters"
+        >
+          Reset Filters
+        </button>
+      )}
     </div>
   );
+
+  // Generate pagination numbers
+  const paginationPages = useMemo(() => {
+    const pages: (number | "ellipsis")[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      if (currentPage > 3) pages.push("ellipsis");
+      for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPages - 1, currentPage + 1); i++) {
+        pages.push(i);
+      }
+      if (currentPage < totalPages - 2) pages.push("ellipsis");
+      pages.push(totalPages);
+    }
+    return pages;
+  }, [currentPage, totalPages]);
 
   return (
     <>
       <SEO {...seoData} />
       <StructuredData data={structuredData} />
-      <div className="min-h-screen bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-10">
-          {/* Breadcrumbs */}
-          <Breadcrumbs items={[{ label: "Rackets" }]} />
-
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="font-heading font-bold text-3xl sm:text-4xl md:text-5xl mb-3" data-testid="text-page-title">
-              Padel Racket Reviews
-            </h1>
-            <p className="text-muted-foreground text-base sm:text-lg">
-              Discover padel rackets from renowned brands with detailed ratings and expert reviews
-            </p>
+      <div className="min-h-screen bg-ds-surface">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 flex flex-col lg:flex-row gap-8">
+          {/* Breadcrumbs — full width above the flex layout */}
+          <div className="w-full lg:hidden">
+            <Breadcrumbs items={[{ label: "Rackets" }]} />
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-8">
-            {/* Desktop Sidebar Filters */}
-            <aside className="hidden lg:block w-64 flex-shrink-0">
-              <Card className="sticky top-24">
-                <CardContent className="p-5 sm:p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="font-semibold text-lg">Filters</h2>
-                    {hasActiveFilters && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={clearFilters}
-                        data-testid="button-clear-filters"
-                      >
-                        Clear All
-                      </Button>
-                    )}
-                  </div>
-                  <FilterContent />
-                </CardContent>
-              </Card>
-            </aside>
-
-            {/* Main Content */}
-            <div className="flex-1">
-              {/* Toolbar */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-3 flex-wrap">
-                  {/* Mobile Filter Button */}
-                  <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                    <SheetTrigger asChild>
-                      <Button variant="outline" className="lg:hidden" data-testid="button-mobile-filters">
-                        <SlidersHorizontal className="h-4 w-4 mr-2" />
-                        Filters
-                        {hasActiveFilters && (
-                          <Badge variant="secondary" className="ml-2">
-                            {selectedBrands.length + selectedShapes.length + selectedGenders.length + selectedLevels.length + (minRating > 0 ? 1 : 0) + (inStockOnly ? 1 : 0) + ((priceRange[0] > 0 || priceRange[1] < 500) ? 1 : 0)}
-                          </Badge>
-                        )}
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm">
-                      <SheetHeader>
-                        <SheetTitle>Filters</SheetTitle>
-                      </SheetHeader>
-                      <div className="mt-6 pb-6 overflow-y-auto h-[calc(100vh-5rem)]">
-                        <FilterContent />
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-
-                  {/* Active Filters */}
-                  {selectedBrands.map((brand) => (
-                    <Badge key={brand} variant="secondary" className="gap-1" data-testid={`badge-filter-${brand}`}>
-                      {brand}
-                      <button onClick={() => toggleBrand(brand)} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedShapes.map((shape) => (
-                    <Badge key={shape} variant="secondary" className="gap-1 capitalize" data-testid={`badge-filter-${shape}`}>
-                      {shape}
-                      <button onClick={() => toggleShape(shape)} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedGenders.map((gender) => (
-                    <Badge key={gender} variant="secondary" className="gap-1 capitalize" data-testid={`badge-filter-gender-${gender}`}>
-                      {gender}
-                      <button onClick={() => toggleGender(gender)} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {selectedLevels.map((level) => (
-                    <Badge key={level} variant="secondary" className="gap-1" data-testid={`badge-filter-level-${level}`}>
-                      {level}
-                      <button onClick={() => toggleLevel(level)} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                  {(priceRange[0] > 0 || priceRange[1] < 500) && (
-                    <Badge variant="secondary" className="gap-1" data-testid="badge-filter-price">
-                      €{priceRange[0]} - €{priceRange[1]}
-                      <button onClick={() => setPriceRange([0, 500])} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  )}
-                  {minRating > 0 && (
-                    <Badge variant="secondary" className="gap-1" data-testid="badge-filter-rating">
-                      Rating {minRating}+
-                      <button onClick={() => setMinRating(0)} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  )}
-                  {inStockOnly && (
-                    <Badge variant="secondary" className="gap-1">
-                      In Stock Only
-                      <button onClick={() => setInStockOnly(false)} className="ml-1 hover:text-foreground">
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Sort */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Sort by:</span>
-                  <Select value={sortBy} onValueChange={setSortBy}>
-                    <SelectTrigger className="w-40" data-testid="select-sort">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest" data-testid="select-sort-newest">Newest</SelectItem>
-                      <SelectItem value="rating" data-testid="select-sort-rating">Highest Rated</SelectItem>
-                      <SelectItem value="price-low" data-testid="select-sort-price-low">Price: Low to High</SelectItem>
-                      <SelectItem value="price-high" data-testid="select-sort-price-high">Price: High to Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          {/* Desktop Sidebar Filters */}
+          <aside className="hidden lg:block w-72 shrink-0">
+            <div className="sticky top-24 space-y-8">
+              {/* Breadcrumbs in sidebar area on desktop */}
+              <Breadcrumbs items={[{ label: "Rackets" }]} />
+              <div>
+                <h3 className="font-heading font-extrabold text-sm uppercase tracking-[0.15em] text-ds-on-surface mb-6">
+                  Refine Selection
+                </h3>
+                <FilterContent />
               </div>
+            </div>
+          </aside>
 
-              {/* Results Count */}
-              {!isLoading && (
-                <p className="text-sm text-muted-foreground mb-6" data-testid="text-results-count">
-                  Showing {startIndex + 1}-{Math.min(endIndex, totalRackets)} of {totalRackets} racket{totalRackets !== 1 ? "s" : ""}
-                </p>
-              )}
+          {/* Main Content */}
+          <section className="flex-1 min-w-0">
+            {/* Header & Sorting */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 sm:mb-8 gap-4">
+              <div>
+                <span className="ds-label text-ds-primary tracking-[0.2em]">
+                  Elite Performance Editorial
+                </span>
+                <h1
+                  className="text-3xl sm:text-4xl font-heading font-black tracking-tighter mt-1 text-ds-on-surface"
+                  data-testid="text-page-title"
+                >
+                  Padel Rackets {new Date().getFullYear()}
+                </h1>
+              </div>
+              <div className="flex items-center gap-4">
+                {/* Mobile Filter Button */}
+                <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                  <SheetTrigger asChild>
+                    <button className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white rounded-xl text-xs font-bold text-ds-on-surface" data-testid="button-mobile-filters">
+                      <SlidersHorizontal className="h-4 w-4" />
+                      Filters
+                      {activeFilterCount > 0 && (
+                        <span className="bg-ds-primary text-white text-[10px] rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                          {activeFilterCount}
+                        </span>
+                      )}
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-full max-w-xs sm:max-w-sm bg-ds-surface">
+                    <SheetHeader>
+                      <SheetTitle className="font-heading font-extrabold text-sm uppercase tracking-[0.15em]">
+                        Refine Selection
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-6 pb-6 overflow-y-auto h-[calc(100vh-5rem)]">
+                      <FilterContent />
+                    </div>
+                  </SheetContent>
+                </Sheet>
 
-              {/* Rackets Grid */}
-              {isLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {Array.from({ length: 12 }).map((_, i) => (
-                    <Card key={i}>
-                      <CardContent className="p-0">
-                        <Skeleton className="aspect-[3/4] w-full" />
-                        <div className="p-6 space-y-3">
-                          <Skeleton className="h-4 w-3/4" />
-                          <Skeleton className="h-6 w-full" />
-                          <Skeleton className="h-20 w-full" />
-                        </div>
-                      </CardContent>
-                    </Card>
+                {!isLoading && (
+                  <span className="text-xs font-medium text-ds-on-surface-variant" data-testid="text-results-count">
+                    Showing {totalRackets} results
+                  </span>
+                )}
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="bg-white border-none rounded-xl text-xs font-bold py-2.5 pl-4 pr-10 focus:ring-2 focus:ring-ds-primary-container cursor-pointer text-ds-on-surface"
+                  data-testid="select-sort"
+                >
+                  <option value="rating">Top Rated First</option>
+                  <option value="price-low">Price: Low to High</option>
+                  <option value="price-high">Price: High to Low</option>
+                  <option value="newest">Newest Arrival</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Active Filter Badges */}
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 flex-wrap mb-6">
+                {selectedBrands.map((brand) => (
+                  <span key={brand} className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full" data-testid={`badge-filter-${brand}`}>
+                    {brand}
+                    <button onClick={() => toggleBrand(brand)} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {selectedShapes.map((shape) => (
+                  <span key={shape} className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full capitalize" data-testid={`badge-filter-${shape}`}>
+                    {shape}
+                    <button onClick={() => toggleShape(shape)} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {selectedGenders.map((gender) => (
+                  <span key={gender} className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full capitalize" data-testid={`badge-filter-gender-${gender}`}>
+                    {gender}
+                    <button onClick={() => toggleGender(gender)} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {selectedLevels.map((level) => (
+                  <span key={level} className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full" data-testid={`badge-filter-level-${level}`}>
+                    {level}
+                    <button onClick={() => toggleLevel(level)} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                {(priceRange[0] > 0 || priceRange[1] < 500) && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full" data-testid="badge-filter-price">
+                    €{priceRange[0]} - €{priceRange[1]}
+                    <button onClick={() => setPriceRange([0, 500])} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {minRating > 0 && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full" data-testid="badge-filter-rating">
+                    Rating {minRating}+
+                    <button onClick={() => setMinRating(0)} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {inStockOnly && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 bg-ds-primary/10 text-ds-primary text-xs font-medium rounded-full">
+                    In Stock Only
+                    <button onClick={() => setInStockOnly(false)} className="hover:text-ds-on-surface">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                <button
+                  onClick={clearFilters}
+                  className="text-xs font-bold text-ds-error hover:underline ml-1"
+                >
+                  Clear all
+                </button>
+              </div>
+            )}
+
+            {/* Rackets Grid */}
+            {isLoading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 12 }).map((_, i) => (
+                  <div key={i} className="bg-white rounded-3xl overflow-hidden animate-pulse">
+                    <div className="h-72 sm:h-80 bg-ds-surface-low" />
+                    <div className="p-6 space-y-4">
+                      <div className="h-5 bg-ds-surface-low rounded w-3/4" />
+                      <div className="h-3 bg-ds-surface-low rounded w-1/2" />
+                      <div className="space-y-3">
+                        <div className="h-1.5 bg-ds-surface-low rounded-full" />
+                        <div className="h-1.5 bg-ds-surface-low rounded-full" />
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="h-12 bg-ds-surface-low rounded-xl" />
+                        <div className="h-12 bg-ds-surface-low rounded-xl" />
+                        <div className="h-12 bg-ds-surface-low rounded-xl" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : filteredRackets && filteredRackets.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {paginatedRackets.map((racket) => (
+                    <RacketCard key={racket.id} racket={racket} />
                   ))}
                 </div>
-              ) : filteredRackets && filteredRackets.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {paginatedRackets.map((racket) => (
-                      <RacketCard key={racket.id} racket={racket} />
-                    ))}
-                  </div>
 
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="mt-8">
-                      <Pagination>
-                        <PaginationContent>
-                          <PaginationItem>
-                            <Button
-                              variant="ghost"
-                              size="default"
-                              onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-                              disabled={currentPage === 1}
-                              className="gap-1 pl-2.5"
-                            >
-                              <ChevronLeft className="h-4 w-4" />
-                              <span>Previous</span>
-                            </Button>
-                          </PaginationItem>
-
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
-                            // Show first page, last page, current page, and pages around current
-                            const showPage =
-                              page === 1 ||
-                              page === totalPages ||
-                              (page >= currentPage - 1 && page <= currentPage + 1);
-
-                            if (!showPage) {
-                              // Show ellipsis
-                              if (page === currentPage - 2 || page === currentPage + 2) {
-                                return (
-                                  <PaginationItem key={page}>
-                                    <PaginationEllipsis />
-                                  </PaginationItem>
-                                );
-                              }
-                              return null;
-                            }
-
-                            return (
-                              <PaginationItem key={page}>
-                                <Button
-                                  variant={currentPage === page ? "outline" : "ghost"}
-                                  size="icon"
-                                  onClick={() => setCurrentPage(page)}
-                                  className="h-9 w-9"
-                                >
-                                  {page}
-                                </Button>
-                              </PaginationItem>
-                            );
-                          })}
-
-                          <PaginationItem>
-                            <Button
-                              variant="ghost"
-                              size="default"
-                              onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-                              disabled={currentPage === totalPages}
-                              className="gap-1 pr-2.5"
-                            >
-                              <span>Next</span>
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </PaginationItem>
-                        </PaginationContent>
-                      </Pagination>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="mt-12 flex flex-col items-center gap-6">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-ds-surface-high text-ds-on-surface hover:bg-ds-surface-dim transition-colors disabled:opacity-40"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      {paginationPages.map((page, idx) =>
+                        page === "ellipsis" ? (
+                          <span key={`ellipsis-${idx}`} className="px-2 text-ds-on-surface-variant">...</span>
+                        ) : (
+                          <button
+                            key={page}
+                            onClick={() => setCurrentPage(page)}
+                            className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-colors ${
+                              currentPage === page
+                                ? "bg-ds-primary text-white"
+                                : "bg-white text-ds-on-surface hover:bg-ds-surface-high"
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        )
+                      )}
+                      <button
+                        onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                        className="w-10 h-10 flex items-center justify-center rounded-xl bg-ds-surface-high text-ds-on-surface hover:bg-ds-surface-dim transition-colors disabled:opacity-40"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
                     </div>
-                  )}
-                </>
-              ) : (
-                <Card>
-                  <CardContent className="flex flex-col items-center justify-center py-16">
-                    <p className="text-muted-foreground text-center mb-4">
-                      No rackets found matching your filters
-                    </p>
-                    {hasActiveFilters && (
-                      <Button onClick={clearFilters} data-testid="button-clear-filters-empty">
-                        Clear Filters
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
-        </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-white rounded-3xl p-16 text-center">
+                <p className="text-ds-on-surface-variant mb-4">
+                  No rackets found matching your filters
+                </p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={clearFilters}
+                    className="ds-btn-primary"
+                    data-testid="button-clear-filters-empty"
+                  >
+                    Clear Filters
+                  </button>
+                )}
+              </div>
+            )}
+          </section>
+        </main>
       </div>
     </>
   );

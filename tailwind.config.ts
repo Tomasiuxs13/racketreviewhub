@@ -11,6 +11,24 @@ export default {
         sm: ".1875rem", /* 3px */
       },
       colors: {
+        // Design system surface palette
+        "ds-surface": "#f9f9ff",
+        "ds-surface-low": "#f0f3ff",
+        "ds-surface-high": "#e2e8f8",
+        "ds-surface-highest": "#dce2f3",
+        "ds-surface-dim": "#d3daea",
+        "ds-surface-variant": "#dce2f3",
+        "ds-inverse-surface": "#2a313d",
+        "ds-inverse-on-surface": "#ebf1ff",
+        "ds-on-surface": "#151c27",
+        "ds-on-surface-variant": "#3c4a42",
+        "ds-primary": "#006c49",
+        "ds-primary-container": "#10b981",
+        "ds-primary-fixed": "#6ffbbe",
+        "ds-outline": "#6c7a71",
+        "ds-outline-variant": "#bbcabf",
+        "ds-secondary": "#545f73",
+        "ds-error": "#ba1a1a",
         // Flat / base colors (regular buttons)
         background: "hsl(var(--background) / <alpha-value>)",
         foreground: "hsl(var(--foreground) / <alpha-value>)",
