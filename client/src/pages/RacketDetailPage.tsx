@@ -231,8 +231,9 @@ export default function RacketDetailPage() {
 
           {/* HERO SECTION */}
           <div className="review-hero-section mb-16">
+            {/* Left: Content */}
             <div className="review-hero-content">
-              {/* Left: Title, Badges, Score, Quote, Quick Buy */}
+              {/* Title, Badges, Score, Quote, Author */}
               <div className="flex flex-col justify-start space-y-6 lg:space-y-8">
                 {/* Badges */}
                 <div className="flex flex-wrap items-center gap-2">
@@ -300,32 +301,32 @@ export default function RacketDetailPage() {
                   </div>
                 )}
               </div>
+            </div>
 
-              {/* Right: Product Image with Glow */}
-              <div className="review-hero-image">
-                {racket.imageUrl ? (
-                  <div className="relative flex items-center justify-center aspect-square">
-                    {/* Glow effect */}
-                    <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-transparent blur-3xl" />
-                    {/* Image */}
-                    <div className="relative z-10">
-                      <img
-                        src={getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 800)}
-                        srcSet={`${getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 400)} 400w, ${getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 800)} 800w`}
-                        sizes="(max-width: 768px) 100vw, 800px"
-                        alt={`${racket.brand} ${racket.model}`}
-                        className="max-w-[85%] max-h-[85%] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
-                        fetchPriority="high"
-                        data-testid="img-racket-detail"
-                      />
-                    </div>
+            {/* Right: Product Image with Glow */}
+            <div className="review-hero-image">
+              {racket.imageUrl ? (
+                <div className="relative flex items-center justify-center aspect-square">
+                  {/* Glow effect */}
+                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-transparent blur-3xl" />
+                  {/* Image */}
+                  <div className="relative z-10">
+                    <img
+                      src={getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 800)}
+                      srcSet={`${getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 400)} 400w, ${getOptimizedImageUrl(upscaleProductserveUrl(racket.imageUrl), 800)} 800w`}
+                      sizes="(max-width: 768px) 100vw, 800px"
+                      alt={`${racket.brand} ${racket.model}`}
+                      className="max-w-[85%] max-h-[85%] object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+                      fetchPriority="high"
+                      data-testid="img-racket-detail"
+                    />
                   </div>
-                ) : (
-                  <div className="aspect-square flex items-center justify-center bg-muted/30 rounded-2xl">
-                    <span className="text-muted-foreground font-medium">{t("racket.detail.noImage")}</span>
-                  </div>
-                )}
-              </div>
+                </div>
+              ) : (
+                <div className="aspect-square flex items-center justify-center bg-muted/30 rounded-2xl">
+                  <span className="text-muted-foreground font-medium">{t("racket.detail.noImage")}</span>
+                </div>
+              )}
             </div>
           </div>
 
