@@ -283,9 +283,31 @@ export default function RacketDetailPage() {
                   <div className="bg-card p-6 rounded-xl shadow-sm border border-border/40">
                     <div className="flex flex-col gap-4">
                       {formattedCurrentPrice && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t("racket.detail.currentPriceShort")}</span>
-                          <span className="text-2xl font-black text-foreground">{formattedCurrentPrice}</span>
+                        <div className="space-y-2">
+                          {hasOriginalPrice && originalPriceValue > currentPriceValue ? (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t("racket.detail.previousPrice")}</span>
+                                <span className="text-base text-muted-foreground line-through decoration-destructive/50">
+                                  €{originalPriceValue.toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t("racket.detail.currentPrice")}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-2xl font-black text-foreground">{formattedCurrentPrice}</span>
+                                  <span className="text-xs font-bold text-white bg-red-500 rounded-md px-1.5 py-0.5">
+                                    {t("racket.detail.save", { percent: String(discountPercentage) })}
+                                  </span>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t("racket.detail.currentPriceShort")}</span>
+                              <span className="text-2xl font-black text-foreground">{formattedCurrentPrice}</span>
+                            </div>
+                          )}
                         </div>
                       )}
 
