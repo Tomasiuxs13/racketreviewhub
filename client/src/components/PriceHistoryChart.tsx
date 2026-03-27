@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 import type { PriceHistory } from "@shared/schema";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -24,45 +24,82 @@ export function PriceHistoryChart({ racketId, currentPrice }: PriceHistoryChartP
   });
 
   if (isLoading || !history || history.length < 2) {
-    return null; // Don't show chart if fewer than 2 data points
+    return null;
   }
 
-  // Group by date and take the lowest price per day (avoids mixing sources like CJ vs Padel Market)
-  const priceByDate = new Map<string, { price: number; fullDate: string; date: string }>();
+  const currentPriceNum = Number(currentPrice);
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+  // Build 6 month buckets
+  const months: { key: string; label: string; year: number; month: number }[] = [];
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(sixMonthsAgo.getFullYear(), sixMonthsAgo.getMonth() + i, 1);
+    months.push({
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      label: d.toLocaleDateString("en-GB", { month: "short" }),
+      year: d.getFullYear(),
+      month: d.getMonth(),
+    });
+  }
+
+  // Group history entries by month, take lowest price per month per day first
+  const monthlyPrices = new Map<string, number[]>();
   for (const entry of history) {
     const d = new Date(entry.recordedAt);
-    const dateKey = d.toISOString().slice(0, 10);
-    const price = Number(entry.price);
-    const existing = priceByDate.get(dateKey);
-    if (!existing || price < existing.price) {
-      priceByDate.set(dateKey, {
-        date: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
-        price,
-        fullDate: d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
-      });
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    if (!monthlyPrices.has(key)) {
+      monthlyPrices.set(key, []);
+    }
+    monthlyPrices.get(key)!.push(Number(entry.price));
+  }
+
+  // Build chart data — use lowest price in each month, fill gaps with previous month or current price
+  const chartData: { month: string; price: number }[] = [];
+  let lastKnownPrice = currentPriceNum;
+
+  // Find the earliest known price to use as fallback for months before data
+  const allPrices = history.map((e) => Number(e.price));
+  const earliestPrice = allPrices[0] ?? currentPriceNum;
+  lastKnownPrice = earliestPrice;
+
+  for (const m of months) {
+    const prices = monthlyPrices.get(m.key);
+    if (prices && prices.length > 0) {
+      lastKnownPrice = Math.min(...prices);
+    }
+    chartData.push({ month: m.label, price: lastKnownPrice });
+  }
+
+  // Ensure last month reflects the actual current price
+  if (chartData.length > 0) {
+    const lastMonth = months[months.length - 1];
+    const isCurrentMonth =
+      lastMonth.year === now.getFullYear() && lastMonth.month === now.getMonth();
+    if (isCurrentMonth) {
+      chartData[chartData.length - 1].price = Math.min(
+        chartData[chartData.length - 1].price,
+        currentPriceNum
+      );
     }
   }
-  const chartData = Array.from(priceByDate.values());
 
   const prices = chartData.map((d) => d.price);
   const minPrice = Math.min(...prices);
   const maxPrice = Math.max(...prices);
-  const currentPriceNum = Number(currentPrice);
   const firstPrice = prices[0];
   const priceDiff = currentPriceNum - firstPrice;
   const priceDiffPercent = firstPrice > 0 ? ((priceDiff / firstPrice) * 100).toFixed(1) : "0";
 
-  // Determine trend
   const trend = priceDiff < -0.5 ? "down" : priceDiff > 0.5 ? "up" : "stable";
 
-  // Y-axis padding
-  const yMin = Math.floor(minPrice * 0.95);
-  const yMax = Math.ceil(maxPrice * 1.05);
+  const yMin = Math.floor(minPrice * 0.92);
+  const yMax = Math.ceil(maxPrice * 1.08);
 
   return (
     <Card>
       <CardContent className="p-4 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-sm sm:text-base">Price History</h3>
           <div className="flex items-center gap-1.5 text-xs sm:text-sm">
             {trend === "down" ? (
@@ -87,50 +124,62 @@ export function PriceHistoryChart({ racketId, currentPrice }: PriceHistoryChartP
             )}
           </div>
         </div>
+        <p className="text-xs text-muted-foreground mb-4">Last 6 months · Best available price</p>
         <div className="h-[200px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 5 }}>
+              <defs>
+                <linearGradient id="priceGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" vertical={false} />
               <XAxis
-                dataKey="date"
-                tick={{ fontSize: 11 }}
+                dataKey="month"
+                tick={{ fontSize: 12 }}
                 className="text-muted-foreground"
-                interval="preserveStartEnd"
+                axisLine={false}
+                tickLine={false}
               />
               <YAxis
                 domain={[yMin, yMax]}
                 tick={{ fontSize: 11 }}
                 className="text-muted-foreground"
                 tickFormatter={(value) => `€${value}`}
+                axisLine={false}
+                tickLine={false}
               />
               <Tooltip
                 content={({ active, payload }) => {
                   if (active && payload && payload.length) {
                     const data = payload[0].payload;
                     return (
-                      <div className="rounded-md border bg-background p-2 shadow-sm">
-                        <p className="text-xs text-muted-foreground">{data.fullDate}</p>
-                        <p className="text-sm font-semibold">€{data.price.toFixed(2)}</p>
+                      <div className="rounded-lg border bg-background px-3 py-2 shadow-md">
+                        <p className="text-xs font-medium text-muted-foreground">{data.month}</p>
+                        <p className="text-base font-bold">€{data.price.toFixed(2)}</p>
                       </div>
                     );
                   }
                   return null;
                 }}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="price"
                 stroke="hsl(var(--primary))"
-                strokeWidth={2}
-                dot={{ r: 3, fill: "hsl(var(--primary))" }}
-                activeDot={{ r: 5 }}
+                strokeWidth={2.5}
+                fill="url(#priceGradient)"
+                dot={{ r: 4, fill: "hsl(var(--primary))", strokeWidth: 2, stroke: "white" }}
+                activeDot={{ r: 6, strokeWidth: 2, stroke: "white" }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-2">
-          <span>Low: €{minPrice.toFixed(2)}</span>
-          <span>High: €{maxPrice.toFixed(2)}</span>
+        <div className="flex justify-between text-xs text-muted-foreground mt-3 px-1">
+          <span>Low: <span className="font-semibold text-green-600">€{minPrice.toFixed(2)}</span></span>
+          <span>Current: <span className="font-semibold text-foreground">€{currentPriceNum.toFixed(2)}</span></span>
+          <span>High: <span className="font-semibold text-red-500">€{maxPrice.toFixed(2)}</span></span>
         </div>
       </CardContent>
     </Card>
