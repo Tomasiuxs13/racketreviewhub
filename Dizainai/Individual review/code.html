@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dce2f3",
+              "primary-fixed": "#6ffbbe",
+              "on-primary-fixed": "#002113",
+              "secondary-fixed": "#d8e3fb",
+              "surface": "#f9f9ff",
+              "on-background": "#151c27",
+              "error": "#ba1a1a",
+              "background": "#f9f9ff",
+              "on-primary-fixed-variant": "#005236",
+              "on-primary-container": "#00422b",
+              "surface-container-high": "#e2e8f8",
+              "inverse-on-surface": "#ebf1ff",
+              "on-secondary-fixed-variant": "#3c475a",
+              "secondary-container": "#d5e0f8",
+              "tertiary-fixed-dim": "#b9c7e0",
+              "primary-container": "#10b981",
+              "tertiary-container": "#95a4bb",
+              "on-tertiary": "#ffffff",
+              "outline": "#6c7a71",
+              "primary": "#006c49",
+              "tertiary-fixed": "#d5e3fd",
+              "on-tertiary-container": "#2c3a4e",
+              "surface-container": "#e7eefe",
+              "on-surface-variant": "#3c4a42",
+              "on-tertiary-fixed-variant": "#3a485c",
+              "on-secondary-container": "#586377",
+              "inverse-primary": "#4edea3",
+              "primary-fixed-dim": "#4edea3",
+              "surface-bright": "#f9f9ff",
+              "surface-container-highest": "#dce2f3",
+              "inverse-surface": "#2a313d",
+              "on-error": "#ffffff",
+              "on-primary": "#ffffff",
+              "on-surface": "#151c27",
+              "on-tertiary-fixed": "#0d1c2f",
+              "surface-tint": "#006c49",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "surface-dim": "#d3daea",
+              "surface-container-low": "#f0f3ff",
+              "on-secondary-fixed": "#111c2d",
+              "error-container": "#ffdad6",
+              "secondary-fixed-dim": "#bcc7de",
+              "secondary": "#545f73",
+              "tertiary": "#515f74",
+              "on-error-container": "#93000a",
+              "outline-variant": "#bbcabf"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .radar-grid {
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+<div class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter">Racket Hub</div>
+<div class="hidden md:flex gap-8 items-center">
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Catalog</a>
+<a class="text-emerald-600 dark:text-emerald-400 border-b-2 border-emerald-500 pb-1" href="#">Reviews</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Guides</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Quiz</a>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg p-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">search</span>
+</button>
+<button class="hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg p-2 transition-all active:scale-95">
+<span class="material-symbols-outlined text-slate-600 dark:text-slate-400">person</span>
+</button>
+</div>
+</div>
+</nav>
+<main class="max-w-7xl mx-auto px-6 pt-8 pb-24">
+<!-- Hero Section -->
+<header class="relative grid md:grid-cols-2 gap-12 items-center mb-16">
+<div class="z-10 order-2 md:order-1">
+<nav class="flex items-center gap-2 mb-6 text-sm font-medium text-secondary">
+<span>Reviews</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span>Nox</span>
+<span class="material-symbols-outlined text-xs">chevron_right</span>
+<span class="text-primary">AT10 Genius 18K Alum</span>
+</nav>
+<h1 class="text-5xl md:text-7xl font-black tracking-tighter leading-none mb-6 text-on-background">
+                    NOX AT10 <br/>GENIUS 18K <span class="text-primary-container">ALUM</span>
+</h1>
+<div class="flex items-center gap-4 mb-8">
+<div class="bg-primary text-white px-4 py-2 rounded-xl flex flex-col items-center">
+<span class="text-3xl font-black">94</span>
+<span class="text-[10px] font-bold tracking-widest uppercase">Score</span>
+</div>
+<div class="text-secondary-fixed-variant font-medium max-w-xs">
+                        "The most balanced weapon in the 2024 circuit. Precision meets power."
+                    </div>
+</div>
+<!-- Quick Buy Card -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<span class="text-sm font-label font-bold tracking-widest text-secondary uppercase">Starting at</span>
+<span class="text-2xl font-black text-on-surface">€249.00</span>
+</div>
+<button class="w-full py-4 bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:shadow-primary-container/20 transition-all active:scale-95">
+                            BUY NOW AT PADEL NUESTRO
+                        </button>
+<div class="pt-4 border-t border-surface-variant flex flex-col gap-3">
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium">Padel Market</span>
+<span class="text-sm font-bold">€254.50</span>
+</div>
+<div class="flex justify-between items-center">
+<span class="text-sm font-medium">Tennis-Point</span>
+<span class="text-sm font-bold">€259.00</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="relative order-1 md:order-2">
+<div class="absolute -inset-4 bg-primary-container/10 blur-3xl rounded-full"></div>
+<img class="relative w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-500" data-alt="Close-up studio shot of a high-end Nox Padel racket featuring intricate carbon fiber textures and metallic accents against a clean minimalist background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoI_peBMTWlzKOu7Cjtz2NWgY3qa5s6vHD8sGqumaaZWfZPtSa69rCpMe1gqPr44sAtwpgILtrohAi46jXc6K_uYC6kp5Aen4Lx9cGVJZwwJNrd1NP62Jfe6xMAG4nTDh8Gg4YucDWjdeAnGLnuFAP9nsmoJfOuGsNej2Iw2K1xPfpwyTDX3odxMzXWUgV-O5niyfcMu10m1VM1wpyWAQSXgydShYqp7QLl8DaU1Omp5IU2XNV_jYwOxfiqZW56AuJWcP_yT7Cm6o"/>
+</div>
+</header>
+<!-- Bento Stats Grid -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+<!-- Radar Chart Simulation -->
+<div class="md:col-span-2 bg-surface-container-low p-8 rounded-xl flex flex-col items-center justify-center">
+<h3 class="font-label font-black tracking-widest uppercase text-sm mb-10 self-start">Performance Radar</h3>
+<div class="relative w-64 h-64 flex items-center justify-center">
+<div class="absolute inset-0 border-2 border-outline-variant/20 radar-grid scale-100"></div>
+<div class="absolute inset-0 border border-outline-variant/20 radar-grid scale-75"></div>
+<div class="absolute inset-0 border border-outline-variant/20 radar-grid scale-50"></div>
+<!-- Data Shape -->
+<div class="absolute inset-0 bg-primary-container/30 border-2 border-primary-container radar-grid" style="clip-path: polygon(50% 5%, 95% 50%, 50% 85%, 15% 50%);"></div>
+<span class="absolute top-[-30px] font-label font-bold text-[10px] tracking-widest">POWER</span>
+<span class="absolute right-[-60px] font-label font-bold text-[10px] tracking-widest">CONTROL</span>
+<span class="absolute bottom-[-30px] font-label font-bold text-[10px] tracking-widest">MANOEUVRABILITY</span>
+<span class="absolute left-[-60px] font-label font-bold text-[10px] tracking-widest">SWEET SPOT</span>
+</div>
+</div>
+<!-- Specs Table -->
+<div class="bg-inverse-surface text-white p-8 rounded-xl">
+<h3 class="font-label font-black tracking-widest uppercase text-sm mb-6 text-primary-fixed">Technical Specs</h3>
+<div class="space-y-4">
+<div class="flex justify-between items-center py-3 border-b border-white/10">
+<span class="text-sm font-label uppercase text-slate-400">Brand</span>
+<span class="font-bold">Nox</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/10">
+<span class="text-sm font-label uppercase text-slate-400">Model</span>
+<span class="font-bold">AT10 18K Alum</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/10">
+<span class="text-sm font-label uppercase text-slate-400">Balance</span>
+<span class="font-bold text-primary-fixed">Medium-High</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/10">
+<span class="text-sm font-label uppercase text-slate-400">Surface</span>
+<span class="font-bold">18K Aluminized</span>
+</div>
+<div class="flex justify-between items-center py-3 border-b border-white/10">
+<span class="text-sm font-label uppercase text-slate-400">Weight</span>
+<span class="font-bold">360-375g</span>
+</div>
+<div class="flex justify-between items-center py-3">
+<span class="text-sm font-label uppercase text-slate-400">Shape</span>
+<span class="font-bold">Teardrop</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Deep Dive Editorial -->
+<section class="grid md:grid-cols-12 gap-12 mb-16">
+<div class="md:col-span-8 space-y-12">
+<article>
+<h2 class="text-4xl font-black tracking-tight mb-6">Performance at the Back</h2>
+<p class="text-lg leading-relaxed text-secondary-fixed-variant mb-6">
+                        The Nox AT10 Genius 18K Alum 2024 feels incredibly solid when defending. Despite its offensive pedigree, the 18K aluminized carbon provides a unique elasticity that assists in the "salida de bola" when you're under pressure. The teardrop shape helps with lobs, offering a generous sweet spot that forgives off-center hits when you're scrambling at the baseline.
+                    </p>
+<div class="grid grid-cols-2 gap-4">
+<img class="rounded-xl h-48 w-full object-cover" data-alt="Professional padel player hitting a deep defensive lob in a modern indoor padel court with bright arena lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAslmwylNtQQ7AYQs2X45u1Pw53cAS222dEJR1ap41sArn2jC1ZqohDVRlo6WM3h7RSjj_PM4YT1genJGkm0aMSFC7CjFLbsFWjO8pCskXO-bVTtM_ELVhk_tOaXz9hrBbzBaCPFCTs7zmrZVoM39u4VbhQbymuHcZDOdHlhPVJQQvxt2_4eCGO2r6K7QB9bXIH2j0bWuJhlrdMmfwpQLK29AwL6CpHjI9UkguVrYt1bb6_GYmXU7_vtCOni4wXW1ngm4WxM1Yo0mY"/>
+<img class="rounded-xl h-48 w-full object-cover" data-alt="Action shot of a padel racket making contact with the ball, showing the compression and power during a smash" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA4KdfuOtmYvxC8U2udG4h5rk0-ebaaPNtB7jaPzD8IoIeG657BIsJwaFa9iDhRVEvNIGtC6wBp2qZSvewHMhP7jgjy_OvcpKWFQdrSmeg1Z6IM8tB1a-rnnPx_hYusP3wAOi6jgZmti9Jc2PXe_yBM5y0RbPUXexkTDGx-BIZp91Z4ldIwy2hNkXHYb5m71_JsdHyJyM2obpe1Xi-CimqsC4lNDcrUxNDrIalLZEYz6OBzmNZvBf1zPEk_cpSP7cPatTXoQf-tcJY"/>
+</div>
+</article>
+<article>
+<h2 class="text-4xl font-black tracking-tight mb-6">Mastery at the Net</h2>
+<p class="text-lg leading-relaxed text-secondary-fixed-variant">
+                        This is where the "Genius" tag truly makes sense. The racket is exceptionally fast. In volley exchanges, the balance allows for rapid adjustments. The 18K Alum surface provides a "crispy" feel that aggressive players will love, delivering immediate feedback and significant power on smashes (remates) without sacrificing the control needed for delicate drop shots.
+                    </p>
+</article>
+<!-- Pros & Cons -->
+<div class="grid md:grid-cols-2 gap-8">
+<div class="bg-emerald-50 p-8 rounded-xl border border-emerald-100">
+<h4 class="font-label font-black uppercase text-sm text-emerald-800 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">thumb_up</span> Pros
+                        </h4>
+<ul class="space-y-4">
+<li class="flex gap-3 text-emerald-900 font-medium">
+<span class="material-symbols-outlined text-emerald-500 shrink-0">check_circle</span>
+                                Exceptional power-to-control ratio
+                            </li>
+<li class="flex gap-3 text-emerald-900 font-medium">
+<span class="material-symbols-outlined text-emerald-500 shrink-0">check_circle</span>
+                                Large, forgiving sweet spot for a pro racket
+                            </li>
+<li class="flex gap-3 text-emerald-900 font-medium">
+<span class="material-symbols-outlined text-emerald-500 shrink-0">check_circle</span>
+                                Premium anti-vibration technology
+                            </li>
+</ul>
+</div>
+<div class="bg-red-50 p-8 rounded-xl border border-red-100">
+<h4 class="font-label font-black uppercase text-sm text-red-800 mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">thumb_down</span> Cons
+                        </h4>
+<ul class="space-y-4">
+<li class="flex gap-3 text-red-900 font-medium">
+<span class="material-symbols-outlined text-red-400 shrink-0">cancel</span>
+                                Premium price point
+                            </li>
+<li class="flex gap-3 text-red-900 font-medium">
+<span class="material-symbols-outlined text-red-400 shrink-0">cancel</span>
+                                Slightly too stiff for absolute beginners
+                            </li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Side Sidebar -->
+<aside class="md:col-span-4 space-y-8">
+<!-- Who Should Buy -->
+<div class="bg-primary-container p-8 rounded-xl text-on-primary-container">
+<span class="material-symbols-outlined text-4xl mb-4">person_celebrate</span>
+<h4 class="text-2xl font-black mb-4">Who Should Buy This?</h4>
+<p class="font-medium opacity-90 leading-relaxed">
+                        Intermediate to Advanced players looking for a versatile "all-rounder" that doesn't compromise on power. If you play both sides of the court and need a racket that reacts as fast as you do, this is the gold standard.
+                    </p>
+</div>
+<!-- FAQ Accordion -->
+<div class="bg-surface-container-low p-6 rounded-xl">
+<h4 class="font-label font-black uppercase text-xs tracking-widest mb-6">Common Questions</h4>
+<div class="space-y-4">
+<details class="group bg-white rounded-lg p-4 cursor-pointer">
+<summary class="flex justify-between items-center font-bold text-sm list-none">
+                                Is it better than the 12K version?
+                                <span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</summary>
+<p class="mt-3 text-sm text-secondary leading-relaxed">
+                                Yes, the 18K Alum offers a more sophisticated touch and better vibration dampening compared to the standard 12K model.
+                            </p>
+</details>
+<details class="group bg-white rounded-lg p-4 cursor-pointer">
+<summary class="flex justify-between items-center font-bold text-sm list-none">
+                                Does it include a cover?
+                                <span class="material-symbols-outlined transition-transform group-open:rotate-180">expand_more</span>
+</summary>
+<p class="mt-3 text-sm text-secondary leading-relaxed">
+                                All 2024 Genius models come with the premium Nox drawstring cover and smart-strap replacement system.
+                            </p>
+</details>
+</div>
+</div>
+</aside>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-slate-900 text-slate-400 py-12 px-6">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
+<div class="text-lg font-bold text-white">Racket Review Hub</div>
+<div class="flex flex-wrap justify-center gap-6">
+<a class="hover:text-white transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-white transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-white transition-colors" href="#">Contact Us</a>
+<a class="hover:text-white transition-colors" href="#">Affiliate Disclosure</a>
+</div>
+<div class="text-sm">© 2024 Racket Review Hub. Elite Performance Editorial.</div>
+</div>
+</footer>
+<!-- BottomNavBar Mobile -->
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe-area pt-2 md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-50">
+<div class="flex flex-col items-center justify-center text-slate-400 py-2 px-4">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-emerald-500 text-white rounded-xl py-2 px-4 scale-110 -translate-y-1 transition-all">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Catalog</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 py-2 px-4">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Guides</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 py-2 px-4">
+<span class="material-symbols-outlined">quiz</span>
+<span class="text-[10px] font-bold uppercase tracking-widest mt-1">Quiz</span>
+</div>
+</div>
+</body></html>

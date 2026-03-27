@@ -136,3 +136,108 @@ export function getOptimizedImageUrl(rawUrl: string | null | undefined, width?: 
 
   return proxyUrl;
 }
+
+/**
+ * Extracts pros and cons from review HTML content
+ * Looks for lists within <div class="pro-card"> and <div class="con-card">
+ */
+export function extractProsConsFromHtml(html: string): { pros: string[]; cons: string[] } {
+  if (!html) return { pros: [], cons: [] };
+
+  const pros: string[] = [];
+  const cons: string[] = [];
+
+  // Extract pros from pro-card
+  const proCardMatch = html.match(/<div class="pro-con-card pro-card">[\s\S]*?<ul class="space-y-2">([\s\S]*?)<\/ul>/);
+  if (proCardMatch) {
+    const proListItems = proCardMatch[1].match(/<li[^>]*>([\s\S]*?)<\/li>/g) || [];
+    proListItems.forEach((item) => {
+      const text = item.replace(/<[^>]*>/g, "").trim();
+      if (text) pros.push(text);
+    });
+  }
+
+  // Extract cons from con-card
+  const conCardMatch = html.match(/<div class="pro-con-card con-card">[\s\S]*?<ul class="space-y-2">([\s\S]*?)<\/ul>/);
+  if (conCardMatch) {
+    const conListItems = conCardMatch[1].match(/<li[^>]*>([\s\S]*?)<\/li>/g) || [];
+    conListItems.forEach((item) => {
+      const text = item.replace(/<[^>]*>/g, "").trim();
+      if (text) cons.push(text);
+    });
+  }
+
+  return { pros, cons };
+}
+
+/**
+ * Extracts FAQ items from review HTML content
+ * Looks for <details> and <summary> tags within FAQ section
+ */
+export function extractFaqFromHtml(html: string): Array<{ question: string; answer: string }> {
+  if (!html) return [];
+
+  const faqItems: Array<{ question: string; answer: string }> = [];
+
+  // Match the FAQ section
+  const faqMatch = html.match(/<div class="review-faq">([\s\S]*?)<\/div>/);
+  if (!faqMatch) return [];
+
+  const faqContent = faqMatch[1];
+
+  // Extract all details/summary pairs
+  const detailsMatches = faqContent.match(/<details class="group[^"]*">([\s\S]*?)<\/details>/g) || [];
+
+  detailsMatches.forEach((details) => {
+    // Extract question from summary
+    const summaryMatch = details.match(/<summary[^>]*>([\s\S]*?)<\/summary>/);
+    const questionText = summaryMatch ? summaryMatch[1].replace(/<[^>]*>/g, "").trim() : "";
+
+    // Extract answer from paragraph
+    const answerMatch = details.match(/<p[^>]*>([\s\S]*?)<\/p>/);
+    const answerText = answerMatch ? answerMatch[1].replace(/<[^>]*>/g, "").trim() : "";
+
+    if (questionText && answerText) {
+      faqItems.push({
+        question: questionText,
+        answer: answerText,
+      });
+    }
+  });
+
+  return faqItems;
+}
+
+/**
+ * Generates a "Who Should Buy" description based on racket specs
+ * Uses gameLevel and gameType to create a targeted description
+ */
+export function generateWhoShouldBuy(racket: Pick<Racket, "gameLevel" | "gameType" | "player">): string {
+  const levelMap: Record<string, string> = {
+    "Beginner": "Beginner to Intermediate players",
+    "Intermediate": "Intermediate players",
+    "Advanced": "Advanced players",
+    "Professional": "Advanced to Professional players",
+  };
+
+  const typeMap: Record<string, string> = {
+    "Aggressive": "looking for power and pace",
+    "Balanced": "looking for an all-rounder",
+    "Defensive": "looking for control and spin",
+    "Competitive": "looking for competitive edge",
+    "Recreational": "looking for comfort and forgiveness",
+  };
+
+  const playerMap: Record<string, string> = {
+    "man": "Men",
+    "woman": "Women",
+    "unisex": "All players",
+  };
+
+  const level = levelMap[racket.gameLevel] || "Intermediate to Advanced players";
+  const type = typeMap[racket.gameType] || "looking for a versatile racket";
+  const playerKey = (racket.player?.toLowerCase() || "unisex") as string;
+  const player = playerMap[playerKey] || "All players";
+
+  return `${level} ${type}. This is the gold standard for anyone who plays both sides of the court and needs a racket that reacts as fast as you do.`;
+}

@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Racket Hub | Elite Padel Performance Catalog</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "surface-variant": "#dce2f3",
+              "primary-fixed": "#6ffbbe",
+              "on-primary-fixed": "#002113",
+              "secondary-fixed": "#d8e3fb",
+              "surface": "#f9f9ff",
+              "on-background": "#151c27",
+              "error": "#ba1a1a",
+              "background": "#f9f9ff",
+              "on-primary-fixed-variant": "#005236",
+              "on-primary-container": "#00422b",
+              "surface-container-high": "#e2e8f8",
+              "inverse-on-surface": "#ebf1ff",
+              "on-secondary-fixed-variant": "#3c475a",
+              "secondary-container": "#d5e0f8",
+              "tertiary-fixed-dim": "#b9c7e0",
+              "primary-container": "#10b981",
+              "tertiary-container": "#95a4bb",
+              "on-tertiary": "#ffffff",
+              "outline": "#6c7a71",
+              "primary": "#006c49",
+              "tertiary-fixed": "#d5e3fd",
+              "on-tertiary-container": "#2c3a4e",
+              "surface-container": "#e7eefe",
+              "on-surface-variant": "#3c4a42",
+              "on-tertiary-fixed-variant": "#3a485c",
+              "on-secondary-container": "#586377",
+              "inverse-primary": "#4edea3",
+              "primary-fixed-dim": "#4edea3",
+              "surface-bright": "#f9f9ff",
+              "surface-container-highest": "#dce2f3",
+              "inverse-surface": "#2a313d",
+              "on-error": "#ffffff",
+              "on-primary": "#ffffff",
+              "on-surface": "#151c27",
+              "on-tertiary-fixed": "#0d1c2f",
+              "surface-tint": "#006c49",
+              "on-secondary": "#ffffff",
+              "surface-container-lowest": "#ffffff",
+              "surface-dim": "#d3daea",
+              "surface-container-low": "#f0f3ff",
+              "on-secondary-fixed": "#111c2d",
+              "error-container": "#ffdad6",
+              "secondary-fixed-dim": "#bcc7de",
+              "secondary": "#545f73",
+              "tertiary": "#515f74",
+              "on-error-container": "#93000a",
+              "outline-variant": "#bbcabf"
+            },
+            fontFamily: {
+              "headline": ["Inter"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top Navigation Shell -->
+<nav class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-md docked full-width top-0 sticky z-50 tonal-shift via surface-low">
+<div class="flex justify-between items-center w-full px-6 py-4 max-w-7xl mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tighter font-headline">Racket Hub</span>
+<div class="hidden md:flex items-center gap-6">
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Catalog</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Reviews</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Guides</a>
+<a class="text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors" href="#">Quiz</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center bg-surface-container px-4 py-2 rounded-full">
+<span class="material-symbols-outlined text-outline text-lg">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-48" placeholder="Search equipment..." type="text"/>
+</div>
+<button class="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+<span class="material-symbols-outlined">person</span>
+</button>
+</div>
+</div>
+</nav>
+<main class="max-w-7xl mx-auto px-6 py-8 flex gap-8">
+<!-- Sidebar Filters -->
+<aside class="hidden lg:block w-72 shrink-0">
+<div class="sticky top-24 space-y-8">
+<div>
+<h3 class="font-headline font-extrabold text-sm uppercase tracking-widest text-on-background mb-4">Refine Selection</h3>
+<!-- Filter Groups -->
+<div class="space-y-6">
+<!-- Brand -->
+<div class="space-y-3">
+<label class="font-label font-bold text-[10px] uppercase tracking-widest text-secondary">Brand</label>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-primary text-on-primary text-xs rounded-full font-medium cursor-pointer">All</span>
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-xs rounded-full font-medium hover:bg-secondary-container transition-colors cursor-pointer">Babolat</span>
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-xs rounded-full font-medium hover:bg-secondary-container transition-colors cursor-pointer">Bullpadel</span>
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-xs rounded-full font-medium hover:bg-secondary-container transition-colors cursor-pointer">Nox</span>
+<span class="px-3 py-1 bg-surface-container-highest text-on-surface text-xs rounded-full font-medium hover:bg-secondary-container transition-colors cursor-pointer">Wilson</span>
+</div>
+</div>
+<!-- Price Range -->
+<div class="space-y-3">
+<label class="font-label font-bold text-[10px] uppercase tracking-widest text-secondary">Price Range</label>
+<div class="px-2">
+<input class="w-full accent-primary h-1.5 bg-surface-variant rounded-lg appearance-none cursor-pointer" type="range"/>
+<div class="flex justify-between mt-2 text-[11px] text-on-surface-variant font-medium">
+<span>€100</span>
+<span>€450+</span>
+</div>
+</div>
+</div>
+<!-- Shape -->
+<div class="space-y-3">
+<label class="font-label font-bold text-[10px] uppercase tracking-widest text-secondary">Racket Shape</label>
+<div class="grid grid-cols-2 gap-2">
+<button class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 hover:border-primary-container transition-all text-xs font-medium">
+<span class="material-symbols-outlined text-sm">circle</span> Round
+                            </button>
+<button class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 hover:border-primary-container transition-all text-xs font-medium">
+<span class="material-symbols-outlined text-sm">diamond</span> Diamond
+                            </button>
+<button class="flex items-center gap-2 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant/20 hover:border-primary-container transition-all text-xs font-medium">
+<span class="material-symbols-outlined text-sm">water_drop</span> Teardrop
+                            </button>
+</div>
+</div>
+<!-- Player Level -->
+<div class="space-y-3">
+<label class="font-label font-bold text-[10px] uppercase tracking-widest text-secondary">Level</label>
+<div class="space-y-2">
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">Professional / Elite</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">Advanced</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer group">
+<input class="rounded-sm border-outline-variant text-primary focus:ring-primary-container" type="checkbox"/>
+<span class="text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">Intermediate</span>
+</label>
+</div>
+</div>
+</div>
+<button class="w-full mt-8 py-3 bg-inverse-surface text-inverse-on-surface rounded-xl font-bold text-xs uppercase tracking-widest hover:opacity-90 transition-opacity">
+                    Reset Filters
+                </button>
+</div>
+</div>
+</aside>
+<!-- Product Grid -->
+<section class="flex-1">
+<!-- Header & Sorting -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+<div>
+<span class="font-label font-bold text-[10px] text-primary uppercase tracking-[0.2em]">Elite Performance editorial</span>
+<h1 class="text-4xl font-black font-headline tracking-tighter mt-1">Padel Rackets 2026</h1>
+</div>
+<div class="flex items-center gap-4">
+<span class="text-xs font-medium text-on-surface-variant">Showing 42 results</span>
+<select class="bg-surface-container-lowest border-none rounded-xl text-xs font-bold py-2 pl-4 pr-10 focus:ring-2 focus:ring-primary-container cursor-pointer">
+<option>Top Rated First</option>
+<option>Price: Low to High</option>
+<option>Price: High to Low</option>
+<option>Newest Arrival</option>
+</select>
+</div>
+</div>
+<!-- Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Card 1 -->
+<div class="group bg-surface-container-lowest rounded-3xl overflow-hidden flex flex-col transition-all hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(21,28,39,0.1)]">
+<div class="relative w-full h-80 bg-surface-container-low flex items-center justify-center p-0 overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+<div class="absolute w-48 h-48 bg-primary-container/10 blur-3xl rounded-full"></div>
+<img alt="Babolat Technical Viper" class="relative z-10 h-[80%] w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCgabk0ivYo1xuAHSmuWaI45dsUbMJgXjLjXjzQlSMmop-k9kHs2OjgoeWfiaxstJnvU3GPKUFe90EtYDB9cbOGTKA8RwoPpLCsjhLOAfXHd7B4_rRke_axGOkhxUspZ3iqBOznLZKZiHtctqZggOSqugSQ9Nr1QXme_Gfg43b8P0aWxp0xq3wke6DzjZoT59KxfoVb5RBadZxIzjfN_CO30c0ERFDFMgIYGamkJwRehJmrqmpTFKDvNyMXaMunlhcQMQGRtjGRoU"/>
+<div class="absolute top-0 left-0 p-4 flex flex-col gap-1.5 z-20">
+<span class="bg-primary text-on-primary px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest shadow-md">New 2026</span>
+<span class="bg-on-background text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest shadow-md">In Stock</span>
+</div>
+<button class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all z-20 shadow-sm flex items-center gap-1 group/compare">
+<span class="material-symbols-outlined text-sm leading-none">add</span>
+<span class="text-[10px] font-black uppercase tracking-wider">Compare</span>
+</button>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<div class="mb-6">
+<div class="flex justify-between items-start mb-1.5">
+<h3 class="font-headline font-black text-xl tracking-tight leading-tight">Babolat Technical Viper</h3>
+<span class="text-sm font-black text-primary bg-primary/5 px-2 py-1 rounded-lg">94</span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-semibold uppercase tracking-wider">Diamond • Power • Pro</p>
+</div>
+<div class="space-y-4 mb-8">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary">
+<span>Power (PWR)</span>
+<span class="text-on-surface">9.8</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant/30 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[98%]"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary">
+<span>Control (CTL)</span>
+<span class="text-on-surface">8.2</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant/30 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[82%]"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3 pt-2">
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">RBD</p>
+<p class="text-xs font-black">9.0</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">MAN</p>
+<p class="text-xs font-black">7.5</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">SS</p>
+<p class="text-xs font-black">8.5</p>
+</div>
+</div>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex flex-col">
+<div class="flex items-center gap-2">
+<span class="text-2xl font-black text-on-surface">€320</span>
+<span class="bg-error text-white px-1.5 py-0.5 rounded text-[10px] font-bold">-20%</span>
+</div>
+<span class="text-[11px] text-on-surface-variant/60 line-through font-medium">€399.00</span>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                            Buy Now
+                        </button>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="group bg-surface-container-lowest rounded-3xl overflow-hidden flex flex-col transition-all hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(21,28,39,0.1)]">
+<div class="relative w-full h-80 bg-surface-container-low flex items-center justify-center p-0 overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+<div class="absolute w-48 h-48 bg-primary-container/10 blur-3xl rounded-full"></div>
+<img alt="Bullpadel Vertex 04" class="relative z-10 h-[80%] w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_-29nDjaYiQ4XQqe12S8mMADeAAQR1jbkD-z7yLfngrzogTieQ6Bom0L2BGN9ijxy9my7X9AE_C7nsQLXuIsg8FrS02-HoVMPsE4wYypreAYhJC7CBfQDBK_X1PHOKPiffhnyiryh8BWEwKV6GuZZAlWaxKN0H78p806R7E8PrNnkbiBYRmVfi9qtm3llS0s7SWWc_RVPoHAqaVfYl_weFZ3k_MDXHwQI18dSoke6z2PS-vrYOFgG1-UYqUt81mmP-MGCINBDqSE"/>
+<div class="absolute top-0 left-0 p-4 flex flex-col gap-1.5 z-20">
+<span class="bg-on-background text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest shadow-md">In Stock</span>
+</div>
+<button class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all z-20 shadow-sm flex items-center gap-1 group/compare">
+<span class="material-symbols-outlined text-sm leading-none">add</span>
+<span class="text-[10px] font-black uppercase tracking-wider">Compare</span>
+</button>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<div class="mb-6">
+<div class="flex justify-between items-start mb-1.5">
+<h3 class="font-headline font-black text-xl tracking-tight leading-tight">Bullpadel Vertex 04</h3>
+<span class="text-sm font-black text-primary bg-primary/5 px-2 py-1 rounded-lg">92</span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-semibold uppercase tracking-wider">Diamond • Balance • Advanced</p>
+</div>
+<div class="space-y-4 mb-8">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary">
+<span>Power (PWR)</span>
+<span class="text-on-surface">9.5</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant/30 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[95%]"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary">
+<span>Control (CTL)</span>
+<span class="text-on-surface">8.5</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant/30 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[85%]"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3 pt-2">
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">RBD</p>
+<p class="text-xs font-black">9.2</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">MAN</p>
+<p class="text-xs font-black">8.0</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">SS</p>
+<p class="text-xs font-black">8.2</p>
+</div>
+</div>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex flex-col">
+<span class="text-2xl font-black text-on-surface">€285</span>
+<span class="text-[11px] text-on-surface-variant/60 font-medium">List Price</span>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                            Buy Now
+                        </button>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="group bg-surface-container-lowest rounded-3xl overflow-hidden flex flex-col transition-all hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(21,28,39,0.1)]">
+<div class="relative w-full h-80 bg-surface-container-low flex items-center justify-center p-0 overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"></div>
+<div class="absolute w-48 h-48 bg-primary-container/10 blur-3xl rounded-full"></div>
+<img alt="Nox AT10 Genius 12K" class="relative z-10 h-[80%] w-full object-contain mix-blend-multiply group-hover:scale-110 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCj61rAmiNCnFXQhtLvLrYRCF6AdBelDKWp_BJ1zFcsEgArAR9SVi9bLIHJe4r_RYZFCFiB4pxjoT7KjGl7vRKxNDcQ96UI6qGC84JGoPVP60Sh4OGNNPbBrTk7qsNSvcofT5WzZaAuqFayef1QhtqxsPVcFO3Ai3BiX1Bkfwwu-ux-JkpQPYBMGXSSKuNQaj6OUQkUaGcHk5Sx_Du3ygZbHRIFnx8ws9KELA6IBM_8Et9gwAZ4EsdTbHoJvFHtxXaFocDb6gm6gbU"/>
+<div class="absolute top-0 left-0 p-4 flex flex-col gap-1.5 z-20">
+<span class="bg-on-background text-white px-3 py-1.5 rounded-sm text-[10px] font-black uppercase tracking-widest shadow-md">In Stock</span>
+</div>
+<button class="absolute top-4 right-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-full hover:bg-primary hover:text-white transition-all z-20 shadow-sm flex items-center gap-1 group/compare">
+<span class="material-symbols-outlined text-sm leading-none">add</span>
+<span class="text-[10px] font-black uppercase tracking-wider">Compare</span>
+</button>
+</div>
+<div class="p-6 flex flex-col flex-1">
+<div class="mb-6">
+<div class="flex justify-between items-start mb-1.5">
+<h3 class="font-headline font-black text-xl tracking-tight leading-tight">Nox AT10 Genius 12K</h3>
+<span class="text-sm font-black text-primary bg-primary/5 px-2 py-1 rounded-lg">89</span>
+</div>
+<p class="text-[11px] text-on-surface-variant font-semibold uppercase tracking-wider">Teardrop • Versatile • Advanced</p>
+</div>
+<div class="space-y-4 mb-8">
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary">
+<span>Power (PWR)</span>
+<span class="text-on-surface">8.8</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant/30 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[88%]"></div>
+</div>
+</div>
+<div class="space-y-1.5">
+<div class="flex justify-between text-[10px] font-bold uppercase tracking-widest text-secondary">
+<span>Control (CTL)</span>
+<span class="text-on-surface">9.2</span>
+</div>
+<div class="h-1.5 w-full bg-surface-variant/30 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[92%]"></div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3 pt-2">
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">RBD</p>
+<p class="text-xs font-black">8.5</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">MAN</p>
+<p class="text-xs font-black">9.0</p>
+</div>
+<div class="bg-surface-container-low/50 p-2 rounded-xl text-center">
+<p class="text-[9px] font-bold text-secondary uppercase tracking-tighter">SS</p>
+<p class="text-xs font-black">8.8</p>
+</div>
+</div>
+</div>
+<div class="mt-auto flex items-end justify-between">
+<div class="flex flex-col">
+<span class="text-2xl font-black text-on-surface">€245</span>
+<span class="text-[11px] text-on-surface-variant/60 font-medium">List Price</span>
+</div>
+<button class="bg-primary text-on-primary px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-primary/20">
+                            Buy Now
+                        </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="mt-12 flex flex-col items-center gap-6">
+<div class="flex items-center gap-1">
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-on-primary font-bold text-sm">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-lowest text-on-surface hover:bg-surface-container-high font-bold text-sm">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-lowest text-on-surface hover:bg-surface-container-high font-bold text-sm">3</button>
+<span class="px-2 text-on-surface-variant">...</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-lowest text-on-surface hover:bg-surface-container-high font-bold text-sm">12</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-surface-container-high text-on-surface hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer Shell -->
+<footer class="bg-slate-900 dark:bg-black w-full mt-auto py-12 px-6 flex flex-col md:flex-row justify-between items-center max-w-7xl mx-auto border-t border-slate-800">
+<div class="mb-8 md:mb-0">
+<span class="text-lg font-bold text-white font-headline">Racket Hub</span>
+<p class="font-['Inter'] text-sm text-slate-400 mt-2 max-w-xs">Elite Performance Editorial. Your data-driven guide to the ultimate Padel equipment.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="font-['Inter'] text-sm text-slate-400 hover:text-white transition-colors" href="#">Privacy Policy</a>
+<a class="font-['Inter'] text-sm text-slate-400 hover:text-white transition-colors" href="#">Terms of Service</a>
+<a class="font-['Inter'] text-sm text-slate-400 hover:text-white transition-colors" href="#">Contact Us</a>
+<a class="font-['Inter'] text-sm text-slate-400 hover:text-white transition-colors" href="#">Affiliate Disclosure</a>
+</div>
+<div class="mt-8 md:mt-0 text-[10px] text-slate-500 uppercase tracking-widest text-center md:text-right">
+        © 2024 Racket Review Hub. Elite Performance Editorial.
+    </div>
+</footer>
+<!-- Mobile Bottom Nav Shell -->
+<div class="fixed bottom-0 left-0 w-full flex justify-around items-center px-4 pb-safe-area pt-2 md:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl z-50 border-t border-slate-200/50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+<div class="flex flex-col items-center justify-center text-slate-400 py-2 px-4 hover:text-emerald-500 transition-all">
+<span class="material-symbols-outlined">home</span>
+<span class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest mt-1">Home</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-emerald-500 text-white rounded-xl py-2 px-4 scale-110 -translate-y-1 transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">grid_view</span>
+<span class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest mt-1">Catalog</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 py-2 px-4 hover:text-emerald-500 transition-all">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest mt-1">Guides</span>
+</div>
+<div class="flex flex-col items-center justify-center text-slate-400 py-2 px-4 hover:text-emerald-500 transition-all">
+<span class="material-symbols-outlined">quiz</span>
+<span class="font-['Inter'] text-[10px] font-bold uppercase tracking-widest mt-1">Quiz</span>
+</div>
+</div>
+</body></html>
