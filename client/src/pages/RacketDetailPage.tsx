@@ -279,27 +279,62 @@ export default function RacketDetailPage() {
                 </div>
 
                 {/* Pricing Card */}
-                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
-                  <div className="flex flex-col gap-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-label font-bold tracking-widest text-secondary uppercase">Starting at</span>
-                      <span className="text-2xl font-black text-foreground">€249.00</span>
-                    </div>
-                    <Button className="w-full bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:shadow-primary-container/20 transition-all active:scale-95 py-4 h-auto">
-                      BUY NOW AT PADEL NUESTRO
-                    </Button>
-                    <div className="pt-4 border-t border-surface-variant flex flex-col gap-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Padel Market</span>
-                        <span className="text-sm font-bold">€254.50</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">Tennis-Point</span>
-                        <span className="text-sm font-bold">€259.00</span>
-                      </div>
+                {(formattedCurrentPrice || racket.padelMarketAffiliateLink) && (
+                  <div className="bg-card p-6 rounded-xl shadow-sm border border-border/40">
+                    <div className="flex flex-col gap-4">
+                      {formattedCurrentPrice && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t("racket.detail.currentPriceShort")}</span>
+                          <span className="text-2xl font-black text-foreground">{formattedCurrentPrice}</span>
+                        </div>
+                      )}
+
+                      {/* Primary CTA - Padel Nuestro */}
+                      {(racket.affiliateLink || racket.titleUrl) && (
+                        <Button
+                          asChild
+                          className="w-full bg-gradient-to-br from-primary to-emerald-500 text-white font-bold rounded-xl shadow-lg hover:shadow-primary/20 transition-all active:scale-[0.98] py-4 h-auto text-base"
+                        >
+                          <a
+                            href={racket.affiliateLink || racket.titleUrl || "#"}
+                            target="_blank"
+                            rel="sponsored noopener noreferrer"
+                            onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_hero", price: Number(racket.currentPrice), inStock: racket.inStock })}
+                          >
+                            {t("racket.detail.buyFromPN")}
+                            <ExternalLink className="ml-2 h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+
+                      {/* Secondary retailers */}
+                      {racket.padelMarketAffiliateLink && (
+                        <div className="pt-3 border-t border-border/50 flex flex-col gap-2">
+                          <a
+                            href={racket.padelMarketAffiliateLink}
+                            target="_blank"
+                            rel="sponsored noopener noreferrer"
+                            onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_hero", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}
+                            className="flex justify-between items-center hover:bg-muted/50 rounded-lg px-2 py-1.5 transition-colors"
+                          >
+                            <span className="text-sm font-medium">Padel Market</span>
+                            <span className="text-sm font-bold text-primary flex items-center gap-1">
+                              {t("racket.detail.buyFromPM")}
+                              <ExternalLink className="h-3 w-3" />
+                            </span>
+                          </a>
+                        </div>
+                      )}
+
+                      {/* No links available */}
+                      {!(racket.affiliateLink || racket.titleUrl) && !racket.padelMarketAffiliateLink && (
+                        <Button disabled className="w-full py-4 h-auto">
+                          {t("racket.detail.notAvailable") || "Not Available"}
+                        </Button>
+                      )}
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Author Info */}
                 {author && (
