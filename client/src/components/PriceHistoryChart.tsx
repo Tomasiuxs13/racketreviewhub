@@ -27,18 +27,22 @@ export function PriceHistoryChart({ racketId, currentPrice }: PriceHistoryChartP
     return null; // Don't show chart if fewer than 2 data points
   }
 
-  const chartData = history.map((entry) => ({
-    date: new Date(entry.recordedAt).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-    }),
-    price: Number(entry.price),
-    fullDate: new Date(entry.recordedAt).toLocaleDateString("en-GB", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }),
-  }));
+  // Group by date and take the lowest price per day (avoids mixing sources like CJ vs Padel Market)
+  const priceByDate = new Map<string, { price: number; fullDate: string; date: string }>();
+  for (const entry of history) {
+    const d = new Date(entry.recordedAt);
+    const dateKey = d.toISOString().slice(0, 10);
+    const price = Number(entry.price);
+    const existing = priceByDate.get(dateKey);
+    if (!existing || price < existing.price) {
+      priceByDate.set(dateKey, {
+        date: d.toLocaleDateString("en-GB", { day: "numeric", month: "short" }),
+        price,
+        fullDate: d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
+      });
+    }
+  }
+  const chartData = Array.from(priceByDate.values());
 
   const prices = chartData.map((d) => d.price);
   const minPrice = Math.min(...prices);
