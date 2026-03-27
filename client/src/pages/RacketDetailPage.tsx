@@ -262,23 +262,44 @@ export default function RacketDetailPage() {
                   </p>
                 </div>
 
-                {/* Score Badge */}
-                <div className="review-score-badge inline-flex flex-col items-center justify-center bg-gradient-to-br from-primary/10 via-background to-background border border-primary/20 rounded-2xl p-6 w-fit">
-                  <p className="text-xs font-bold tracking-[0.2em] uppercase text-primary/80 mb-2">
-                    {t("racket.detail.overallScore")}
-                  </p>
-                  <div className="text-5xl sm:text-6xl font-heading font-extrabold text-gradient" data-testid="text-overall-rating">
-                    {racket.overallRating}
+                {/* Score Badge + Quote (Horizontal Layout) */}
+                <div className="flex items-start gap-4">
+                  {/* Score Badge - Green with white text */}
+                  <div className="bg-primary text-white px-4 py-2 rounded-xl flex flex-col items-center flex-shrink-0">
+                    <span className="text-3xl font-black">{racket.overallRating}</span>
+                    <span className="text-[10px] font-bold tracking-widest uppercase">Score</span>
                   </div>
-                  <p className="text-sm font-medium text-muted-foreground mt-1">/100</p>
+
+                  {/* Editorial Quote - next to score */}
+                  {racket.reviewContent && (
+                    <div className="review-quote font-medium max-w-xs text-muted-foreground">
+                      "A standout choice for players seeking a balance of power and control with exceptional build quality."
+                    </div>
+                  )}
                 </div>
 
-                {/* Editorial Quote */}
-                {racket.reviewContent && (
-                  <div className="review-quote border-l-4 border-primary pl-6 py-2 italic text-lg text-foreground/80">
-                    "A standout choice for players seeking a balance of power and control with exceptional build quality."
+                {/* Pricing Card */}
+                <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+                  <div className="flex flex-col gap-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-label font-bold tracking-widest text-secondary uppercase">Starting at</span>
+                      <span className="text-2xl font-black text-foreground">€249.00</span>
+                    </div>
+                    <Button className="w-full bg-gradient-to-br from-primary to-primary-container text-white font-bold rounded-xl shadow-lg hover:shadow-primary-container/20 transition-all active:scale-95 py-4 h-auto">
+                      BUY NOW AT PADEL NUESTRO
+                    </Button>
+                    <div className="pt-4 border-t border-surface-variant flex flex-col gap-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Padel Market</span>
+                        <span className="text-sm font-bold">€254.50</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium">Tennis-Point</span>
+                        <span className="text-sm font-bold">€259.00</span>
+                      </div>
+                    </div>
                   </div>
-                )}
+                </div>
 
                 {/* Author Info */}
                 {author && (
