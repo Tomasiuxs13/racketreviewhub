@@ -186,7 +186,7 @@ export default function HomePage() {
               <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-border/50 bg-muted aspect-[4/3] lg:aspect-square xl:aspect-[4/3] group cursor-default group-hover:shadow-[0_0_40px_rgba(34,197,94,0.3)] transition-all duration-500">
                 <img
                   src={heroImage}
-                  alt="Padel court"
+                  alt="Professional padel court with players mid-rally — expert padel racket reviews and buying guides"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-1000 ease-out"
                   fetchPriority="high"
                 />

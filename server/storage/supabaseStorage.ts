@@ -25,6 +25,7 @@ import {
 } from "@shared/schema";
 import { eq, desc, and, ne, or, sql } from "drizzle-orm";
 import type { IStorage } from "../storage.js";
+import { computeRacketSlugBase } from "@shared/utils";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is required");
@@ -64,6 +65,7 @@ export class SupabaseStorage implements IStorage {
         brand: rackets.brand,
         model: rackets.model,
         year: rackets.year,
+        slug: rackets.slug,
         shape: rackets.shape,
         powerRating: rackets.powerRating,
         controlRating: rackets.controlRating,
@@ -126,8 +128,14 @@ export class SupabaseStorage implements IStorage {
   }
 
   async getRacketBySlug(slug: string): Promise<Racket | undefined> {
-    // Compute slug on the fly, avoiding duplicate brand if model already starts with brand name
-    // Example: "Adidas" + "ADIDAS METALBONE" -> "adidas-metalbone" (not "adidas-adidas-metalbone")
+    // Prefer the stored slug column; fall back to computed brand+model for legacy rows without slug.
+    const byStored = await db
+      .select()
+      .from(rackets)
+      .where(and(eq(rackets.isPublished, true), eq(rackets.slug, slug)))
+      .limit(1);
+    if (byStored[0]) return byStored[0];
+
     const result = await db
       .select()
       .from(rackets)
@@ -136,8 +144,8 @@ export class SupabaseStorage implements IStorage {
           eq(rackets.isPublished, true),
           sql`regexp_replace(
           regexp_replace(
-            CASE 
-                WHEN lower(${rackets.model}) LIKE lower(${rackets.brand}) || '%' 
+            CASE
+                WHEN lower(${rackets.model}) LIKE lower(${rackets.brand}) || '%'
                 THEN lower(${rackets.model})
                 ELSE lower(${rackets.brand} || ' ' || ${rackets.model})
               END,
@@ -296,14 +304,29 @@ export class SupabaseStorage implements IStorage {
       5
     );
 
+    // Build unique slug. If base is taken, disambiguate with year, then with a counter.
+    const slug = insertRacket.slug || await this.buildUniqueSlug(insertRacket.brand, insertRacket.model, insertRacket.year);
+
     const result = await db
       .insert(rackets)
       .values({
         ...insertRacket,
+        slug,
         overallRating,
       })
       .returning();
     return result[0];
+  }
+
+  private async buildUniqueSlug(brand: string, model: string, year: number): Promise<string> {
+    const base = computeRacketSlugBase(brand, model);
+    const candidates = [base, `${base}-${year}`];
+    for (const candidate of candidates) {
+      const existing = await db.select({ id: rackets.id }).from(rackets).where(eq(rackets.slug, candidate)).limit(1);
+      if (existing.length === 0) return candidate;
+    }
+    // Last resort: append random suffix
+    return `${base}-${year}-${Math.random().toString(36).slice(2, 7)}`;
   }
 
   async updateRacket(id: string, updates: Partial<InsertRacket> & { overallRating?: number }): Promise<Racket | undefined> {

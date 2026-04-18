@@ -163,6 +163,28 @@ function buildBlogDescription(post: { title: string }): string {
   return base.length > 160 ? base.slice(0, 157) + "..." : base;
 }
 
+interface BreadcrumbItem {
+  name: string;
+  url?: string;
+}
+
+function buildBreadcrumbSchema(items: BreadcrumbItem[]): object {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": items.map((item, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": item.name,
+      ...(item.url ? { "item": item.url } : {}),
+    })),
+  };
+}
+
+function localeUrl(path: string, locale: string): string {
+  return locale === "en" ? `${SITE_URL}${path}` : `${SITE_URL}/${locale}${path}`;
+}
+
 function buildRacketSlug(brand: string, model: string): string {
   const lower = model.toLowerCase();
   const brandLower = brand.toLowerCase();
@@ -484,6 +506,12 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           crawlableContent: buildRacketCrawlableHtml(translatedRacket),
           hreflangTags: buildHreflangTags(racketCanonicalPath),
           structuredData: [
+            buildBreadcrumbSchema([
+              { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
+              { name: t(locale, "header.menu.rackets") || "Rackets", url: localeUrl("/rackets", locale) },
+              { name: racket.brand, url: localeUrl(`/brands/${racket.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, locale) },
+              { name: `${racket.brand} ${racket.model} ${racket.year || ""}`.trim() },
+            ]),
             {
               "@context": "https://schema.org",
               "@type": "Product",
@@ -545,6 +573,14 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         const description = brand.description || `Discover the best ${brand.name} padel rackets. Expert reviews, ratings, and buying guide.`;
         const brandCanonicalPath = `/brands/${brand.slug}`;
         const brandUrl = locale === "en" ? `${SITE_URL}${brandCanonicalPath}` : `${SITE_URL}/${locale}${brandCanonicalPath}`;
+        const brandSchema: any = {
+          "@context": "https://schema.org",
+          "@type": "Brand",
+          "name": brand.name,
+          "url": brandUrl,
+        };
+        if (brand.logoUrl) brandSchema.logo = brand.logoUrl;
+        if (brand.description) brandSchema.description = brand.description;
         return {
           title,
           description,
@@ -553,6 +589,14 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           ogImage: brand.logoUrl || undefined,
           crawlableContent: buildBrandCrawlableHtml(brand),
           hreflangTags: buildHreflangTags(brandCanonicalPath),
+          structuredData: [
+            buildBreadcrumbSchema([
+              { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
+              { name: t(locale, "header.menu.brands") || "Brands", url: localeUrl("/brands", locale) },
+              { name: brand.name },
+            ]),
+            brandSchema,
+          ],
         };
       }
       return { is404: true };
@@ -576,6 +620,13 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           ogImage: guide.featuredImage || undefined,
           crawlableContent: buildGuideCrawlableHtml(guide),
           hreflangTags: buildHreflangTags(guideCanonicalPath),
+          structuredData: [
+            buildBreadcrumbSchema([
+              { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
+              { name: t(locale, "header.menu.guides") || "Guides", url: localeUrl("/guides", locale) },
+              { name: guide.title },
+            ]),
+          ],
         };
       }
       return { is404: true };
@@ -599,6 +650,13 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           ogImage: post.featuredImage || undefined,
           crawlableContent: buildBlogCrawlableHtml(post),
           hreflangTags: buildHreflangTags(blogCanonicalPath),
+          structuredData: [
+            buildBreadcrumbSchema([
+              { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
+              { name: t(locale, "header.menu.blog") || "Blog", url: localeUrl("/blog", locale) },
+              { name: post.title },
+            ]),
+          ],
         };
       }
       return { is404: true };
@@ -733,13 +791,53 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
       const bestUrl = locale === "en" ? `${SITE_URL}${bestCanonicalPath}` : `${SITE_URL}/${locale}${bestCanonicalPath}`;
       const pageTitle = `${catTitle} of ${year} - Expert Reviews`;
       const pageDesc = `Discover the ${catTitle.toLowerCase()} for ${year}. ${catDesc}`;
+
+      // Populate crawlable listing with matching rackets so the page is indexable
+      const allRackets = await storage.getPublishedRackets();
+      const scored = allRackets.map(r => {
+        let score = r.overallRating || 0;
+        switch (category) {
+          case "power":
+            score = r.powerRating || 0; break;
+          case "control":
+            score = r.controlRating || 0; break;
+          case "beginner":
+            score = (r.gameLevel?.toLowerCase() === "beginner" ? 100 : 0) + (r.sweetSpotRating || 0) + (r.maneuverabilityRating || 0);
+            break;
+          case "advanced":
+            score = (r.gameLevel?.toLowerCase() === "advanced" || r.gameLevel?.toLowerCase() === "professional" ? 100 : 0) + (r.overallRating || 0);
+            break;
+          case "budget":
+            score = -Number(r.currentPrice || 999); break;
+          case "overall":
+          default:
+            score = r.overallRating || 0;
+        }
+        return { r, score };
+      }).sort((a, b) => b.score - a.score).slice(0, 20);
+
+      const items = scored.map(({ r }) => {
+        const slug = (r as any).slug || buildRacketSlug(r.brand, r.model);
+        return {
+          label: `${r.brand} ${r.model} ${r.year || ""} — ${r.overallRating}/100 — €${Number(r.currentPrice).toFixed(2)}`.trim(),
+          href: locale === "en" ? `/rackets/${slug}` : `/${locale}/rackets/${slug}`,
+        };
+      });
+
       return {
         title: pageTitle,
         description: pageDesc,
         canonical: bestUrl,
         ogType: "website",
         hreflangTags: buildHreflangTags(bestCanonicalPath),
-        crawlableContent: await buildListingCrawlableHtml(pageTitle, pageDesc, [])
+        crawlableContent: await buildListingCrawlableHtml(pageTitle, pageDesc, items),
+        structuredData: [
+          buildBreadcrumbSchema([
+            { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
+            { name: t(locale, "header.menu.rackets") || "Rackets", url: localeUrl("/rackets", locale) },
+            { name: catTitle },
+          ]),
+        ],
       };
     }
 

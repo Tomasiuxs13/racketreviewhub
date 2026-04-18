@@ -320,7 +320,7 @@ export default function RacketDetailPage() {
                           <a
                             href={racket.affiliateLink || racket.titleUrl || "#"}
                             target="_blank"
-                            rel="sponsored noopener noreferrer"
+                            rel="sponsored nofollow noopener noreferrer"
                             onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_hero", price: Number(racket.currentPrice), inStock: racket.inStock })}
                           >
                             {t("racket.detail.buyFromPN")}
@@ -335,7 +335,7 @@ export default function RacketDetailPage() {
                           <a
                             href={racket.padelMarketAffiliateLink}
                             target="_blank"
-                            rel="sponsored noopener noreferrer"
+                            rel="sponsored nofollow noopener noreferrer"
                             onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_hero", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}
                             className="flex justify-between items-center hover:bg-muted/50 rounded-lg px-2 py-1.5 transition-colors"
                           >
@@ -671,7 +671,7 @@ export default function RacketDetailPage() {
                       className={`w-full py-6 text-lg ${racket.inStock ? "font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all" : ""}`}
                       data-testid="button-buy-now-sidebar"
                     >
-                      <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.inStock })}>
+                      <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored nofollow noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.inStock })}>
                         {t("racket.detail.buyFromPN")} {!racket.inStock && t("racket.detail.checkAvailability")}
                         <ExternalLink className="ml-2 h-5 w-5" />
                       </a>
@@ -687,7 +687,7 @@ export default function RacketDetailPage() {
                       className={`w-full py-6 text-lg ${!(racket.affiliateLink || racket.titleUrl) || !racket.inStock ? "font-bold shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-0.5 transition-all" : ""}`}
                       data-testid="button-buy-now-sidebar-pm"
                     >
-                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
+                      <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored nofollow noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sidebar", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
                         {t("racket.detail.buyFromPM")} {!racket.padelMarketInStock && t("racket.detail.checkAvailability")}
                         <ExternalLink className="ml-2 h-5 w-5" />
                       </a>
@@ -788,14 +788,14 @@ export default function RacketDetailPage() {
               </div>
               {(racket.affiliateLink || racket.titleUrl) ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy">
-                  <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.inStock })}>
+                  <a href={racket.affiliateLink || racket.titleUrl || "#"} target="_blank" rel="sponsored nofollow noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_nuestro", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.inStock })}>
                     {t("racket.detail.buyFromPN")} {!racket.inStock && t("racket.detail.checkShort")}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>
                 </Button>
               ) : racket.padelMarketAffiliateLink ? (
                 <Button asChild size="lg" className="flex-1 min-h-[48px]" data-testid="button-sticky-buy-pm">
-                  <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
+                  <a href={racket.padelMarketAffiliateLink} target="_blank" rel="sponsored nofollow noopener noreferrer" onClick={() => trackAffiliateClick({ racketId: racket.id, brand: racket.brand, model: racket.model, partner: "padel_market", source: "racket_detail_sticky", price: Number(racket.currentPrice), inStock: racket.padelMarketInStock })}>
                     {t("racket.detail.buyFromPM")} {!racket.padelMarketInStock && t("racket.detail.checkShort")}
                     <ExternalLink className="ml-2 h-4 w-4" />
                   </a>

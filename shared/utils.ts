@@ -45,6 +45,49 @@ export function extractProsCons(htmlContent: string | null | undefined): { pros:
  * These URLs have the pattern: https://images2.productserve.com/?w=200&h=200&...
  * We replace w/h params to get a higher-resolution image.
  */
+/**
+ * Picks the primary affiliate link for a racket, in this preference order:
+ * 1. Padel Nuestro (`affiliateLink` then `titleUrl`) when in stock
+ * 2. Padel Market (`padelMarketAffiliateLink`) when in stock
+ * 3. Any available link even if OOS (graceful degradation)
+ * Returns { url, partner, inStock } or null if no link exists.
+ */
+export type AffiliatePartner = "padel_nuestro" | "padel_market";
+export interface RacketLinkFields {
+    affiliateLink?: string | null;
+    titleUrl?: string | null;
+    padelMarketAffiliateLink?: string | null;
+    inStock?: boolean | null;
+    padelMarketInStock?: boolean | null;
+}
+export function pickPrimaryAffiliateLink(
+    racket: RacketLinkFields,
+): { url: string; partner: AffiliatePartner; inStock: boolean } | null {
+    const pn = racket.affiliateLink || racket.titleUrl;
+    const pm = racket.padelMarketAffiliateLink;
+    const pnInStock = racket.inStock !== false;
+    const pmInStock = racket.padelMarketInStock === true;
+
+    if (pn && pnInStock) return { url: pn, partner: "padel_nuestro", inStock: true };
+    if (pm && pmInStock) return { url: pm, partner: "padel_market", inStock: true };
+    if (pn) return { url: pn, partner: "padel_nuestro", inStock: false };
+    if (pm) return { url: pm, partner: "padel_market", inStock: false };
+    return null;
+}
+
+/**
+ * Builds a URL-friendly slug for a racket based on brand and model.
+ * Avoids duplicating brand when model already starts with it.
+ */
+export function computeRacketSlugBase(brand: string, model: string): string {
+    const brandLower = brand.toLowerCase();
+    const modelLower = model.toLowerCase();
+    const base = modelLower.startsWith(brandLower) ? modelLower : `${brandLower} ${modelLower}`;
+    return base
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
 export function upscaleProductserveUrl(url: string | null | undefined, size = 600): string | null | undefined {
     if (!url) return url;
     if (!url.includes("productserve.com")) return url;

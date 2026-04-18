@@ -80,7 +80,10 @@ export function cleanReviewContent(content: string): string {
  * Example: "Nox" + "ML10 Pro Cup" -> "nox-ml10-pro-cup"
  * Example: "Adidas" + "ADIDAS METALBONE PRO" -> "adidas-metalbone-pro" (not "adidas-adidas-metalbone-pro")
  */
-export function getRacketSlug(racket: Pick<Racket, "brand" | "model">): string {
+export function getRacketSlug(racket: Pick<Racket, "brand" | "model"> & { slug?: string | null }): string {
+  // Prefer the stored slug (disambiguates year collisions, stable across brand/model edits)
+  if (racket.slug) return racket.slug;
+
   const brandLower = racket.brand.toLowerCase();
   const modelLower = racket.model.toLowerCase();
 

@@ -7,6 +7,8 @@
 import { storage } from "../storage.js";
 import { SHAPE_VALUES } from "@shared/schema";
 import { upscaleProductserveUrl } from "@shared/utils";
+import { estimateRacketRatings, generateRacketReview, performRacketResearch } from "../lib/openai.js";
+import { checkPublishQualityGates } from "../lib/qualityGates.js";
 import {
   type PadelMarketFeedProduct,
   extractBrandModelYear,
@@ -119,8 +121,10 @@ function getDefaultRatings(brand: string): {
  */
 async function processProduct(
   product: PadelMarketFeedProduct,
-  processedRackets: Map<string, number>
+  processedRackets: Map<string, number>,
+  options: { generateRatings?: boolean; generateReviews?: boolean } = {}
 ): Promise<{ action: "created" | "updated" | "unchanged" | "skipped"; error?: string }> {
+  const { generateRatings = true, generateReviews = true } = options;
   try {
     // Extract brand, model, and year from product name
     // Use brand_name from feed if available (more reliable)
@@ -496,8 +500,43 @@ async function processProduct(
 
       // No duplicate found, create new racket
       const shape = estimateShape(product);
-      const ratings = getDefaultRatings(extracted.brand);
+      let ratings = getDefaultRatings(extracted.brand);
       const year = extracted.year || new Date().getFullYear();
+      let researchBriefText: string | undefined = undefined;
+
+      // Step 1: Research
+      if (generateRatings || generateReviews) {
+        try {
+          const research = await performRacketResearch({
+            brand: extracted.brand,
+            model: extracted.model,
+            year,
+          });
+          if (research?.sentiment) {
+            researchBriefText = research.sentiment;
+          }
+        } catch (researchError) {
+          console.warn(`[PadelMarket-Processor] Research failed for ${extracted.brand} ${extracted.model}`);
+        }
+      }
+
+      // Step 2: Estimate ratings using ChatGPT + Research
+      if (generateRatings) {
+        try {
+          const estimatedRatings = await estimateRacketRatings({
+            brand: extracted.brand,
+            model: extracted.model,
+            shape,
+            year,
+            researchBrief: researchBriefText,
+          });
+          if (estimatedRatings) {
+            ratings = estimatedRatings;
+          }
+        } catch (ratingError) {
+          console.warn(`[PadelMarket-Processor] Rating estimation failed for ${extracted.brand} ${extracted.model}, using defaults`);
+        }
+      }
 
       const createData = {
         brand: extracted.brand,
@@ -514,6 +553,7 @@ async function processProduct(
         isPublished: false, // New rackets need review before publishing
         inStock: true, // Products from feed are in stock
         color: product.colour || undefined,
+        researchBrief: researchBriefText,
       };
 
       const newRacket = await storage.createRacket(createData);
@@ -531,7 +571,32 @@ async function processProduct(
         }
       }
 
-      console.log(`[PadelMarket-Processor] Created: ${extracted.brand} ${extracted.model} ${year} - Price: €${price.toFixed(2)} (pending review, isPublished=false)`);
+      // Step 3: Generate review with ChatGPT + Research, then gate-check for auto-publish
+      if (generateReviews && newRacket) {
+        try {
+          const reviewResult = await generateRacketReview(newRacket);
+          if (reviewResult?.reviewContent) {
+            await storage.updateRacket(newRacket.id, {
+              reviewContent: reviewResult.reviewContent,
+            });
+
+            const updatedRacket = await storage.getRacket(newRacket.id);
+            if (updatedRacket) {
+              const qualityResult = checkPublishQualityGates(updatedRacket);
+              if (qualityResult.passes) {
+                await storage.updateRacket(newRacket.id, { isPublished: true });
+                console.log(`[PadelMarket-Processor] Auto-published: ${extracted.brand} ${extracted.model} (passed quality gates)`);
+              } else {
+                console.log(`[PadelMarket-Processor] Quality gate failed for ${extracted.brand} ${extracted.model}: ${qualityResult.failures.join(", ")}`);
+              }
+            }
+          }
+        } catch (reviewError) {
+          console.warn(`[PadelMarket-Processor] Review generation failed for ${extracted.brand} ${extracted.model}`);
+        }
+      }
+
+      console.log(`[PadelMarket-Processor] Created: ${extracted.brand} ${extracted.model} ${year} - Price: €${price.toFixed(2)}`);
       return { action: "created" };
     }
 
@@ -616,8 +681,10 @@ function deduplicateProducts(products: PadelMarketFeedProduct[]): PadelMarketFee
  * Process Padel Market feed products and update rackets
  */
 export async function processPadelMarketFeed(
-  products: PadelMarketFeedProduct[]
+  products: PadelMarketFeedProduct[],
+  options: { generateRatings?: boolean; generateReviews?: boolean } = {}
 ): Promise<ProcessingResult> {
+  const { generateRatings = true, generateReviews = true } = options;
   const result: ProcessingResult = {
     success: false,
     totalProcessed: 0,
@@ -650,7 +717,7 @@ export async function processPadelMarketFeed(
   // Process products
   for (const product of deduplicatedProducts) {
     try {
-      const { action, error } = await processProduct(product, processedRackets);
+      const { action, error } = await processProduct(product, processedRackets, { generateRatings, generateReviews });
       result.totalProcessed++;
 
       // Track successfully processed feed product IDs

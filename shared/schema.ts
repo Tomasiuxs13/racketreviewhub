@@ -35,6 +35,7 @@ export const rackets = pgTable("rackets", {
   brand: text("brand").notNull(),
   model: text("model").notNull(),
   year: integer("year").notNull(),
+  slug: text("slug").unique(), // URL-friendly unique slug (nullable for legacy rows)
   shape: text("shape").notNull(), // diamond, round, teardrop
   powerRating: integer("power_rating").notNull(), // 0-100
   controlRating: integer("control_rating").notNull(), // 0-100

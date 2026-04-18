@@ -135,12 +135,19 @@ export default function ComparisonPage() {
     { key: "core" as const, label: "Core" },
   ];
 
+  // Canonical URL: sort slugs alphabetically so /compare/a,b and /compare/b,a share a canonical
+  const canonicalCompareSlugs = useMemo(() => {
+    return [...ids].sort().join(",");
+  }, [ids]);
+
   const seoData = {
     title: rackets.length >= 2
       ? `${rackets[0].brand} ${rackets[0].model} vs ${rackets[1].brand} ${rackets[1].model} - Comparison`
       : "Racket Comparison",
     description: "Compare padel rackets side by side - ratings, specs, and prices.",
-    url: "/compare",
+    url: canonicalCompareSlugs ? `/compare/${canonicalCompareSlugs}` : "/compare",
+    canonical: canonicalCompareSlugs ? `/compare/${canonicalCompareSlugs}` : "/compare",
+    noindex: true,
   };
 
   if (isLoading) {
@@ -302,7 +309,7 @@ export default function ComparisonPage() {
                         </div>
                         {(racket.affiliateLink || racket.padelMarketAffiliateLink) && (
                           <Button asChild size="sm" className="w-full bg-primary hover:bg-primary/90 font-black shadow-lg shadow-primary/20 text-[10px] uppercase tracking-widest">
-                            <a href={racket.affiliateLink || racket.padelMarketAffiliateLink || "#"} target="_blank" rel="sponsored">
+                            <a href={racket.affiliateLink || racket.padelMarketAffiliateLink || "#"} target="_blank" rel="sponsored nofollow noopener noreferrer">
                               Shop Best Price <ExternalLink className="ml-1 h-3 w-3" />
                             </a>
                           </Button>

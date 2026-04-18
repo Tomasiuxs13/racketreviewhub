@@ -15,6 +15,7 @@ import {
   type InsertPriceHistory,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { computeRacketSlugBase } from "@shared/utils";
 
 export interface IStorage {
   // Rackets
@@ -871,14 +872,14 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
   }
 
   async getRacketBySlug(slug: string): Promise<Racket | undefined> {
+    // Prefer stored slug column
+    const byStored = Array.from(this.rackets.values()).find(
+      r => (r as any).slug === slug && r.isPublished !== false,
+    );
+    if (byStored) return byStored;
+    // Fallback: compute from brand+model for legacy rows
     return Array.from(this.rackets.values()).find(r => {
-      const brandLower = r.brand.toLowerCase();
-      const modelLower = r.model.toLowerCase();
-      // Avoid duplicate brand if model already starts with brand name
-      const base = modelLower.startsWith(brandLower) ? modelLower : `${brandLower} ${modelLower}`;
-      const racketSlug = base
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
+      const racketSlug = computeRacketSlugBase(r.brand, r.model);
       return racketSlug === slug && r.isPublished !== false;
     });
   }
@@ -963,9 +964,19 @@ Ready to find rackets in your preferred shape? Browse our [complete racket colle
       insertRacket.sweetSpotRating
     ) / 5);
 
+    // Build unique slug. If base is taken, append year, then a counter.
+    let slug = (insertRacket as any).slug as string | undefined;
+    if (!slug) {
+      const base = computeRacketSlugBase(insertRacket.brand, insertRacket.model);
+      const taken = (s: string) => Array.from(this.rackets.values()).some(r => (r as any).slug === s);
+      const candidates = [base, `${base}-${insertRacket.year}`];
+      slug = candidates.find(c => !taken(c)) || `${base}-${insertRacket.year}-${Math.random().toString(36).slice(2, 7)}`;
+    }
+
     const newRacket: Racket = {
       ...insertRacket,
       id,
+      slug,
       overallRating,
       createdAt: new Date(),
       updatedAt: new Date(),
