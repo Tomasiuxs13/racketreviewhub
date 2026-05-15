@@ -80,13 +80,15 @@ interface SeoMeta {
   crawlableContent?: string;
   /** Pre-built hreflang link tags for injection into <head> */
   hreflangTags?: string;
+  /** When true, emits noindex,follow instead of index,follow */
+  noindex?: boolean;
 }
 
 function buildMetaTags(meta: SeoMeta): string {
   const tags: string[] = [];
 
   tags.push(`<title>${escapeHtml(meta.title)}</title>`);
-  tags.push(`<meta name="robots" content="index, follow">`);
+  tags.push(`<meta name="robots" content="${meta.noindex ? "noindex, follow" : "index, follow"}">`);
   tags.push(`<meta name="description" content="${escapeAttr(meta.description)}">`);
   tags.push(`<link rel="canonical" href="${escapeAttr(meta.canonical)}">`);
 
@@ -435,19 +437,33 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           rating: racket.overallRating
         }) || `Expert ${racket.brand} ${racket.model} ${racket.year || ""} padel racket review. ${racket.overallRating}/100 rating.`.trim();
 
+        // Look up the racket's author (if any) so we can wire E-E-A-T signals
+        // (Person author with same-site URL) into Review schema. Falls back to
+        // the site organization when no author is set.
+        let racketAuthor: { id: string; name: string; slug: string; bio: string | null; avatarUrl: string | null } | null = null;
+        if ((racket as any).authorId) {
+          try {
+            const all = await storage.getAllAuthors();
+            racketAuthor = all.find((a: any) => a.id === (racket as any).authorId) || null;
+          } catch (err) {
+            console.warn(`[SEO] Failed to load author for racket ${racket.id}:`, err);
+          }
+        }
+        const authorEntity = racketAuthor ? {
+          "@type": "Person" as const,
+          "name": racketAuthor.name,
+          "url": `${SITE_URL}/authors/${racketAuthor.slug}`,
+          ...(racketAuthor.avatarUrl ? { "image": racketAuthor.avatarUrl } : {}),
+          ...(racketAuthor.bio ? { "description": racketAuthor.bio.slice(0, 280) } : {}),
+        } : {
+          "@type": "Organization" as const,
+          "name": t(locale, "common.brandName"),
+        };
+
         const extracted = extractProsCons(reviewContent);
         const reviewSchema: any = {
           "@type": "Review",
-          "reviewRating": {
-            "@type": "Rating",
-            "ratingValue": racket.overallRating,
-            "bestRating": 100,
-            "worstRating": 0,
-          },
-          "author": {
-            "@type": "Organization",
-            "name": t(locale, "common.brandName"),
-          },
+          "author": authorEntity,
         };
 
         if (extracted.pros.length > 0) {
@@ -475,27 +491,61 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         const racketUrl = locale === "en"
           ? `${SITE_URL}${racketCanonicalPath}`
           : `${SITE_URL}/${locale}${racketCanonicalPath}`;
+
+        // Build a normalized rating on the 0-5 scale that Google rich results
+        // prefer for star display. Falls back to the 0-100 internal scale only
+        // when no overall rating is set.
+        const overall100 = Number(racket.overallRating) || 0;
+        const rating5 = overall100 > 0 ? Math.round((overall100 / 20) * 10) / 10 : 0;
+        const productName = `${racket.brand} ${racket.model} ${racket.year || ""}`.trim();
+        const sku = buildRacketSlug(racket.brand, racket.model);
+        const priceValidUntil = (() => {
+          // Use end of current year — long enough to stay valid through normal
+          // GSC indexing windows, short enough to avoid stale snippets.
+          const d = new Date();
+          d.setUTCMonth(11, 31);
+          return d.toISOString().split("T")[0];
+        })();
+        const priceNum = Number(racket.currentPrice);
+        const hasPrice = priceNum > 0;
+
+        const ratingObj = rating5 > 0 ? {
+          "@type": "Rating",
+          "ratingValue": rating5,
+          "bestRating": 5,
+          "worstRating": 0,
+        } : undefined;
+
+        if (ratingObj) {
+          reviewSchema.reviewRating = ratingObj;
+          reviewSchema.name = `Review of ${productName}`;
+        }
+
         const topLevelReviewSchema = {
           "@context": "https://schema.org",
           "@type": "Review",
+          "name": `Review of ${productName}`,
           "itemReviewed": {
             "@type": "Product",
-            "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+            "name": productName,
             "brand": { "@type": "Brand", "name": racket.brand },
-            "image": racket.imageUrl || undefined,
+            ...(racket.imageUrl ? { "image": racket.imageUrl } : {}),
           },
-          "reviewRating": {
-            "@type": "Rating",
-            "ratingValue": racket.overallRating,
-            "bestRating": 100,
-            "worstRating": 0,
-          },
-          "author": { "@type": "Organization", "name": t(locale, "common.brandName") },
+          ...(ratingObj ? { "reviewRating": ratingObj } : {}),
+          "author": authorEntity,
           "datePublished": racket.createdAt ? new Date(racket.createdAt).toISOString().split("T")[0] : undefined,
           "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
           ...(extracted.pros.length > 0 ? { positiveNotes: reviewSchema.positiveNotes } : {}),
           ...(extracted.cons.length > 0 ? { negativeNotes: reviewSchema.negativeNotes } : {}),
         };
+
+        // Mark thin pages noindex,follow so Google focuses crawl budget on
+        // pages with real editorial content. Matches sitemap thresholds in
+        // server/routes.ts so the two stay in sync. Env-tunable.
+        const reviewLen = (racket.reviewContent || "").trim().length;
+        const minLen = Number(process.env.SEO_MIN_REVIEW_LENGTH) || 800;
+        const minRating = Number(process.env.SEO_MIN_RATING) || 60;
+        const isThinPage = reviewLen < minLen || (Number(racket.overallRating) || 0) < minRating;
 
         return {
           title,
@@ -505,31 +555,47 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           ogImage: racket.imageUrl || undefined,
           crawlableContent: buildRacketCrawlableHtml(translatedRacket),
           hreflangTags: buildHreflangTags(racketCanonicalPath),
+          noindex: isThinPage,
           structuredData: [
             buildBreadcrumbSchema([
               { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
               { name: t(locale, "header.menu.rackets") || "Rackets", url: localeUrl("/rackets", locale) },
               { name: racket.brand, url: localeUrl(`/brands/${racket.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, locale) },
-              { name: `${racket.brand} ${racket.model} ${racket.year || ""}`.trim() },
+              { name: productName },
             ]),
             {
               "@context": "https://schema.org",
               "@type": "Product",
-              "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+              "name": productName,
               "description": description,
-              "image": racket.imageUrl ? [racket.imageUrl] : undefined,
+              "sku": sku,
+              "mpn": sku,
+              ...(racket.imageUrl ? { "image": [racket.imageUrl] } : {}),
               "brand": { "@type": "Brand", "name": racket.brand },
+              ...(ratingObj ? {
+                "aggregateRating": {
+                  "@type": "AggregateRating",
+                  "ratingValue": rating5,
+                  "bestRating": 5,
+                  "worstRating": 0,
+                  "ratingCount": 1,
+                  "reviewCount": 1,
+                }
+              } : {}),
               "review": reviewSchema,
               "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
               "url": racketUrl,
               "offers": (() => {
+                if (!hasPrice) return undefined;
                 const offers: any[] = [];
                 if (racket.affiliateLink || racket.titleUrl) {
                   offers.push({
                     "@type": "Offer",
-                    "price": racket.currentPrice,
+                    "price": priceNum.toFixed(2),
                     "priceCurrency": "EUR",
+                    "priceValidUntil": priceValidUntil,
                     "availability": racket.inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                    "itemCondition": "https://schema.org/NewCondition",
                     "url": racket.affiliateLink || racket.titleUrl,
                     "seller": { "@type": "Organization", "name": "Padel Nuestro" },
                   });
@@ -537,19 +603,24 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
                 if (racket.padelMarketAffiliateLink) {
                   offers.push({
                     "@type": "Offer",
-                    "price": racket.currentPrice,
+                    "price": priceNum.toFixed(2),
                     "priceCurrency": "EUR",
+                    "priceValidUntil": priceValidUntil,
                     "availability": racket.padelMarketInStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                    "itemCondition": "https://schema.org/NewCondition",
                     "url": racket.padelMarketAffiliateLink,
                     "seller": { "@type": "Organization", "name": "Padel Market" },
                   });
                 }
                 if (offers.length === 0) return undefined;
                 if (offers.length === 1) return offers[0];
+                const highPrice = racket.originalPrice && Number(racket.originalPrice) > priceNum
+                  ? Number(racket.originalPrice).toFixed(2)
+                  : priceNum.toFixed(2);
                 return {
                   "@type": "AggregateOffer",
-                  "lowPrice": racket.currentPrice,
-                  "highPrice": racket.originalPrice && Number(racket.originalPrice) > Number(racket.currentPrice) ? racket.originalPrice : racket.currentPrice,
+                  "lowPrice": priceNum.toFixed(2),
+                  "highPrice": highPrice,
                   "priceCurrency": "EUR",
                   "offerCount": offers.length,
                   "offers": offers,
@@ -569,8 +640,14 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
       const brand = await storage.getBrand(brandMatch[1]);
       if (brand) {
         const year = new Date().getFullYear();
-        const title = `Best ${brand.name} Padel Rackets ${year} - Reviews & Buying Guide`;
-        const description = brand.description || `Discover the best ${brand.name} padel rackets. Expert reviews, ratings, and buying guide.`;
+        const brandRackets = await storage.getRacketsByBrand(brand.name).catch(() => [] as any[]);
+        const racketCount = Array.isArray(brandRackets) ? brandRackets.length : 0;
+        const topCount = Math.min(10, Math.max(racketCount, 1));
+        const title = `Best ${brand.name} Padel Rackets ${year} - Top ${topCount} Reviews & Buying Guide`;
+        const fallbackDescription = `Best ${brand.name} padel rackets ${year}: ${topCount} expert reviews with power, control, and value ratings. Find the right ${brand.name} model for your level and budget.`;
+        const description = (brand.description && brand.description.length >= 80 && brand.description.length <= 175)
+          ? brand.description
+          : fallbackDescription;
         const brandCanonicalPath = `/brands/${brand.slug}`;
         const brandUrl = locale === "en" ? `${SITE_URL}${brandCanonicalPath}` : `${SITE_URL}/${locale}${brandCanonicalPath}`;
         const brandSchema: any = {
@@ -581,6 +658,67 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         };
         if (brand.logoUrl) brandSchema.logo = brand.logoUrl;
         if (brand.description) brandSchema.description = brand.description;
+
+        // ItemList schema for the top N rackets on this brand page — gives Google
+        // a structured list to surface as a category-style rich result.
+        const itemListSchema = racketCount > 0 ? {
+          "@context": "https://schema.org",
+          "@type": "ItemList",
+          "name": `Best ${brand.name} Padel Rackets ${year}`,
+          "numberOfItems": Math.min(racketCount, 10),
+          "itemListElement": brandRackets.slice(0, 10).map((r: any, i: number) => ({
+            "@type": "ListItem",
+            "position": i + 1,
+            "url": locale === "en"
+              ? `${SITE_URL}/rackets/${buildRacketSlug(r.brand, r.model)}`
+              : `${SITE_URL}/${locale}/rackets/${buildRacketSlug(r.brand, r.model)}`,
+            "name": `${r.brand} ${r.model} ${r.year || ""}`.trim(),
+          })),
+        } : null;
+
+        // FAQ schema covering high-volume brand queries we already rank for
+        // (e.g. "is X a good brand", "best X racket for beginners").
+        const faqSchema = {
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": `Is ${brand.name} a good padel racket brand?`,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": `${brand.name} is a well-established padel brand with a range of rackets for different levels. Our reviews score each ${brand.name} model on power, control, manoeuvrability, sweet spot, and rebound to help you choose the right one for your game.`,
+              },
+            },
+            {
+              "@type": "Question",
+              "name": `Which is the best ${brand.name} padel racket in ${year}?`,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": racketCount > 0
+                  ? `Our top-rated ${brand.name} racket of ${year} is the ${brandRackets[0].brand} ${brandRackets[0].model}, scoring ${brandRackets[0].overallRating}/100 in our expert review. See the full ranking above for alternatives matched to your playing level and budget.`
+                  : `We rank the best ${brand.name} rackets each year based on power, control, manoeuvrability, sweet spot, and rebound testing. See the current top picks above.`,
+              },
+            },
+            {
+              "@type": "Question",
+              "name": `What is the best ${brand.name} racket for beginners?`,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": `Beginner players generally do best with round-shape ${brand.name} rackets featuring a large sweet spot, softer core, and even balance. Use the level filter on this page to see ${brand.name} models we recommend for beginners.`,
+              },
+            },
+            {
+              "@type": "Question",
+              "name": `Are ${brand.name} rackets worth the price?`,
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": `Our value scores compare each ${brand.name} racket's performance against its price. The reviews flag standout value picks, premium frames that justify the cost, and models where you can find better alternatives.`,
+              },
+            },
+          ],
+        };
+
         return {
           title,
           description,
@@ -596,6 +734,8 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
               { name: brand.name },
             ]),
             brandSchema,
+            ...(itemListSchema ? [itemListSchema] : []),
+            faqSchema,
           ],
         };
       }
@@ -660,6 +800,125 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         };
       }
       return { is404: true };
+    }
+
+    // Comparison page: /compare/{slugA}-vs-{slugB}
+    // Splits on the first "-vs-" and validates that both halves resolve to
+    // real rackets. Falls back to the bare /compare landing page if either
+    // racket is missing.
+    const compareMatch = resourcePath.match(/^\/compare\/([^/]+)$/);
+    if (compareMatch) {
+      const compareSlug = compareMatch[1];
+      const vsIdx = compareSlug.indexOf("-vs-");
+      if (vsIdx > 0) {
+        const slugA = compareSlug.slice(0, vsIdx);
+        const slugB = compareSlug.slice(vsIdx + 4);
+        const [racketA, racketB] = await Promise.all([
+          storage.getRacketBySlug(slugA).catch(() => undefined),
+          storage.getRacketBySlug(slugB).catch(() => undefined),
+        ]);
+        if (racketA && racketB) {
+          const nameA = `${racketA.brand} ${racketA.model} ${racketA.year || ""}`.trim();
+          const nameB = `${racketB.brand} ${racketB.model} ${racketB.year || ""}`.trim();
+          const compareCanonicalPath = `/compare/${slugA}-vs-${slugB}`;
+          const compareUrl = locale === "en"
+            ? `${SITE_URL}${compareCanonicalPath}`
+            : `${SITE_URL}/${locale}${compareCanonicalPath}`;
+          const title = `${nameA} vs ${nameB} - Padel Racket Comparison`;
+          const ratingA = Number(racketA.overallRating) || 0;
+          const ratingB = Number(racketB.overallRating) || 0;
+          const winner = ratingA === ratingB ? "a tight match" : (ratingA > ratingB ? `${nameA} wins overall` : `${nameB} wins overall`);
+          const description = `${nameA} vs ${nameB}: side-by-side comparison of power, control, shape, balance, and price. ${winner} (${ratingA}/100 vs ${ratingB}/100).`;
+
+          const crawlableHtml = (() => {
+            const parts: string[] = [];
+            parts.push(`<article id="ssr-content">`);
+            parts.push(`<h1>${escapeHtml(`${nameA} vs ${nameB}`)}</h1>`);
+            parts.push(`<p>${escapeHtml(description)}</p>`);
+            parts.push(`<h2>Specifications</h2>`);
+            parts.push(`<table><thead><tr><th>Spec</th><th>${escapeHtml(nameA)}</th><th>${escapeHtml(nameB)}</th></tr></thead><tbody>`);
+            const rows: [string, any, any][] = [
+              ["Overall rating", `${ratingA}/100`, `${ratingB}/100`],
+              ["Power", racketA.powerRating, racketB.powerRating],
+              ["Control", racketA.controlRating, racketB.controlRating],
+              ["Sweet spot", racketA.sweetSpotRating, racketB.sweetSpotRating],
+              ["Manoeuvrability", racketA.maneuverabilityRating, racketB.maneuverabilityRating],
+              ["Shape", racketA.shape, racketB.shape],
+              ["Balance", racketA.balance, racketB.balance],
+              ["Surface", racketA.surface, racketB.surface],
+              ["Game level", racketA.gameLevel, racketB.gameLevel],
+              ["Price (EUR)", racketA.currentPrice, racketB.currentPrice],
+            ];
+            for (const [label, a, b] of rows) {
+              if (a == null && b == null) continue;
+              parts.push(`<tr><td>${escapeHtml(label)}</td><td>${escapeHtml(String(a ?? "—"))}</td><td>${escapeHtml(String(b ?? "—"))}</td></tr>`);
+            }
+            parts.push(`</tbody></table>`);
+            parts.push(`<p>See the full reviews: <a href="${localeUrl(`/rackets/${slugA}`, locale)}">${escapeHtml(nameA)}</a> · <a href="${localeUrl(`/rackets/${slugB}`, locale)}">${escapeHtml(nameB)}</a></p>`);
+            parts.push(`</article>`);
+            return parts.join("\n");
+          })();
+
+          const productJson = (r: any, ratingX: number) => {
+            const rating5 = ratingX > 0 ? Math.round((ratingX / 20) * 10) / 10 : 0;
+            const slug = buildRacketSlug(r.brand, r.model);
+            return {
+              "@type": "Product",
+              "name": `${r.brand} ${r.model} ${r.year || ""}`.trim(),
+              "brand": { "@type": "Brand", "name": r.brand },
+              ...(r.imageUrl ? { "image": [r.imageUrl] } : {}),
+              "url": locale === "en" ? `${SITE_URL}/rackets/${slug}` : `${SITE_URL}/${locale}/rackets/${slug}`,
+              ...(rating5 > 0 ? {
+                "aggregateRating": {
+                  "@type": "AggregateRating",
+                  "ratingValue": rating5,
+                  "bestRating": 5,
+                  "worstRating": 0,
+                  "ratingCount": 1,
+                  "reviewCount": 1,
+                },
+              } : {}),
+            };
+          };
+
+          return {
+            title,
+            description,
+            canonical: compareUrl,
+            ogType: "article",
+            ogImage: racketA.imageUrl || racketB.imageUrl || undefined,
+            crawlableContent: crawlableHtml,
+            hreflangTags: buildHreflangTags(compareCanonicalPath),
+            structuredData: [
+              buildBreadcrumbSchema([
+                { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
+                { name: t(locale, "header.menu.rackets") || "Rackets", url: localeUrl("/rackets", locale) },
+                { name: `${nameA} vs ${nameB}` },
+              ]),
+              {
+                "@context": "https://schema.org",
+                "@type": "ItemList",
+                "name": `${nameA} vs ${nameB}`,
+                "numberOfItems": 2,
+                "itemListElement": [
+                  { "@type": "ListItem", "position": 1, "item": productJson(racketA, ratingA) },
+                  { "@type": "ListItem", "position": 2, "item": productJson(racketB, ratingB) },
+                ],
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebPage",
+                "name": title,
+                "description": description,
+                "url": compareUrl,
+              },
+            ],
+          };
+        }
+        // If either slug resolves to nothing, return 404 so we don't index empty pages
+        return { is404: true };
+      }
+      // Bare /compare landing page or comma-separated id list — let client render
     }
 
     // Static pages

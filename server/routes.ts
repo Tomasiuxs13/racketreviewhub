@@ -127,27 +127,34 @@ const RACKET_REVIEW_TRANSLATABLE_FIELDS = [
 export async function registerRoutes(app: Express): Promise<Server> {
   const SITE_URL = process.env.SITE_URL || "https://racketreviewhub.com";
 
-  // Normalize legacy racket slugs that duplicated the brand prefix
+  // Normalize legacy racket slugs that duplicated the brand prefix.
+  // Handles single-word brands ("siux-siux-...") and multi-word brands
+  // up to 3 words ("royal-padel-royal-padel-...", "drop-shot-drop-shot-...").
+  const DUP_BRAND_RE = /^((?:[a-z0-9]+-){0,2}[a-z0-9]+)-\1-(.+)$/i;
+
   const normalizeRacketSlug = (slug: string): string => {
-    const lower = slug.toLowerCase().replace(/^-+|-+$/g, "");
-    const match = lower.match(/^([a-z0-9]+)-\1-(.+)$/);
-    if (match) {
-      return `${match[1]}-${match[2]}`.replace(/--+/g, "-");
+    let lower = slug.toLowerCase().replace(/^-+|-+$/g, "").replace(/--+/g, "-");
+    // Apply repeatedly in case of nested duplication (rare but safe)
+    for (let i = 0; i < 3; i++) {
+      const m = lower.match(DUP_BRAND_RE);
+      if (!m) break;
+      lower = `${m[1]}-${m[2]}`.replace(/--+/g, "-");
     }
-    return lower.replace(/--+/g, "-");
+    return lower;
   };
 
-  // Redirect legacy duplicated-brand racket URLs to the canonical slug
-  // Supports both /rackets/xxx-xxx-... and /:locale/rackets/xxx-xxx-...
+  // Redirect legacy duplicated-brand racket URLs to the canonical slug.
+  // Supports both /rackets/<slug> and /:locale/rackets/<slug>.
   app.use((req, res, next) => {
     if (req.method !== "GET") return next();
-    const match = req.path.match(/^(\/[a-z]{2})?\/rackets\/([a-z0-9]+)-\2-(.+)$/i);
-    if (!match) return next();
-
-    const localePrefix = match[1] || "";
-    const normalizedSlug = normalizeRacketSlug(`${match[2]}-${match[3]}`);
+    const racketMatch = req.path.match(/^(\/[a-z]{2})?\/rackets\/([^/]+)$/i);
+    if (!racketMatch) return next();
+    const localePrefix = racketMatch[1] || "";
+    const rawSlug = racketMatch[2];
+    const normalized = normalizeRacketSlug(rawSlug);
+    if (normalized === rawSlug.toLowerCase()) return next();
     const query = req.url.includes("?") ? req.url.substring(req.url.indexOf("?")) : "";
-    return res.redirect(301, `${localePrefix}/rackets/${normalizedSlug}${query}`);
+    return res.redirect(301, `${localePrefix}/rackets/${normalized}${query}`);
   });
 
   // robots.txt - directs crawlers away from API/admin routes and points to sitemap
@@ -954,7 +961,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const now = new Date().toISOString().split('T')[0];
       let index = '<?xml version="1.0" encoding="UTF-8"?>\n';
       index += '<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n';
-      for (const type of ['pages', 'rackets', 'brands', 'guides', 'blog', 'authors']) {
+      for (const type of ['pages', 'rackets', 'brands', 'compare', 'guides', 'blog', 'authors']) {
         index += `  <sitemap>\n    <loc>${baseUrl}/sitemap-${type}.xml</loc>\n    <lastmod>${now}</lastmod>\n  </sitemap>\n`;
       }
       index += '</sitemapindex>';
@@ -994,16 +1001,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Sub-sitemap: rackets
+  // Sub-sitemap: rackets — only include pages with real review content and a
+  // valid overall rating. Thin auto-generated pages without editorial signal
+  // are intentionally excluded so Google focuses crawl budget on high-quality URLs.
+  // Override via env to tune without a code change.
+  const SITEMAP_MIN_REVIEW_LENGTH = Number(process.env.SEO_MIN_REVIEW_LENGTH) || 800;
+  const SITEMAP_MIN_RATING = Number(process.env.SEO_MIN_RATING) || 60;
+
   app.get("/sitemap-rackets.xml", async (req, res) => {
     sendCachedSitemap(res, 'rackets', async () => {
       const baseUrl = SITE_URL;
       const allRackets = await storage.getPublishedRackets();
+      const eligible = allRackets.filter(r => {
+        const reviewLen = (r.reviewContent || "").trim().length;
+        const rating = Number(r.overallRating) || 0;
+        return reviewLen >= SITEMAP_MIN_REVIEW_LENGTH && rating >= SITEMAP_MIN_RATING;
+      });
       let xml = urlsetHeader();
-      for (const racket of allRackets) {
+      for (const racket of eligible) {
         const slug = getRacketSlug(racket);
         const lastmod = racket.updatedAt ? new Date(racket.updatedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
         xml += buildUrlEntry(baseUrl, `/rackets/${slug}`, 'weekly', '0.8', lastmod);
+      }
+      xml += '</urlset>';
+      return xml;
+    });
+  });
+
+  // Sub-sitemap: comparison pages. Generates A-vs-B URLs for sensible pairs
+  // (same brand, both eligible by sitemap quality thresholds). Capped so we
+  // don't flood the sitemap with combinatorial junk.
+  const COMPARE_SITEMAP_MAX_PER_BRAND = 10; // top N rackets per brand
+  const COMPARE_SITEMAP_MAX_TOTAL = 500;     // overall cap
+
+  app.get("/sitemap-compare.xml", async (req, res) => {
+    sendCachedSitemap(res, 'compare', async () => {
+      const baseUrl = SITE_URL;
+      const allRackets = await storage.getPublishedRackets();
+      const eligible = allRackets.filter(r => {
+        const reviewLen = (r.reviewContent || "").trim().length;
+        const rating = Number(r.overallRating) || 0;
+        return reviewLen >= SITEMAP_MIN_REVIEW_LENGTH && rating >= SITEMAP_MIN_RATING;
+      });
+
+      // Group by brand, keep top N per brand, then build all pairs within a brand.
+      const byBrand = new Map<string, typeof eligible>();
+      for (const r of eligible) {
+        const list = byBrand.get(r.brand) || [];
+        list.push(r);
+        byBrand.set(r.brand, list);
+      }
+
+      const pairs: Array<[any, any]> = [];
+      for (const [, list] of Array.from(byBrand.entries())) {
+        const sorted = list.sort((a, b) => (Number(b.overallRating) || 0) - (Number(a.overallRating) || 0));
+        const top = sorted.slice(0, COMPARE_SITEMAP_MAX_PER_BRAND);
+        for (let i = 0; i < top.length; i++) {
+          for (let j = i + 1; j < top.length; j++) {
+            pairs.push([top[i], top[j]]);
+            if (pairs.length >= COMPARE_SITEMAP_MAX_TOTAL) break;
+          }
+          if (pairs.length >= COMPARE_SITEMAP_MAX_TOTAL) break;
+        }
+        if (pairs.length >= COMPARE_SITEMAP_MAX_TOTAL) break;
+      }
+
+      let xml = urlsetHeader();
+      for (const [a, b] of pairs) {
+        const slugA = getRacketSlug(a);
+        const slugB = getRacketSlug(b);
+        // Deterministic ordering so a-vs-b and b-vs-a don't both appear
+        const [first, second] = slugA < slugB ? [slugA, slugB] : [slugB, slugA];
+        const lastmod = new Date().toISOString().split('T')[0];
+        xml += buildUrlEntry(baseUrl, `/compare/${first}-vs-${second}`, 'monthly', '0.6', lastmod);
       }
       xml += '</urlset>';
       return xml;

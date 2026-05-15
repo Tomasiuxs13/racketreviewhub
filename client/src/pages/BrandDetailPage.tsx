@@ -179,27 +179,38 @@ export default function BrandDetailPage() {
 
     // Add product references if rackets exist
     if (top10Rackets.length > 0) {
-      articleSchema.mentions = top10Rackets.slice(0, 10).map((racket) => ({
-        "@type": "Product",
-        "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
-        "brand": {
-          "@type": "Brand",
-          "name": racket.brand,
-        },
-        "aggregateRating": {
-          "@type": "AggregateRating",
-          "ratingValue": racket.overallRating,
-          "bestRating": 100,
-          "worstRating": 0,
-        },
-        "offers": {
-          "@type": "Offer",
-          "price": racket.currentPrice,
-          "priceCurrency": "EUR",
-          "availability": "https://schema.org/InStock",
-          "url": racket.affiliateLink || racket.titleUrl || `${siteUrl}/rackets/${getRacketSlug(racket)}`,
-        },
-      }));
+      articleSchema.mentions = top10Rackets.slice(0, 10).map((racket) => {
+        const overall100 = Number(racket.overallRating) || 0;
+        const rating5 = overall100 > 0 ? Math.round((overall100 / 20) * 10) / 10 : 0;
+        const priceNum = Number(racket.currentPrice) || 0;
+        return {
+          "@type": "Product",
+          "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+          "brand": {
+            "@type": "Brand",
+            "name": racket.brand,
+          },
+          ...(rating5 > 0 ? {
+            "aggregateRating": {
+              "@type": "AggregateRating",
+              "ratingValue": rating5,
+              "bestRating": 5,
+              "worstRating": 0,
+              "ratingCount": 1,
+              "reviewCount": 1,
+            },
+          } : {}),
+          ...(priceNum > 0 ? {
+            "offers": {
+              "@type": "Offer",
+              "price": priceNum.toFixed(2),
+              "priceCurrency": "EUR",
+              "availability": "https://schema.org/InStock",
+              "url": racket.affiliateLink || racket.titleUrl || `${siteUrl}/rackets/${getRacketSlug(racket)}`,
+            },
+          } : {}),
+        };
+      });
     }
 
     schemas.push(articleSchema);

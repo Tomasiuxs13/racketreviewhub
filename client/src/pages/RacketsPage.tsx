@@ -188,34 +188,45 @@ export default function RacketsPage() {
       schemas.push({
         "@context": "https://schema.org",
         "@type": "ItemList",
-        "itemListElement": filteredRackets.slice(0, 20).map((racket, index) => ({
-          "@type": "ListItem",
-          "position": index + 1,
-          "item": {
-            "@type": "Product",
-            "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
-            "description": `Expert review of the ${racket.brand} ${racket.model} padel racket with overall rating ${racket.overallRating}/100.`,
-            "url": `${siteUrl}/rackets/${getRacketSlug(racket)}`,
-            "image": racket.imageUrl || undefined,
-            "brand": {
-              "@type": "Brand",
-              "name": racket.brand,
+        "itemListElement": filteredRackets.slice(0, 20).map((racket, index) => {
+          const overall100 = Number(racket.overallRating) || 0;
+          const rating5 = overall100 > 0 ? Math.round((overall100 / 20) * 10) / 10 : 0;
+          const priceNum = Number(racket.currentPrice) || 0;
+          return {
+            "@type": "ListItem",
+            "position": index + 1,
+            "item": {
+              "@type": "Product",
+              "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+              "description": `Expert review of the ${racket.brand} ${racket.model} padel racket.`,
+              "url": `${siteUrl}/rackets/${getRacketSlug(racket)}`,
+              ...(racket.imageUrl ? { "image": racket.imageUrl } : {}),
+              "brand": {
+                "@type": "Brand",
+                "name": racket.brand,
+              },
+              ...(rating5 > 0 ? {
+                "aggregateRating": {
+                  "@type": "AggregateRating",
+                  "ratingValue": rating5,
+                  "bestRating": 5,
+                  "worstRating": 0,
+                  "ratingCount": 1,
+                  "reviewCount": 1,
+                },
+              } : {}),
+              ...(priceNum > 0 ? {
+                "offers": {
+                  "@type": "Offer",
+                  "price": priceNum.toFixed(2),
+                  "priceCurrency": "EUR",
+                  "availability": "https://schema.org/InStock",
+                  "url": racket.affiliateLink || racket.titleUrl || `${siteUrl}/rackets/${getRacketSlug(racket)}`,
+                },
+              } : {}),
             },
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": racket.overallRating,
-              "bestRating": 100,
-              "worstRating": 0,
-            },
-            "offers": {
-              "@type": "Offer",
-              "price": racket.currentPrice,
-              "priceCurrency": "EUR",
-              "availability": "https://schema.org/InStock",
-              "url": racket.affiliateLink || racket.titleUrl || `${siteUrl}/rackets/${getRacketSlug(racket)}`,
-            },
-          },
-        })),
+          };
+        }),
       });
     }
 

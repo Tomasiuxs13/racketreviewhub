@@ -24,8 +24,36 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: false }));
 
-// Handle SEO redirects for legacy ?lang= parameter
+// Trust the platform proxy (Render/Cloudflare) so req.protocol reflects
+// the original scheme via X-Forwarded-Proto.
+app.set("trust proxy", true);
+
+const CANONICAL_HOST = process.env.CANONICAL_HOST || "racketreviewhub.com";
 const SUPPORTED_LOCALES = ["en", "es", "pt", "it", "fr"];
+
+// Force HTTPS + canonical host for the production domain only.
+// - http://racketreviewhub.com/x -> https://racketreviewhub.com/x
+// - https://www.racketreviewhub.com/x -> https://racketreviewhub.com/x
+// Skips localhost (dev) and unrelated hosts (Render preview, custom domains).
+app.use((req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+  const host = (req.headers.host || "").toLowerCase().split(":")[0];
+  if (!host || host === "localhost" || host === "127.0.0.1") return next();
+
+  const normalizedHost = host.replace(/^www\./, "");
+  const isCanonicalDomain = normalizedHost === CANONICAL_HOST;
+  if (!isCanonicalDomain) return next();
+
+  const proto = (req.headers["x-forwarded-proto"] as string | undefined)?.split(",")[0].trim() || req.protocol;
+  const isHttps = proto === "https";
+  const hostMismatch = host !== CANONICAL_HOST;
+  if (!isHttps || hostMismatch) {
+    return res.redirect(301, `https://${CANONICAL_HOST}${req.originalUrl}`);
+  }
+  next();
+});
+
+// Handle SEO redirects for legacy ?lang= parameter
 app.use((req, res, next) => {
   // Only redirect page requests, not API calls — API routes handle ?lang= themselves
   if (req.method === 'GET' && req.query.lang && !req.path.startsWith('/api/')) {

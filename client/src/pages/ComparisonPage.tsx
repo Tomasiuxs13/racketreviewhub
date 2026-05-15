@@ -27,9 +27,21 @@ export default function ComparisonPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
 
-  // Extract ids from the path, supporting both /compare/:ids and /:locale/compare/:ids
+  // Extract ids from the path, supporting:
+  //  - /compare/slug-a,slug-b  (legacy comma list)
+  //  - /compare/slug-a-vs-slug-b  (SEO-friendly format, splits on FIRST -vs-)
+  // Also supports the locale-prefixed forms.
   const compareMatch = location.match(/\/compare\/([^/?#]+)/);
-  const urlIds = compareMatch ? decodeURIComponent(compareMatch[1]).split(",") : [];
+  const urlIds = (() => {
+    if (!compareMatch) return [] as string[];
+    const raw = decodeURIComponent(compareMatch[1]);
+    if (raw.includes(",")) return raw.split(",");
+    const vsIdx = raw.indexOf("-vs-");
+    if (vsIdx > 0) {
+      return [raw.slice(0, vsIdx), raw.slice(vsIdx + 4)];
+    }
+    return [raw];
+  })();
 
   // Use URL ids if present, otherwise fallback to stored ids. Deduplicate.
   const ids = useMemo(() => {
@@ -135,19 +147,33 @@ export default function ComparisonPage() {
     { key: "core" as const, label: "Core" },
   ];
 
-  // Canonical URL: sort slugs alphabetically so /compare/a,b and /compare/b,a share a canonical
+  // Detect SEO-friendly format (/compare/slug-a-vs-slug-b). Only indexable when
+  // exactly two real rackets resolve; everything else stays noindex.
+  const isVsUrl = !!compareMatch && compareMatch[1].includes("-vs-");
+  const isIndexableCompare = isVsUrl && rackets.length === 2;
+
+  // Canonical URL: alphabetical slug order so different URL orderings dedupe.
   const canonicalCompareSlugs = useMemo(() => {
+    if (rackets.length === 2) {
+      const slugs = rackets.map(getRacketSlug).sort();
+      return isVsUrl ? `${slugs[0]}-vs-${slugs[1]}` : slugs.join(",");
+    }
     return [...ids].sort().join(",");
-  }, [ids]);
+  }, [ids, rackets, isVsUrl]);
+
+  const compareTitle = rackets.length >= 2
+    ? `${rackets[0].brand} ${rackets[0].model} vs ${rackets[1].brand} ${rackets[1].model} - Padel Racket Comparison`
+    : "Racket Comparison";
+  const compareDescription = rackets.length >= 2
+    ? `${rackets[0].brand} ${rackets[0].model} vs ${rackets[1].brand} ${rackets[1].model}: side-by-side comparison of power, control, shape, balance, and price.`
+    : "Compare padel rackets side by side - ratings, specs, and prices.";
 
   const seoData = {
-    title: rackets.length >= 2
-      ? `${rackets[0].brand} ${rackets[0].model} vs ${rackets[1].brand} ${rackets[1].model} - Comparison`
-      : "Racket Comparison",
-    description: "Compare padel rackets side by side - ratings, specs, and prices.",
+    title: compareTitle,
+    description: compareDescription,
     url: canonicalCompareSlugs ? `/compare/${canonicalCompareSlugs}` : "/compare",
     canonical: canonicalCompareSlugs ? `/compare/${canonicalCompareSlugs}` : "/compare",
-    noindex: true,
+    noindex: !isIndexableCompare,
   };
 
   if (isLoading) {

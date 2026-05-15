@@ -86,7 +86,7 @@ export function SEO({
       <meta name="twitter:image" content={imageUrl} />
 
       {noindex ? (
-        <meta name="robots" content="noindex, nofollow" />
+        <meta name="robots" content="noindex, follow" />
       ) : (
         <meta name="robots" content="index, follow" />
       )}
