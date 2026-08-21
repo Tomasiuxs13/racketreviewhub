@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: racketreviewhub
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: racketreviewhub
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - default
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    depends_on:
+      - db
+    networks:
+      - default
+      - web
+    labels:
+      - traefik.enable=true
+      - "traefik.http.routers.racketreviewhub.rule=Host(`racketreviewhub.com`) || Host(`www.racketreviewhub.com`)"
+      - traefik.http.routers.racketreviewhub.entrypoints=websecure
+      - traefik.http.routers.racketreviewhub.tls.certresolver=mytlschallenge
+      - traefik.http.services.racketreviewhub.loadbalancer.server.port=5000
+      - traefik.docker.network=root_default
+
+networks:
+  web:
+    external: true
+    name: root_default
+
+volumes:
+  db_data:

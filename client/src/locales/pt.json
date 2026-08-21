@@ -117,6 +117,9 @@
       "description": "Análise especializada da raquete de padel {{brand}} {{model}} {{year}}. Classificações detalhadas de potência, controlo e desempenho. Pontuação total: {{rating}}/100. Encontre o melhor preço.",
       "defaultTitle": "Análise de Raquete de Padel",
       "defaultDescription": "Análise especializada de raquete de padel com classificações detalhadas e comparação do melhor preço"
+    },
+    "detail": {
+      "priceChecked": "Preço verificado em {{date}} — a loja pode apresentar um preço mais recente."
     }
   },
   "about": {

@@ -117,6 +117,9 @@
       "description": "Test d'expert de la raquette de padel {{brand}} {{model}} {{year}}. Évaluations détaillées de la puissance, du contrôle et de la performance. Score global : {{rating}}/100. Trouvez le meilleur prix.",
       "defaultTitle": "Test de raquette de padel",
       "defaultDescription": "Test d'expert de raquette de padel avec évaluations détaillées et comparaison du meilleur prix"
+    },
+    "detail": {
+      "priceChecked": "Prix vérifié le {{date}} — la boutique peut afficher un prix plus récent."
     }
   },
   "about": {

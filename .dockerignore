@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+*.tar.gz
+server/public
+.DS_Store
+user-images
+facebook_racket_images_*
+test_reviews
+test_gen_tmp.ts

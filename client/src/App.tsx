@@ -6,28 +6,32 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 
-// Pages
+import { lazy, Suspense, useEffect } from "react";
+
+// Eager pages — primary SEO entry points (avoid a chunk-load waterfall on landing)
 import HomePage from "@/pages/HomePage";
 import RacketsPage from "@/pages/RacketsPage";
 import RacketDetailPage from "@/pages/RacketDetailPage";
-import GuidesPage from "@/pages/GuidesPage";
-import GuideDetailPage from "@/pages/GuideDetailPage";
-import BrandsPage from "@/pages/BrandsPage";
-import BrandDetailPage from "@/pages/BrandDetailPage";
-import BlogPage from "@/pages/BlogPage";
-import BlogPostPage from "@/pages/BlogPostPage";
-import AuthorPage from "@/pages/AuthorPage";
-import AdminPage from "@/pages/AdminPage";
-import LoginPage from "@/pages/LoginPage";
-import SignupPage from "@/pages/SignupPage";
-import ComparisonPage from "@/pages/ComparisonPage";
-import QuizPage from "@/pages/QuizPage";
-import BestOfPage from "@/pages/BestOfPage";
-import AboutPage from "@/pages/AboutPage";
-import MethodologyPage from "@/pages/MethodologyPage";
-import ContactPage from "@/pages/ContactPage";
-import LegalPage from "@/pages/LegalPage";
-import NotFound from "@/pages/not-found";
+
+// Lazy pages — split into per-route chunks to keep the main bundle small
+const GuidesPage = lazy(() => import("@/pages/GuidesPage"));
+const GuideDetailPage = lazy(() => import("@/pages/GuideDetailPage"));
+const BrandsPage = lazy(() => import("@/pages/BrandsPage"));
+const BrandDetailPage = lazy(() => import("@/pages/BrandDetailPage"));
+const BlogPage = lazy(() => import("@/pages/BlogPage"));
+const BlogPostPage = lazy(() => import("@/pages/BlogPostPage"));
+const AuthorPage = lazy(() => import("@/pages/AuthorPage"));
+const AdminPage = lazy(() => import("@/pages/AdminPage"));
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const SignupPage = lazy(() => import("@/pages/SignupPage"));
+const ComparisonPage = lazy(() => import("@/pages/ComparisonPage"));
+const QuizPage = lazy(() => import("@/pages/QuizPage"));
+const BestOfPage = lazy(() => import("@/pages/BestOfPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const MethodologyPage = lazy(() => import("@/pages/MethodologyPage"));
+const ContactPage = lazy(() => import("@/pages/ContactPage"));
+const LegalPage = lazy(() => import("@/pages/LegalPage"));
+const NotFound = lazy(() => import("@/pages/not-found"));
 import { AuthGuard } from "@/components/AuthGuard";
 import { CompareBar } from "@/components/CompareBar";
 import { CompareProvider } from "@/hooks/useCompare";
@@ -35,8 +39,23 @@ import { SUPPORTED_LOCALES } from "@/i18n/I18nProvider";
 
 
 
+/**
+ * Reset scroll position on every route change. Without this, SPA navigations
+ * keep the previous page's scroll offset (e.g. opening a racket from a
+ * scrolled listing landed mid-page on Performance Metrics).
+ */
+function ScrollToTop() {
+  const [location] = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location]);
+  return null;
+}
+
 function Router() {
   return (
+    <Suspense fallback={null}>
+    <ScrollToTop />
     <Switch>
       {/* English (default) routes */}
       <Route path="/" component={HomePage} />
@@ -106,6 +125,7 @@ function Router() {
       {/* Fallback for invalid routes */}
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 }
 

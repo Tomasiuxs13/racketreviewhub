@@ -4,6 +4,7 @@ import type { Racket } from "@shared/schema";
 import { getRacketSlug, getOptimizedImageUrl } from "@/lib/utils";
 import { openAffiliateLink } from "@/lib/analytics";
 import { useCompare } from "@/hooks/useCompare";
+import { formatRacketDisplayName } from "@shared/utils";
 
 interface RacketCardProps {
   racket: Racket;
@@ -102,7 +103,7 @@ export function RacketCard({ racket }: RacketCardProps) {
                 className="font-heading font-black text-lg sm:text-xl tracking-tight leading-tight text-ds-on-surface group-hover:text-ds-primary transition-colors duration-300 line-clamp-2"
                 data-testid={`text-model-${racket.id}`}
               >
-                {racket.brand} {racket.model}
+                {`${racket.brand} ${formatRacketDisplayName(racket.brand, racket.model, racket.year)}`}
               </h3>
               <span className="ds-score shrink-0" data-testid={`text-overall-rating-${racket.id}`}>
                 {racket.overallRating}

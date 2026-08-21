@@ -17,6 +17,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useCompare } from "@/hooks/useCompare";
 import { useI18n } from "@/i18n/useI18n";
+import { formatRacketDisplayName } from "@shared/utils";
 
 export default function ComparisonPage() {
   const [location, setLocation] = useLocation();
@@ -349,7 +350,7 @@ export default function ComparisonPage() {
                               className="w-full flex items-center gap-3 p-2 rounded hover:bg-primary/5 transition-colors text-xs font-bold"
                             >
                               <img src={getOptimizedImageUrl(r.imageUrl || "", 100)} className="w-6 h-6 object-contain" alt={`${r.brand} ${r.model}`} />
-                              <span className="truncate">{r.brand} {r.model}</span>
+                              <span className="truncate">{`${r.brand} ${formatRacketDisplayName(r.brand, r.model, r.year)}`}</span>
                             </button>
                           ))}
                         </div>

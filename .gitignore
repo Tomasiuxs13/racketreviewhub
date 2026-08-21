@@ -5,3 +5,8 @@ server/public
 vite.config.ts.*
 *.tar.gz
 .env
+# Local scratch: source photo dumps and test output (not shipped)
+/user-images/
+/facebook_racket_images_*/
+/test_reviews/
+/test_gen_tmp.ts

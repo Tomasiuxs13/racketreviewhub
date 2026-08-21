@@ -30,6 +30,7 @@ const args = process.argv.slice(2);
 const options = {
   local: args.includes("--local"),
   dryRun: args.includes("--dry-run"),
+  noAi: args.includes("--no-ai"), // import/update without AI generation (spend controlled elsewhere)
   file: args.includes("--file") ? args[args.indexOf("--file") + 1] : undefined,
 };
 
@@ -83,7 +84,7 @@ async function main() {
 
     // Process the products
     console.log("[Cron] Processing feed products...");
-    const result = await processPadelMarketFeed(feedResult.products);
+    const result = await processPadelMarketFeed(feedResult.products, options.noAi ? { generateRatings: false, generateReviews: false } : {});
 
     // Log results
     const endTime = new Date();

@@ -117,6 +117,9 @@
       "description": "Recensione esperta della racchetta da padel {{brand}} {{model}} {{year}}. Valutazioni dettagliate per potenza, controllo e prestazioni. Voto complessivo: {{rating}}/100. Trova il miglior prezzo.",
       "defaultTitle": "Recensione Racchetta Padel",
       "defaultDescription": "Recensione esperta di racchetta da padel con valutazioni dettagliate e confronto del miglior prezzo"
+    },
+    "detail": {
+      "priceChecked": "Prezzo verificato il {{date}} — il negozio potrebbe mostrare un prezzo più recente."
     }
   },
   "about": {

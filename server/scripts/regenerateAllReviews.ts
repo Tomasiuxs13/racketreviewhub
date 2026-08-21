@@ -1,8 +1,9 @@
 import "dotenv/config";
 import { storage } from "../storage.js";
-import { performRacketResearch, estimateRacketRatings, generateRacketReview } from "../lib/openai.js";
+import { performRacketResearch, estimateRacketRatings, generateRacketReview, getCumulativeCostUsd } from "../lib/openai.js";
 import { checkPublishQualityGates } from "../lib/qualityGates.js";
 import type { Racket } from "@shared/schema";
+import { formatRacketDisplayName } from "@shared/utils";
 
 // Helper to build URL-friendly slugs for rackets
 function getRacketSlug(racket: Pick<Racket, "brand" | "model">): string {
@@ -46,24 +47,59 @@ function parseIntArg(flag: string): number | undefined {
     return isNaN(val) ? undefined : val;
 }
 
+// Market-leading padel brands get priority in --priority mode (index = rank).
+const PRIORITY_BRANDS = [
+    "nox", "bullpadel", "babolat", "adidas", "head", "siux",
+    "starvie", "wilson", "black crown", "dunlop", "varlion", "royal padel",
+];
+
+function brandRank(brand: string): number {
+    const idx = PRIORITY_BRANDS.indexOf(brand.trim().toLowerCase());
+    return idx === -1 ? PRIORITY_BRANDS.length : idx;
+}
+
+/** New-format reviews open with the Quick Verdict section — used as an idempotency marker. */
+function hasCurrentFormatReview(racket: Racket): boolean {
+    return Boolean(racket.reviewContent && racket.reviewContent.includes("<h2>Quick Verdict</h2>"));
+}
+
 async function run() {
     console.log("Starting Bulk Racket Regeneration (Research -> Rate -> Review)...");
 
     const processPublished = process.argv.includes("--published");
     const processAll = process.argv.includes("--all");
+    const priorityMode = process.argv.includes("--priority"); // in-stock, top brands first, old-format only
+    const dryRun = process.argv.includes("--dry-run");
+    const budgetEur = parseIntArg("--budget-eur"); // hard stop once real API spend exceeds this
+    const yearFilter = parseIntArg("--year"); // only process rackets of this model year
     const startFrom = parseIntArg("--start-from") ?? 1; // 1-based
     const limit = parseIntArg("--limit");
 
-    const modeLabel = processAll ? "ALL (published + unpublished)" : processPublished ? "PUBLISHED" : "UNPUBLISHED";
+    const modeLabel = priorityMode
+        ? "PRIORITY (in-stock, top brands first, old-format reviews only)"
+        : processAll ? "ALL (published + unpublished)" : processPublished ? "PUBLISHED" : "UNPUBLISHED";
     console.log(`Targeting: ${modeLabel} rackets.`);
 
     // Get all rackets that exist
     const allRackets = await storage.getAllRackets();
 
-    // Filter by publish status
-    let rackets = processAll
+    // Filter by publish status (priority mode targets everything, then applies its own filters)
+    let rackets = (processAll || priorityMode)
         ? allRackets
         : allRackets.filter(r => r.isPublished === processPublished);
+
+    if (priorityMode) {
+        rackets = rackets
+            // "In stock" = purchasable somewhere: Padel Nuestro OR Padel Market
+            .filter(r => r.inStock || (r as any).padelMarketInStock)
+            .filter(r => yearFilter === undefined || r.year === yearFilter)
+            .filter(r => !hasCurrentFormatReview(r))
+            .sort((a, b) => {
+                const rankDiff = brandRank(a.brand) - brandRank(b.brand);
+                if (rankDiff !== 0) return rankDiff;
+                return (b.overallRating || 0) - (a.overallRating || 0);
+            });
+    }
 
     const totalMatched = rackets.length;
     const inStockCount = rackets.filter(r => r.inStock).length;
@@ -84,22 +120,44 @@ async function run() {
 
     console.log(`Processing ${rackets.length} of ${totalMatched} rackets (${modeLabel}).`);
 
+    if (dryRun) {
+        const estCostEur = rackets.length * 0.17;
+        console.log(`\n--- DRY RUN: would process ${rackets.length} rackets (~€${estCostEur.toFixed(0)} at ~€0.17/racket) ---`);
+        const byBrand = new Map<string, number>();
+        rackets.forEach(r => byBrand.set(r.brand, (byBrand.get(r.brand) || 0) + 1));
+        [...byBrand.entries()].sort((a, b) => b[1] - a[1]).forEach(([brand, count]) => {
+            console.log(`  ${brand}: ${count}`);
+        });
+        console.log(`\nFirst 15 in queue:`);
+        rackets.slice(0, 15).forEach((r, i) => console.log(`  ${i + 1}. ${r.brand} ${r.model} (€${r.currentPrice}, ${r.overallRating}/100)`));
+        return;
+    }
+
     let successCount = 0;
     let failCount = 0;
 
+    const USD_PER_EUR = 1.10;
     for (let i = 0; i < rackets.length; i++) {
+        const spentEur = getCumulativeCostUsd() / USD_PER_EUR;
+        if (budgetEur !== undefined && spentEur >= budgetEur) {
+            console.log(`\n*** BUDGET REACHED: €${spentEur.toFixed(2)} spent (cap €${budgetEur}). Stopping after ${i} rackets. ***`);
+            break;
+        }
         const absoluteIndex = (startFrom - 1) + i; // 0-based position in the full list
         const racket = rackets[i];
         console.log(`\n--- [${i + 1}/${rackets.length}] (#${absoluteIndex + 1} overall) Processing: ${racket.brand} ${racket.model} ---`);
+        console.log(`    [spend so far: €${spentEur.toFixed(2)}${budgetEur !== undefined ? ` / €${budgetEur} cap` : ""}]`);
 
         try {
             // Step 1: Online Research
-            console.log("-> Searching web for specs & sentiment (Perplexity)...");
-            const research = await withRetry(() => performRacketResearch({
+            console.log("-> Searching web for specs & sentiment (Claude web search)...");
+            // Single attempt only: a timed-out research request still bills server-side,
+            // so retrying multiplies hidden cost. Research is optional — proceed without it.
+            const research = await performRacketResearch({
                 brand: racket.brand,
                 model: racket.model,
                 year: racket.year
-            }));
+            }).catch(() => null);
 
             let researchBriefText = null;
             let researchKeywords: string[] = [];
@@ -206,7 +264,7 @@ async function run() {
                 );
 
                 const competitors = scored.slice(0, 2).map(s =>
-                    `<a href="/rackets/${getRacketSlug(s.racket)}">${s.racket.brand} ${s.racket.model}</a>`
+                    `<a href="/rackets/${getRacketSlug(s.racket)}">${s.racket.brand} ${formatRacketDisplayName(s.racket.brand, s.racket.model, s.racket.year)}</a>`
                 );
 
                 if (competitors.length > 0) {
@@ -216,7 +274,7 @@ async function run() {
                     console.log(`   Found ${internalLinks.length} internal links to guides.`);
                 }
 
-                console.log("   (Waiting for OpenRouter LLM Review Generation & Translations...)");
+                console.log("   (Waiting for Claude review generation & translations...)");
                 const reviewResult = await withRetry(() => generateRacketReview(perfectlyUpdatedRacket, {
                     competitors,
                     internalLinks,

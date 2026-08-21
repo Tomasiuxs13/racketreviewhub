@@ -34,9 +34,9 @@ const options = {
 };
 
 async function bulkPublishRackets() {
-  if (!process.env.OPENAI_API_KEY && (!options.skipReviews || !options.skipTranslations)) {
-    console.error("❌ ERROR: OPENAI_API_KEY not set. Cannot generate reviews/translations.");
-    console.error("   Please set OPENAI_API_KEY in your .env file.");
+  if (!process.env.ANTHROPIC_API_KEY && (!options.skipReviews || !options.skipTranslations)) {
+    console.error("❌ ERROR: ANTHROPIC_API_KEY not set. Cannot generate reviews/translations.");
+    console.error("   Please set ANTHROPIC_API_KEY in your .env file.");
     console.error("   Or use --skip-reviews and --skip-translations to skip AI generation.");
     process.exit(1);
   }

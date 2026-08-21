@@ -7,7 +7,7 @@ import { ArrowRight, Star, TrendingUp, Shield, Scale } from "lucide-react";
 import { RacketCard } from "@/components/RacketCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Racket, Guide } from "@shared/schema";
-import heroImage from "@assets/generated_images/Padel_court_hero_background_fd7eb556.png";
+import heroImage from "@assets/generated_images/Padel_court_hero_background_fd7eb556.webp";
 import SEO from "@/components/SEO";
 import { StructuredData } from "@/components/StructuredData";
 import { useMemo } from "react";
@@ -188,6 +188,8 @@ export default function HomePage() {
                   src={heroImage}
                   alt="Professional padel court with players mid-rally — expert padel racket reviews and buying guides"
                   className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-1000 ease-out"
+                  width={1408}
+                  height={768}
                   fetchPriority="high"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/40 to-transparent pointer-events-none" />

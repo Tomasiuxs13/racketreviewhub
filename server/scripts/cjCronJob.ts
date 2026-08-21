@@ -33,6 +33,7 @@ const options = {
   quick: args.includes("--quick"),
   local: args.includes("--local"),
   dryRun: args.includes("--dry-run"),
+  noAi: args.includes("--no-ai"), // import/update products without AI generation (spend controlled elsewhere)
   file: args.includes("--file") ? args[args.indexOf("--file") + 1] : undefined,
 };
 
@@ -89,10 +90,12 @@ async function main() {
       console.log("[Cron] Running quick price update (no AI generation)...");
       result = await quickPriceUpdate(feedResult.products);
     } else {
-      console.log("[Cron] Running full sync with AI generation...");
+      console.log(options.noAi
+        ? "[Cron] Running full sync WITHOUT AI generation (--no-ai)..."
+        : "[Cron] Running full sync with AI generation...");
       result = await processCjFeed(feedResult.products, {
-        generateRatings: true,
-        generateReviews: true,
+        generateRatings: !options.noAi,
+        generateReviews: !options.noAi,
         batchSize: 5,
         delayBetweenBatches: 2000, // Slower for cron job to avoid rate limits
       });

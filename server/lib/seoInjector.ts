@@ -1,5 +1,5 @@
 import { storage } from "../storage.js";
-import { extractProsCons } from "@shared/utils";
+import { extractProsCons, formatRacketDisplayName } from "@shared/utils";
 import { fetchTranslation } from "./i18n.js";
 import fs from "fs";
 import path from "path";
@@ -80,13 +80,15 @@ interface SeoMeta {
   crawlableContent?: string;
   /** Pre-built hreflang link tags for injection into <head> */
   hreflangTags?: string;
+  /** Robots directive; defaults to "index, follow" */
+  robots?: string;
 }
 
 function buildMetaTags(meta: SeoMeta): string {
   const tags: string[] = [];
 
   tags.push(`<title>${escapeHtml(meta.title)}</title>`);
-  tags.push(`<meta name="robots" content="index, follow">`);
+  tags.push(`<meta name="robots" content="${escapeAttr(meta.robots || "index, follow")}">`);
   tags.push(`<meta name="description" content="${escapeAttr(meta.description)}">`);
   tags.push(`<link rel="canonical" href="${escapeAttr(meta.canonical)}">`);
 
@@ -163,6 +165,39 @@ function buildBlogDescription(post: { title: string }): string {
   return base.length > 160 ? base.slice(0, 157) + "..." : base;
 }
 
+/**
+ * Extract FAQ question/answer pairs from review HTML.
+ * Reviews use the strict format: <p><strong>Q: [question]</strong></p><p>[answer]</p>
+ * Returns a FAQPage JSON-LD schema, or null if no Q&A pairs found.
+ */
+function buildFaqSchema(reviewContent: string | null | undefined): object | null {
+  if (!reviewContent) return null;
+  const pairs: { question: string; answer: string }[] = [];
+  const qaRegex = /<p>\s*<strong>\s*Q:\s*([^<]+?)\s*<\/strong>\s*<\/p>\s*<p>([\s\S]*?)<\/p>/gi;
+  let match: RegExpExecArray | null;
+  while ((match = qaRegex.exec(reviewContent)) !== null) {
+    const question = match[1].trim();
+    // Strip any HTML tags from the answer for schema text
+    const answer = match[2].replace(/<[^>]+>/g, "").trim();
+    if (question && answer) {
+      pairs.push({ question, answer });
+    }
+  }
+  if (pairs.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": pairs.map((p) => ({
+      "@type": "Question",
+      "name": p.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": p.answer,
+      },
+    })),
+  };
+}
+
 interface BreadcrumbItem {
   name: string;
   url?: string;
@@ -229,7 +264,8 @@ function cleanReviewContentServer(content: string): string {
 function buildRacketCrawlableHtml(racket: any): string {
   const parts: string[] = [];
   parts.push(`<article id="ssr-content" data-nosnippet="false">`);
-  parts.push(`<h1>${escapeHtml(`${racket.brand} ${racket.model} ${racket.year || ''} Padel Racket Review`.trim())}</h1>`);
+  const displayModel = formatRacketDisplayName(racket.brand, racket.model, racket.year);
+  parts.push(`<h1>${escapeHtml(`${racket.brand} ${displayModel} ${racket.year || ''} Padel Racket Review`.trim())}</h1>`);
 
   // Overall rating
   parts.push(`<p><strong>Overall Rating: ${racket.overallRating}/100</strong></p>`);
@@ -392,7 +428,7 @@ async function buildListingCrawlableHtml(title: string, description: string, ite
   parts.push(`</article>`);
   return parts.join('\n');
 }
-export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: true } | null> {
+export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: true }> {
   try {
     // Detect and strip locale prefix from path
     const locale = extractLocaleFromPath(path) ?? "en";
@@ -421,21 +457,49 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         }
         const translatedRacket = { ...racket, reviewContent };
 
+        // Normalize feed model names ("ADIDAS ADIPOWER CARBON CTRL 2025") so titles
+        // don't duplicate the brand/year: "Adidas Adipower Carbon Ctrl 2025 Review..."
+        const displayModel = formatRacketDisplayName(racket.brand, racket.model, racket.year);
+        const fullDisplayName = `${racket.brand} ${displayModel} ${racket.year || ""}`.trim();
+
         const title = t(locale, "racket.seo.title", {
           brand: racket.brand,
-          model: racket.model,
+          model: displayModel,
           year: racket.year || "",
           rating: racket.overallRating
         });
 
         const description = t(locale, "racket.seo.description", {
           brand: racket.brand,
-          model: racket.model,
+          model: displayModel,
           year: racket.year || "",
           rating: racket.overallRating
-        }) || `Expert ${racket.brand} ${racket.model} ${racket.year || ""} padel racket review. ${racket.overallRating}/100 rating.`.trim();
+        }) || `Expert ${fullDisplayName} padel racket review. ${racket.overallRating}/100 rating.`.trim();
 
         const extracted = extractProsCons(reviewContent);
+
+        // E-E-A-T: attribute the review to the real author (Person) when one is
+        // assigned; Google's reviews system devalues anonymous/org-only reviews.
+        let authorSchema: object = {
+          "@type": "Organization",
+          "name": t(locale, "common.brandName"),
+        };
+        if (racket.authorId) {
+          try {
+            const author = await storage.getAuthorById(racket.authorId);
+            if (author) {
+              authorSchema = {
+                "@type": "Person",
+                "name": author.name,
+                "url": `${SITE_URL}/authors/${author.slug}`,
+                ...(author.bio ? { "description": author.bio } : {}),
+              };
+            }
+          } catch (err) {
+            console.warn(`[SEO] Failed to load author ${racket.authorId} for review schema:`, err);
+          }
+        }
+
         const reviewSchema: any = {
           "@type": "Review",
           "reviewRating": {
@@ -444,10 +508,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
             "bestRating": 100,
             "worstRating": 0,
           },
-          "author": {
-            "@type": "Organization",
-            "name": t(locale, "common.brandName"),
-          },
+          "author": authorSchema,
         };
 
         if (extracted.pros.length > 0) {
@@ -480,7 +541,7 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           "@type": "Review",
           "itemReviewed": {
             "@type": "Product",
-            "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+            "name": fullDisplayName,
             "brand": { "@type": "Brand", "name": racket.brand },
             "image": racket.imageUrl || undefined,
           },
@@ -490,12 +551,15 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
             "bestRating": 100,
             "worstRating": 0,
           },
-          "author": { "@type": "Organization", "name": t(locale, "common.brandName") },
+          "author": authorSchema,
+          "publisher": { "@type": "Organization", "name": t(locale, "common.brandName"), "url": SITE_URL },
           "datePublished": racket.createdAt ? new Date(racket.createdAt).toISOString().split("T")[0] : undefined,
           "dateModified": racket.updatedAt ? new Date(racket.updatedAt).toISOString().split("T")[0] : undefined,
           ...(extracted.pros.length > 0 ? { positiveNotes: reviewSchema.positiveNotes } : {}),
           ...(extracted.cons.length > 0 ? { negativeNotes: reviewSchema.negativeNotes } : {}),
         };
+
+        const faqSchema = buildFaqSchema(reviewContent);
 
         return {
           title,
@@ -506,16 +570,17 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
           crawlableContent: buildRacketCrawlableHtml(translatedRacket),
           hreflangTags: buildHreflangTags(racketCanonicalPath),
           structuredData: [
+            ...(faqSchema ? [faqSchema] : []),
             buildBreadcrumbSchema([
               { name: t(locale, "header.menu.home") || "Home", url: localeUrl("/", locale) },
               { name: t(locale, "header.menu.rackets") || "Rackets", url: localeUrl("/rackets", locale) },
               { name: racket.brand, url: localeUrl(`/brands/${racket.brand.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`, locale) },
-              { name: `${racket.brand} ${racket.model} ${racket.year || ""}`.trim() },
+              { name: fullDisplayName },
             ]),
             {
               "@context": "https://schema.org",
               "@type": "Product",
-              "name": `${racket.brand} ${racket.model} ${racket.year || ""}`.trim(),
+              "name": fullDisplayName,
               "description": description,
               "image": racket.imageUrl ? [racket.imageUrl] : undefined,
               "brand": { "@type": "Brand", "name": racket.brand },
@@ -785,8 +850,13 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
         "budget": "Incredible value for money without sacrificing build quality or playability.",
         "overall": "Our top-rated rackets combining power, control, maneuverability, and value.",
       };
-      const catTitle = categoryTitles[category] || `Best ${category.charAt(0).toUpperCase() + category.slice(1)} Padel Rackets`;
-      const catDesc = categoryDescriptions[category] || `Discover the best ${category} padel rackets.`;
+      // Unknown categories must 404 — a fabricated fallback page for any
+      // /best/* string is an unbounded source of thin duplicate URLs.
+      if (!categoryTitles[category]) {
+        return { is404: true };
+      }
+      const catTitle = categoryTitles[category];
+      const catDesc = categoryDescriptions[category];
       const bestCanonicalPath = `/best/${category}`;
       const bestUrl = locale === "en" ? `${SITE_URL}${bestCanonicalPath}` : `${SITE_URL}/${locale}${bestCanonicalPath}`;
       const pageTitle = `${catTitle} of ${year} - Expert Reviews`;
@@ -925,10 +995,39 @@ export async function resolveSeoMeta(path: string): Promise<SeoMeta | { is404: t
       return { is404: true };
     }
 
-    return null;
+    // Comparison tool: /compare is indexable; /compare/:ids permutations are
+    // user-generated and would flood the index with near-duplicates, so they
+    // get noindex + a canonical pointing at the base tool page.
+    const compareMatch = resourcePath.match(/^\/compare(\/.+)?$/);
+    if (compareMatch) {
+      const compareCanonicalPath = "/compare";
+      return {
+        title: "Compare Padel Rackets Side-by-Side - Padel Racket Reviews",
+        description: "Compare padel rackets side-by-side: power, control, weight, balance, price and expert ratings. Find the right racket for your game.",
+        canonical: locale === "en" ? `${SITE_URL}${compareCanonicalPath}` : `${SITE_URL}/${locale}${compareCanonicalPath}`,
+        ogType: "website",
+        hreflangTags: buildHreflangTags(compareCanonicalPath),
+        ...(compareMatch[1] ? { robots: "noindex, follow" } : {}),
+      };
+    }
+
+    // Auth/admin utility pages: real client routes, but never for the index.
+    if (/^\/(login|signup)$/.test(resourcePath) || /^\/admin(\/.*)?$/.test(resourcePath)) {
+      return {
+        title: "Padel Racket Reviews",
+        description: "Expert padel racket reviews, comparisons, and buying guides.",
+        canonical: `${SITE_URL}${resourcePath}`,
+        ogType: "website",
+        robots: "noindex, nofollow",
+      };
+    }
+
+    // Any path not matched above is not a real page: return a hard 404 so
+    // crawlers don't file the SPA shell as a soft 404 / duplicate.
+    return { is404: true };
   } catch (error) {
     console.error("[SEO] Error resolving meta for path:", path, error);
-    return null;
+    throw error;
   }
 }
 
@@ -978,6 +1077,9 @@ export function injectSeoMeta(html: string, meta: SeoMeta): string {
   // Inject crawlable content inside <div id="root"> for search engine crawlers.
   // React's createRoot will replace this content on client-side hydration.
   // Also inject site-wide nav links so crawlers can discover all major sections.
+  // IMPORTANT: content must NOT be display:none — Google devalues hidden text and
+  // it reads as cloaking. We render it visible (minimal styling) and let React
+  // replace it on hydration; the brief flash is the SEO-correct trade-off.
   {
     const localeFromCanonical = meta.canonical.replace(SITE_URL, "").match(/^\/([a-z]{2})(\/|$)/);
     const locale = localeFromCanonical && SUPPORTED_LOCALES.includes(localeFromCanonical[1] as SupportedLocale) && localeFromCanonical[1] !== "en"
@@ -987,7 +1089,7 @@ export function injectSeoMeta(html: string, meta: SeoMeta): string {
     const content = meta.crawlableContent ? `${navHtml}${meta.crawlableContent}` : navHtml;
     html = html.replace(
       '<div id="root"></div>',
-      `<div id="root"><div style="display:none">${content}</div></div>`,
+      `<div id="root"><div id="seo-ssr" style="max-width:72rem;margin:0 auto;padding:1rem;font-family:system-ui,sans-serif">${content}</div></div>`,
     );
   }
 

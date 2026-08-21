@@ -1,22 +1,127 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 import type { Racket } from "@shared/schema";
+import { formatRacketDisplayName } from "@shared/utils";
 import { upsertTranslation } from "./i18n.js";
 
-// Support both OpenRouter_API_Key (preferred) and OPENAI_API_KEY (fallback) for compatibility
+// Legacy OpenRouter key — only used by the deprecated `openai` client export below.
 const API_KEY = process.env.OpenRouter_API_Key || process.env.OPENAI_API_KEY;
 
-if (!API_KEY) {
-  console.warn("Warning: OpenRouter_API_Key or OPENAI_API_KEY not set. Review generation will be disabled.");
+// The generation pipeline runs on the Claude API directly.
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+
+if (!ANTHROPIC_KEY) {
+  console.warn("Warning: ANTHROPIC_API_KEY not set. Review generation will be disabled.");
 }
 
-// Configurable models for the OpenRouter pipeline
-// We use Claude 3.5 Sonnet for writing the review and estimating ratings by default
-// Model docs: https://openrouter.ai/anthropic/claude-3.5-sonnet
-export const OPENAI_MODEL = process.env.OPENAI_MODEL || "anthropic/claude-sonnet-4.5";
-// We use Gemini 2.5 Flash for reliable translations (lite was too weak for long HTML in JSON)
-export const OPENAI_TRANSLATION_MODEL = process.env.OPENAI_TRANSLATION_MODEL || "google/gemini-2.5-flash";
-// We use Perplexity Sonar for research tasks (latest model optimized for search on OpenRouter)
-export const OPENAI_RESEARCH_MODEL = process.env.OPENAI_RESEARCH_MODEL || "perplexity/sonar";
+// Configurable models for the Claude API pipeline.
+// Claude Sonnet 5 writes reviews and estimates ratings.
+// NOTE: Sonnet 5 rejects non-default sampling params (temperature/top_p) — do not pass them.
+export const OPENAI_MODEL = process.env.OPENAI_MODEL || "claude-sonnet-5";
+// Claude Haiku 4.5 handles translations — strong HTML/JSON instruction following,
+// same provider family for consistent tone across locales.
+export const OPENAI_TRANSLATION_MODEL = process.env.OPENAI_TRANSLATION_MODEL || "claude-haiku-4-5";
+// Research uses Claude Sonnet 5 with the Claude API's built-in web-search server tool.
+export const OPENAI_RESEARCH_MODEL = process.env.OPENAI_RESEARCH_MODEL || "claude-sonnet-5";
+
+export const anthropic = ANTHROPIC_KEY ? new Anthropic({ apiKey: ANTHROPIC_KEY }) : null;
+
+interface ClaudeCallOptions {
+  model: string;
+  user: string;
+  system?: string;
+  maxTokens: number;
+  timeoutMs?: number;
+  /** Only pass for models that accept sampling params (e.g. Haiku 4.5) — Sonnet 5 rejects them. */
+  temperature?: number;
+  /** Disable adaptive thinking for short structured-output tasks to keep max_tokens tight. */
+  disableThinking?: boolean;
+  /** Enable the server-side web search tool (research tasks). */
+  webSearch?: boolean;
+}
+
+interface ClaudeCallResult {
+  text: string;
+  stopReason: string | null;
+}
+
+/**
+ * Thin wrapper over the Messages API used by every pipeline function.
+ * Handles server-tool pause_turn continuations and concatenates text blocks.
+ */
+async function claudeText(opts: ClaudeCallOptions): Promise<ClaudeCallResult | null> {
+  if (!anthropic) {
+    console.warn("Anthropic client not initialized. Set ANTHROPIC_API_KEY.");
+    return null;
+  }
+
+  const params: Anthropic.MessageCreateParams = {
+    model: opts.model,
+    max_tokens: opts.maxTokens,
+    messages: [{ role: "user", content: opts.user }],
+  };
+  if (opts.system) params.system = opts.system;
+  if (opts.temperature !== undefined) params.temperature = opts.temperature;
+  if (opts.disableThinking) {
+    (params as any).thinking = { type: "disabled" };
+  }
+  if (opts.webSearch) {
+    (params as any).tools = [{ type: "web_search_20260209", name: "web_search", max_uses: 2 }];
+  }
+
+  const requestOptions = { timeout: opts.timeoutMs ?? 120000, maxRetries: opts.webSearch ? 0 : 1 };
+
+  let response = await anthropic.messages.create(params, requestOptions);
+  trackUsage(opts.model, (response as any).usage);
+
+  // Server-side tools can pause the turn; resume by echoing the assistant turn back.
+  let continuations = 0;
+  while (response.stop_reason === "pause_turn" && continuations < 3) {
+    params.messages = [
+      { role: "user", content: opts.user },
+      { role: "assistant", content: response.content },
+    ];
+    response = await anthropic.messages.create(params, requestOptions);
+    trackUsage(opts.model, (response as any).usage);
+    continuations++;
+  }
+
+  const text = response.content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("");
+
+  return { text, stopReason: response.stop_reason };
+}
+
+// ---------------------------------------------------------------------------
+// Cost tracking: accumulates real usage across every claudeText call so bulk
+// scripts can log spend and enforce a hard budget.
+// Prices in USD per million tokens (Claude API, intro pricing where applicable).
+const MODEL_PRICES: Record<string, { inPerM: number; outPerM: number }> = {
+  "claude-sonnet-5": { inPerM: 2, outPerM: 10 },
+  "claude-haiku-4-5": { inPerM: 1, outPerM: 5 },
+  "claude-opus-4-8": { inPerM: 5, outPerM: 25 },
+};
+const WEB_SEARCH_PER_REQUEST_USD = 0.01; // $10 per 1000 searches
+
+let cumulativeCostUsd = 0;
+
+function trackUsage(model: string, usage: any): void {
+  const price = MODEL_PRICES[model] ?? MODEL_PRICES["claude-sonnet-5"];
+  const inputTokens = (usage?.input_tokens ?? 0) + (usage?.cache_creation_input_tokens ?? 0) + (usage?.cache_read_input_tokens ?? 0);
+  const outputTokens = usage?.output_tokens ?? 0;
+  const searches = usage?.server_tool_use?.web_search_requests ?? 0;
+  cumulativeCostUsd +=
+    (inputTokens / 1_000_000) * price.inPerM +
+    (outputTokens / 1_000_000) * price.outPerM +
+    searches * WEB_SEARCH_PER_REQUEST_USD;
+}
+
+/** Total API spend (USD) accumulated by this process since start. */
+export function getCumulativeCostUsd(): number {
+  return cumulativeCostUsd;
+}
 
 const REVIEW_TRANSLATION_MAX_SECTIONS_PER_BATCH = 1;
 const REVIEW_TRANSLATION_MAX_CHARS_PER_BATCH = 2000;
@@ -228,7 +333,7 @@ export const openai = API_KEY
   })
   : null;
 
-export const isOpenAIConfigured = Boolean(openai && API_KEY);
+export const isOpenAIConfigured = Boolean(anthropic);
 
 const DEFAULT_REVIEW_TRANSLATION_LOCALES = ["es", "pt", "it", "fr"];
 
@@ -253,9 +358,17 @@ function buildReviewTemplate(racket: Partial<Racket>, racketInfo: string, option
   const isPower = gameType === "power";
   const isControl = gameType === "control";
 
+  // Quick verdict box — targets Google featured snippets and AI-search answers.
+  // Must be a direct, self-contained answer to "should I buy the X?" in 40-60 words.
+  const quickVerdictSection = `<h2>Quick Verdict</h2>
+<p>Write a single 40-60 word paragraph that directly answers "Is the ${racket.brand} ${racket.model} worth buying and who is it for?" in a self-contained way. Name the racket, state the verdict, the ideal player profile (level + play style), and its single biggest strength and weakness. This must read as a complete standalone answer — a search engine should be able to lift this paragraph verbatim as a featured snippet.</p>`;
+
   // Core sections that always appear (but with varied instructions)
+  const hookInstruction = options?.hookAngle
+    ? `HOOK ANGLE FOR THIS REVIEW: ${options.hookAngle}`
+    : "Open with a hook sentence about what makes this racket distinctive on court";
   const introSection = `<h2>Introduction</h2>
-<p>Write a 2-3 paragraph introduction that opens with a hook sentence about what makes this racket distinctive on court — NOT with the price, NOT with a list of specs. Lead with a strong opinion or observation from testing. Then cover: what kind of player StarVie/this brand built it for, what makes this specific model stand out in the ${racket.year || "current"} lineup, and confirm that we tested it on court. Reference actual specs naturally (${shape} shape, ${racket.balance || ""} balance) as part of the narrative, not as a bullet list. End the intro with a single teaser sentence about what surprised us most during testing.</p>`;
+<p>Write a 2-3 paragraph introduction. ${hookInstruction} — do NOT open with the price, NOT with a list of specs. Lead with a strong opinion or observation from testing. Then cover: what kind of player StarVie/this brand built it for, what makes this specific model stand out in the ${racket.year || "current"} lineup, and confirm that we tested it on court. Reference actual specs naturally (${shape} shape, ${racket.balance || ""} balance) as part of the narrative, not as a bullet list. End the intro with a single teaser sentence about what surprised us most during testing.</p>`;
 
   const prosConsSection = `<h2>Pros and Cons</h2>
 <p>Analyze this specific racket's strengths and weaknesses based on its actual specifications. Be honest and specific.</p>
@@ -279,7 +392,7 @@ function buildReviewTemplate(racket: Partial<Racket>, racketInfo: string, option
 <p>Describe how the racket handles defensive lobs, low balls, and returning heavy smashes from the baseline. Does its ${shape} shape and ${racket.balance || "current"} balance help or hinder maneuverability?</p>
 <h3>At the Net (Volleys and Smashes)</h3>
 <p>Explain the sensation when attacking. Discuss power generation on smashes, block volley stability, and punch volley speed.</p>
-<h3>Spin and Control (Viboras & Bandjeas)</h3>
+<h3>Spin and Control (Viboras & Bandejas)</h3>
 <p>Describe how the ${racket.surface || "surface"} interacts with the ball when applying slice or topspin during bandeja and vibora setups.</p>`;
 
   // Dynamic sections based on racket tier
@@ -356,9 +469,11 @@ ${options.internalLinks.map(link => `- ${link}`).join("\n")}
 CRITICAL DIRECTIVE: You MUST ONLY talk about THIS specific racket (${racket.brand} ${racket.model}). 
 ABSOLUTELY NO GENERIC PADEL EDUCATION. Do NOT explain what racket shapes are. Do NOT explain what weight categories are. Do NOT explain what different core foams mean. Your audience already knows how to play padel. If you include sections like "Understanding Padel Shapes", "Skill Level Recommendations", or "Maintenance Tips", YOU HAVE FAILED.
 
-You must output EXACTLY these 8 sections, utilizing the provided HTML structure.
+You must output EXACTLY these 9 sections, utilizing the provided HTML structure.
 
 ${seoGuidance}
+
+${quickVerdictSection}
 
 ${introSection}
 
@@ -377,7 +492,7 @@ ${faqSection}
 ${conclusionSection}
 
 WRITING QUALITY REQUIREMENTS:
-- Each of the 8 sections must be substantive. Aim for at least 120 words per section.
+- Each section must be substantive. Aim for at least 140 words per section, EXCEPT "Quick Verdict" which must stay at 40-60 words.
 - Every performance claim must be grounded in a specific padel scenario. BAD: "excellent for volleys". GOOD: "when blocking a hard-hit smash from the back glass, the stiff frame returns the ball cleanly with minimal energy loss".
 - Never cite a numerical rating as evidence for itself. BAD: "The 92/100 control rating proves this racket has great control." GOOD: "We noticed pin-point accuracy on cross-court volleys, which aligns with its control-oriented design."
 - Never START a sentence or bullet point with a rating number. BAD: "The 85/100 maneuverability rating delivers..." GOOD: "During quick exchanges at the net, the racket felt nimble..."
@@ -390,6 +505,7 @@ PARAGRAPH FORMATTING (CRITICAL FOR READABILITY):
 - After each H3 subheading, use 2-3 short paragraphs rather than one long block.
 
 BANNED PHRASES & PATTERNS (never use these):
+- Opening the Introduction with "The first thing we noticed" or "What struck us first" — these are overused across our reviews. Invent a hook specific to THIS racket instead (a shot it changed, an expectation it broke, a comparison to its predecessor).
 - "we were keen to see", "we were excited to", "we were struck by", "we were eager to"
 - "making it a great choice for players who value these features"
 - "help them take their game to the next level"
@@ -400,7 +516,7 @@ BANNED PHRASES & PATTERNS (never use these):
 - Ending sections with generic summaries that repeat the intro sentence
 
 CRITICAL HTML FORMATTING REQUIREMENTS:
-- Use <h2> tags for the 8 section headings listed above ONLY. DO NOT invent new <h2> headings.
+- Use <h2> tags for the 9 section headings listed above ONLY. DO NOT invent new <h2> headings.
 - Use <h3> tags for Pros and Cons / Performance subsections.
 - Use <p> tags for ALL paragraph text.
 - Use <ul> and <li> tags for ALL bullet lists.
@@ -430,7 +546,23 @@ export interface ReviewGenerationOptions {
   competitors?: string[];
   internalLinks?: string[];
   keywords?: string[];
+  /** Angle for the introduction's opening hook — rotated across bulk runs so
+   *  similar rackets don't converge on the same phrasing (Sonnet 5 has no
+   *  temperature; prompt-side variation is the lever). */
+  hookAngle?: string;
 }
+
+/** Rotation pool for intro hook angles used by bulk generation. */
+export const INTRO_HOOK_ANGLES = [
+  "Open with a specific shot from testing (a vibora, bandeja, or block volley) and what the racket did to it.",
+  "Open with the expectation you had before testing and how the racket broke or confirmed it.",
+  "Open with how this racket compares to its predecessor or its siblings in the brand lineup.",
+  "Open with the type of player you kept thinking about while testing it.",
+  "Open with a weakness or quirk you noticed early, then pivot to what it gets right.",
+  "Open with the racket's price positioning and whether the on-court experience matches it.",
+  "Open with the sound/feel of the first clean strike and what it signals about the build.",
+  "Open with a match situation (defending a 2v1 net assault, closing a tight tiebreak) where the racket showed its character.",
+];
 
 export interface RacketResearch {
   specs?: {
@@ -452,13 +584,40 @@ export async function performRacketResearch(racketInfo: {
   model: string;
   year?: number;
 }): Promise<RacketResearch | null> {
-  if (!openai) {
-    console.warn("OpenAI client not initialized. Using default/empty research.");
+  if (!anthropic) {
+    console.warn("Anthropic client not initialized. Using default/empty research.");
     return null;
   }
 
   try {
-    const prompt = `You are a padel research assistant. Your job is to search the web for the specifications and general sentiment of a specific padel racket.
+    const prompt = buildResearchPrompt(racketInfo);
+    const result = await claudeText({
+      model: OPENAI_RESEARCH_MODEL,
+      user: prompt,
+      maxTokens: 2500, // room for adaptive thinking + JSON answer
+      webSearch: true,
+      timeoutMs: 150000, // one generous attempt; timed-out server requests still bill, so never retry-hammer
+    });
+
+    const content = result?.text?.trim();
+    if (!content) {
+      console.error("Failed to get research from Claude");
+      return null;
+    }
+    const parsed = parseResearchResponse(content);
+    if (!parsed) {
+      console.warn(`Research model returned non-JSON for ${racketInfo.brand} ${racketInfo.model} — skipping research.`);
+    }
+    return parsed;
+  } catch (error) {
+    console.error("Error performing research with Claude:", error);
+    return null;
+  }
+}
+
+/** Prompt for the web-search research step. Shared by live and batch pipelines. */
+export function buildResearchPrompt(racketInfo: { brand: string; model: string; year?: number }): string {
+  return `You are a padel research assistant. Your job is to search the web for the specifications and general sentiment of a specific padel racket.
     
 Target Racket:
 - Brand: ${racketInfo.brand}
@@ -484,40 +643,23 @@ Return ONLY a JSON object with these exact keys (no other text):
 }
 
 If you cannot find specific information for a field, leave it null or omit it. Do not guess.`;
+}
 
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_RESEARCH_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.1, // Low temp for facts
-      max_tokens: 1200,
-    }, { timeout: 30000 }); // 30 second hard timeout
-
-    let content = completion.choices[0]?.message?.content?.trim();
-    if (!content) {
-      console.error("Failed to get research from OpenRouter");
-      return null;
-    }
-
-    content = content
-      .replace(/^```json\s*/i, "")
-      .replace(/^```\s*/i, "")
-      .replace(/```$/i, "")
-      .trim();
-
-    try {
-      return JSON.parse(content) as RacketResearch;
-    } catch (_parseError) {
-      // Model returned a natural-language refusal instead of JSON (e.g. "I cannot provide...")
-      console.warn(`Research model returned non-JSON for ${racketInfo.brand} ${racketInfo.model} — skipping research.`);
-      return null;
-    }
-  } catch (error) {
-    console.error("Error performing research with OpenRouter:", error);
+/** Parse the research model's output (JSON possibly wrapped in prose/fences). */
+export function parseResearchResponse(raw: string): RacketResearch | null {
+  let content = raw.trim();
+  const objMatch = content.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    content = objMatch[0];
+  }
+  content = content
+    .replace(/^```json\s*/i, "")
+    .replace(/^```\s*/i, "")
+    .replace(/```$/i, "")
+    .trim();
+  try {
+    return JSON.parse(content) as RacketResearch;
+  } catch {
     return null;
   }
 }
@@ -525,7 +667,7 @@ If you cannot find specific information for a field, leave it null or omit it. D
 // Optional keyword research helper to inform SEO-focused review generation.
 // Uses the research model to discover common search queries for a given racket.
 async function researchRacketKeywords(brand: string, model: string): Promise<string[]> {
-  if (!openai) {
+  if (!anthropic) {
     return [];
   }
 
@@ -537,23 +679,16 @@ CRITICAL: Return ONLY a valid JSON array of strings. No explanations, no markdow
 
 Return up to 10 common search queries as a JSON array.`;
 
-    const completion = await openai.chat.completions.create({
+    const result = await claudeText({
       model: OPENAI_RESEARCH_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: "You are a JSON-only API. Always return valid JSON arrays, never natural language.",
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.1,
-      max_tokens: 400,
-    }, { timeout: 30000 });
+      system: "You are a JSON-only API. Always return valid JSON arrays, never natural language.",
+      user: prompt,
+      maxTokens: 600,
+      disableThinking: true,
+      timeoutMs: 60000,
+    });
 
-    let content = completion.choices[0]?.message?.content?.trim();
+    let content = result?.text?.trim();
     if (!content) {
       return [];
     }
@@ -612,13 +747,41 @@ export async function estimateRacketRatings(racketInfo: {
   player?: string;
   researchBrief?: string | null;
 }): Promise<RacketRatings | null> {
-  if (!openai) {
+  if (!anthropic) {
     console.warn("OpenAI client not initialized. Using default ratings.");
     return null;
   }
 
   try {
-    const prompt = `You are a padel racket expert. Based on the following racket characteristics, estimate performance ratings on a scale of 0-100.
+    const prompt = buildRatingsPrompt(racketInfo);
+    const result = await claudeText({
+      model: OPENAI_MODEL,
+      user: prompt,
+      maxTokens: 300,
+      disableThinking: true, // short structured output — no thinking budget needed
+      timeoutMs: 45000,
+    });
+
+    const content = result?.text?.trim();
+    if (!content) {
+      console.error("Failed to get rating estimation from Claude");
+      return null;
+    }
+    return parseRatingsResponse(content);
+  } catch (error) {
+    console.error("Error estimating ratings with Claude:", error);
+    return null;
+  }
+}
+
+/** Prompt for the ratings-estimation step. Shared by live and batch pipelines. */
+export function buildRatingsPrompt(racketInfo: {
+  brand: string; model: string; shape: string; year?: number;
+  balance?: string; surface?: string; hardness?: string; core?: string;
+  gameLevel?: string; gameType?: string; player?: string;
+  researchBrief?: string | null;
+}): string {
+  return `You are a padel racket expert. Based on the following racket characteristics, estimate performance ratings on a scale of 0-100.
 
 Racket Information:
 - Brand: ${racketInfo.brand}
@@ -668,27 +831,12 @@ The overallRating should be a comprehensive assessment considering all factors, 
 - Target player level and suitability
 - Overall balance of power, control, and other characteristics
 - Innovation and technology level`;
+}
 
-    const completion = await openai.chat.completions.create({
-      model: OPENAI_MODEL,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.2,
-      max_tokens: 200,
-    }, { timeout: 45000 }); // 45 second hard timeout
-
-    let content = completion.choices[0]?.message?.content?.trim();
-    if (!content) {
-      console.error("Failed to get rating estimation from OpenAI");
-      return null;
-    }
-
-    // Clean up response - remove markdown code blocks if present
-    content = content
+/** Parse + clamp the ratings model's JSON output. Shared by live and batch pipelines. */
+export function parseRatingsResponse(raw: string): RacketRatings | null {
+  try {
+    const content = raw
       .replace(/^```json\s*/i, "")
       .replace(/^```\s*/i, "")
       .replace(/```$/i, "")
@@ -721,8 +869,7 @@ The overallRating should be a comprehensive assessment considering all factors, 
         ), 85
       ),
     };
-  } catch (error) {
-    console.error("Error estimating ratings with OpenAI:", error);
+  } catch {
     return null;
   }
 }
@@ -737,27 +884,30 @@ export interface TranslationBatchOptions {
   sourceLocale?: string;
 }
 
-export async function generateRacketReview(
-  racket: Racket,
+/**
+ * Build the {system, user} prompt pair for review generation.
+ * Normalizes the feed model name so generated prose uses the clean display name.
+ * Shared by live and batch pipelines.
+ */
+export function buildReviewGenerationPrompts(
+  racketInput: Racket,
   options: ReviewGenerationOptions = {},
-): Promise<ReviewGenerationResult | null> {
-  if (!openai) {
-    console.warn("OpenAI client not initialized. Skipping review generation.");
-    return null;
-  }
+  keywordPhrases: string[] = [],
+): { system: string; user: string } {
+  // Normalize the feed model name ("ADIDAS ADIPOWER CTRL MTW PRO EDT 2025") so the
+  // generated prose says "Adidas Adipower Ctrl MTW Pro EDT 2025" instead of the
+  // duplicated all-caps feed string — this text is what gets indexed.
+  const racket = {
+    ...racketInput,
+    model: formatRacketDisplayName(racketInput.brand, racketInput.model, racketInput.year),
+  };
 
-  try {
-    // Build racket information string with all specifications and ratings
-    // Use pre-fetched keywords from research if available, otherwise fall back to separate call
-    const keywordPhrases = options.keywords?.length
-      ? options.keywords
-      : await researchRacketKeywords(racket.brand, racket.model);
-    const keywordHintBlock = keywordPhrases.length
-      ? `Top real-world search queries users type when looking for this racket:
+  const keywordHintBlock = keywordPhrases.length
+    ? `Top real-world search queries users type when looking for this racket:
 ${keywordPhrases.map((k: string) => `- ${k}`).join("\n")}`
-      : "";
+    : "";
 
-    const racketInfo = `
+  const racketInfo = `
 Brand: ${racket.brand}
 Model: ${racket.model}
 Year: ${racket.year}
@@ -798,66 +948,80 @@ Absolute prohibitions:
 2. NO banned filler phrases (see system prompt).
 3. NO citing a rating number as proof of itself.
 4. Every performance claim needs a real padel scenario behind it.
-5. All 8 sections must be present and each at least 120 words long.
+5. All 9 sections must be present. "Quick Verdict" is 40-60 words; every other section at least 140 words.
 
 Specs:
 ${racketInfo}
 
-Output ONLY the 8 required HTML sections. No markdown wrapping. No preamble.`;
+Output ONLY the 9 required HTML sections. No markdown wrapping. No preamble.`;
 
-    const completion = await openai.chat.completions.create({
+  return { system: systemPrompt, user: userPrompt };
+}
+
+/**
+ * Strip markdown fences / stray markdown headings from a generated review.
+ * Shared by live and batch pipelines.
+ */
+export function cleanGeneratedReviewHtml(raw: string): string {
+  let reviewContent = raw.trim();
+
+  const codeBlockStartPattern = /^```(?:html)?\s*\n?/;
+  if (codeBlockStartPattern.test(reviewContent)) {
+    reviewContent = reviewContent.replace(codeBlockStartPattern, '');
+  }
+  const codeBlockEndPattern = /\n?```\s*$/;
+  if (codeBlockEndPattern.test(reviewContent)) {
+    reviewContent = reviewContent.replace(codeBlockEndPattern, '');
+  }
+  reviewContent = reviewContent
+    .replace(/^```html\s*\n?/gm, '')
+    .replace(/^```\s*\n?/gm, '')
+    .replace(/\n?```\s*$/gm, '')
+    .trim();
+
+  reviewContent = reviewContent.replace(/\n{3,}/g, '\n\n');
+
+  return reviewContent
+    .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+    .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+}
+
+export async function generateRacketReview(
+  racket: Racket,
+  options: ReviewGenerationOptions = {},
+): Promise<ReviewGenerationResult | null> {
+  if (!anthropic) {
+    console.warn("OpenAI client not initialized. Skipping review generation.");
+    return null;
+  }
+
+  try {
+    const originalRacket = racket;
+    // Use pre-fetched keywords from research if available, otherwise fall back to separate call
+    const keywordPhrases = options.keywords?.length
+      ? options.keywords
+      : await researchRacketKeywords(racket.brand, racket.model);
+
+    const prompts = buildReviewGenerationPrompts(racket, options, keywordPhrases);
+    const result = await claudeText({
       model: OPENAI_MODEL,
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt,
-        },
-        {
-          role: "user",
-          content: userPrompt,
-        },
-      ],
-      temperature: 0.5,
-      max_tokens: 8000,
-    }, { timeout: 180000 }); // 3 minute hard timeout for large review generation
+      system: prompts.system,
+      user: prompts.user,
+      maxTokens: 12000, // review text + adaptive thinking headroom
+      timeoutMs: 300000, // 5 minute hard timeout for large review generation
+    });
 
-    let reviewContent = completion.choices[0]?.message?.content || "";
+    let reviewContent = result?.text || "";
 
     if (!reviewContent) {
       console.error("Failed to generate review content");
       return null;
     }
-
-    // Strip markdown code blocks if present (```html ... ``` or ``` ... ```)
-    // Handle various formats: ```html, ```, or code blocks at start/end
-    reviewContent = reviewContent.trim();
-
-    // Remove code blocks at the beginning - handle multiple formats
-    const codeBlockStartPattern = /^```(?:html)?\s*\n?/;
-    if (codeBlockStartPattern.test(reviewContent)) {
-      reviewContent = reviewContent.replace(codeBlockStartPattern, '');
+    if (result?.stopReason === "max_tokens") {
+      console.warn("Review generation hit max_tokens — output may be truncated.");
     }
 
-    // Remove code blocks at the end - handle multiple formats
-    const codeBlockEndPattern = /\n?```\s*$/;
-    if (codeBlockEndPattern.test(reviewContent)) {
-      reviewContent = reviewContent.replace(codeBlockEndPattern, '');
-    }
-
-    // Also handle code block markers at start of lines (multiline)
-    reviewContent = reviewContent
-      .replace(/^```html\s*\n?/gm, '')  // Remove opening ```html at start of lines
-      .replace(/^```\s*\n?/gm, '')      // Remove opening ``` at start of lines
-      .replace(/\n?```\s*$/gm, '')      // Remove closing ``` at end of lines
-      .trim();
-
-    // Clean up any excessive newlines that might have been created
-    reviewContent = reviewContent.replace(/\n{3,}/g, '\n\n');
-
-    // Convert any remaining markdown headings that slipped through
-    reviewContent = reviewContent
-      .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
-      .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    reviewContent = cleanGeneratedReviewHtml(reviewContent);
 
     // Try to extract ratings from the review if they're mentioned, otherwise use existing ratings
     // For now, we'll use the existing ratings from the racket
@@ -873,7 +1037,7 @@ Output ONLY the 8 required HTML sections. No markdown wrapping. No preamble.`;
     const localesToTranslate = resolveReviewLocales(options);
     if (reviewContent && localesToTranslate.length) {
       try {
-        await translateReviewLocales(racket, localesToTranslate, reviewContent);
+        await translateReviewLocales(originalRacket, localesToTranslate, reviewContent);
       } catch (translationError) {
         console.error("Error translating review content:", translationError);
       }
@@ -884,7 +1048,7 @@ Output ONLY the 8 required HTML sections. No markdown wrapping. No preamble.`;
       ratings,
     };
   } catch (error) {
-    console.error("Error generating review with OpenAI:", error);
+    console.error("Error generating review with Claude:", error);
     return null;
   }
 }
@@ -896,7 +1060,7 @@ export async function generateBrandArticle(
   brand: { name: string; description?: string | null },
   rackets: Array<{ model: string; year: number; shape: string; overallRating: number; currentPrice: string; powerRating: number; controlRating: number; gameLevel?: string | null; gameType?: string | null }>,
 ): Promise<string | null> {
-  if (!openai) {
+  if (!anthropic) {
     console.warn("OpenAI not available, skipping brand article generation");
     return null;
   }
@@ -929,17 +1093,15 @@ Important:
 - Output clean HTML only`;
 
   try {
-    const response = await openai.chat.completions.create({
+    const result = await claudeText({
       model: OPENAI_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      temperature: 0.7,
-      max_tokens: 2500,
+      system: systemPrompt,
+      user: userPrompt,
+      maxTokens: 5000, // article + adaptive thinking headroom
+      timeoutMs: 180000,
     });
 
-    const content = response.choices[0]?.message?.content;
+    const content = result?.text;
     if (!content) return null;
 
     // Clean up any markdown code fences
@@ -950,13 +1112,69 @@ Important:
   }
 }
 
+/**
+ * Build the {system, user} prompt pair for a translation batch request.
+ * Mirrors translateTextBatch's live prompts. Shared by live and batch pipelines.
+ */
+export function buildTranslationPrompts(
+  items: TranslationBatchItem[],
+  targetLocale: string,
+  sourceLocale = "en",
+): { system: string; user: string } {
+  const localeGuidance: Record<string, string> = {
+    es: "Use European Spanish (Spain). Use informal 'tú' form. Padel terminology: use 'pala' for racket, 'pista' for court. Keep brand/model names untranslated.",
+    pt: "Use European Portuguese (Portugal). Use formal 'você' form. Padel terminology: use 'raquete' for racket. Keep brand/model names untranslated.",
+    it: "Use standard Italian. Use informal 'tu' form. Padel terminology: use 'racchetta' for racket, 'campo' for court. Keep brand/model names untranslated.",
+    fr: "Use standard French. Use informal 'tu' form. Padel terminology: use 'raquette' for racket, 'terrain' for court. Keep brand/model names untranslated.",
+  };
+  const localeHint = localeGuidance[targetLocale] || "";
+  const system = `You are a professional localization specialist for a padel racket review website. Translate content from ${sourceLocale.toUpperCase()} to ${targetLocale.toUpperCase()} while preserving meaning, tone, HTML tags, and placeholders such as {{variable}} or {variable}. Respond ONLY with valid JSON.${localeHint ? `\n\nLocale-specific guidance: ${localeHint}` : ""}`;
+
+  const payload = {
+    instructions: [
+      "Return a JSON object where each key matches the provided id and each value is the translated string.",
+      "CRITICAL: The value must be a plain string, NOT an object.",
+      "Do NOT translate or return the context fields.",
+      "Do not include additional commentary or formatting.",
+      "Preserve placeholders exactly as they appear ({{variable}}).",
+      "If HTML tags are present, keep them unchanged and in the same order.",
+      "Use the provided context notes to keep nuance (e.g., headlines vs paragraphs).",
+      "Use sentence casing consistent with native speakers.",
+      "Ensure the translation reads naturally to a native speaker - avoid overly literal translations.",
+      "Keep padel-specific technical terms accurate for the target locale.",
+    ],
+    sourceLocale,
+    targetLocale,
+    entries: items.map((item) => ({
+      id: item.key,
+      text_to_translate: item.text,
+      context: item.context ?? "",
+    })),
+  };
+
+  const user = `Translate the text_to_translate fields in the following entries.\n\nInput:\n${JSON.stringify(payload, null, 2)}\n\nCRITICAL: You MUST return ONLY a JSON object of this EXACT shape (do not include context fields in the output):\n{\n  "translations": {\n    "id_1": "translated text for id_1",\n    "id_2": "translated text for id_2"\n  }\n}`;
+  return { system, user };
+}
+
+/** Parse the translation model's JSON output. Returns null on shape mismatch. */
+export function parseTranslationResponse(raw: string): Record<string, string> | null {
+  try {
+    const content = raw.trim().replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
+    const parsed = JSON.parse(content);
+    if (!parsed || typeof parsed !== "object" || typeof parsed.translations !== "object") return null;
+    return parsed.translations as Record<string, string>;
+  } catch {
+    return null;
+  }
+}
+
 export async function translateTextBatch(
   items: TranslationBatchItem[],
   targetLocale: string,
   options: TranslationBatchOptions = {},
 ): Promise<Record<string, string>> {
-  if (!openai) {
-    throw new Error("OpenAI client not initialized. Set OpenRouter_API_Key or OPENAI_API_KEY to enable translations.");
+  if (!anthropic) {
+    throw new Error("Anthropic client not initialized. Set ANTHROPIC_API_KEY to enable translations.");
   }
 
   if (!items.length) {
@@ -1003,31 +1221,25 @@ export async function translateTextBatch(
 
   while (retries <= maxRetries) {
     try {
-      const completion = await openai.chat.completions.create({
+      const result = await claudeText({
         model: OPENAI_TRANSLATION_MODEL,
-        temperature: 0.1,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: systemPrompt },
-          {
-            role: "user",
-            content: `Translate the text_to_translate fields in the following entries.\n\nInput:\n${JSON.stringify(payload, null, 2)}\n\nCRITICAL: You MUST return ONLY a JSON object of this EXACT shape (do not include context fields in the output):\n{\n  "translations": {\n    "id_1": "translated text for id_1",\n    "id_2": "translated text for id_2"\n  }\n}`,
-          },
-        ],
-        max_tokens: 12000,
-      }, { timeout: 120000 }); // 2 minute hard timeout for batch translations
+        system: systemPrompt,
+        user: `Translate the text_to_translate fields in the following entries.\n\nInput:\n${JSON.stringify(payload, null, 2)}\n\nCRITICAL: You MUST return ONLY a JSON object of this EXACT shape (do not include context fields in the output):\n{\n  "translations": {\n    "id_1": "translated text for id_1",\n    "id_2": "translated text for id_2"\n  }\n}`,
+        maxTokens: 12000,
+        temperature: 0.1, // Haiku 4.5 accepts sampling params
+        timeoutMs: 120000, // 2 minute hard timeout for batch translations
+      });
 
       // Detect truncation before attempting to parse
-      const finishReason = completion.choices[0]?.finish_reason;
-      if (finishReason === "length") {
-        console.warn(`Translation output truncated (finish_reason=length) for ${targetLocale}. Batch too large.`);
+      if (result?.stopReason === "max_tokens") {
+        console.warn(`Translation output truncated (stop_reason=max_tokens) for ${targetLocale}. Batch too large.`);
         throw new Error(`Translation truncated for ${targetLocale}: output exceeded max_tokens. Reduce batch size or increase max_tokens.`);
       }
 
-      let content = completion.choices[0]?.message?.content?.trim();
+      let content = result?.text?.trim();
 
       if (!content) {
-        throw new Error("OpenAI returned an empty translation response.");
+        throw new Error("Claude returned an empty translation response.");
       }
 
       content = content.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();

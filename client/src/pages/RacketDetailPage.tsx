@@ -7,21 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RatingMetrics } from "@/components/RatingBar";
-import { RatingRadar } from "@/components/RatingRadar";
+const RatingRadar = lazy(() => import("@/components/RatingRadar").then(m => ({ default: m.RatingRadar })));
 import { ArrowLeft, ExternalLink, User, Scale, ChevronDown } from "lucide-react";
 import { cleanReviewContent, getRacketSlug, extractProsConsFromHtml, extractFaqFromHtml, generateWhoShouldBuy } from "@/lib/utils";
 import type { Racket, Author, Guide } from "@shared/schema";
 import SEO from "@/components/SEO";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { useI18n } from "@/i18n/useI18n";
 import { trackAffiliateClick } from "@/lib/analytics";
-import { PriceHistoryChart } from "@/components/PriceHistoryChart";
+const PriceHistoryChart = lazy(() => import("@/components/PriceHistoryChart").then(m => ({ default: m.PriceHistoryChart })));
 import { ShareButtons } from "@/components/ShareButtons";
 import { TableOfContents } from "@/components/TableOfContents";
-import { upscaleProductserveUrl } from "@shared/utils";
+import { upscaleProductserveUrl, formatRacketDisplayName } from "@shared/utils";
 import { useCompare } from "@/hooks/useCompare";
 import { getOptimizedImageUrl } from "@/lib/utils";
+import { UserPhotoGallery } from "@/components/UserPhotoGallery";
 
 function isUuid(value: string | undefined): boolean {
   if (!value) return false;
@@ -86,21 +87,24 @@ export default function RacketDetailPage() {
 
   const { locale, t } = useI18n();
 
+  // Clean display name for titles/breadcrumbs (feed models embed brand + year in caps)
+  const displayModel = racket ? formatRacketDisplayName(racket.brand, racket.model, racket.year) : "";
+
   // SEO data - calculate even when racket is loading/undefined to keep hooks consistent
   const seoTitle = racket
     ? t("racket.seo.title", {
       brand: racket.brand,
-      model: racket.model,
+      model: displayModel,
       year: racket.year || "",
-    }) || `${racket.brand} ${racket.model} ${racket.year || ""} Review - Expert Analysis & Best Price`
+    }) || `${racket.brand} ${displayModel} ${racket.year || ""} Review - Expert Analysis & Best Price`
     : t("racket.seo.defaultTitle") || "Padel Racket Review";
   const seoDescription = racket
     ? t("racket.seo.description", {
       brand: racket.brand,
-      model: racket.model,
+      model: displayModel,
       year: racket.year || "",
       rating: racket.overallRating,
-    }) || `Expert review of the ${racket.brand} ${racket.model} ${racket.year || ""} padel racket. Detailed ratings for power, control, and performance. Overall rating: ${racket.overallRating}/100. Find the best price with our affiliate links.`
+    }) || `Expert review of the ${racket.brand} ${displayModel} ${racket.year || ""} padel racket. Detailed ratings for power, control, and performance. Overall rating: ${racket.overallRating}/100. Find the best price with our affiliate links.`
     : t("racket.seo.defaultDescription") || "Expert padel racket review with detailed ratings and best price comparison";
   const canonicalPath = racket ? `/rackets/${getRacketSlug(racket)}` : "/rackets";
 
@@ -184,7 +188,7 @@ export default function RacketDetailPage() {
           <Breadcrumbs
             items={[
               { label: "Rackets", href: "/rackets" },
-              { label: racket ? `${racket.brand} ${racket.model}` : "Racket" },
+              { label: racket ? `${racket.brand} ${displayModel}` : "Racket" },
             ]}
           />
 
@@ -255,7 +259,7 @@ export default function RacketDetailPage() {
                 {/* Title */}
                 <div>
                   <h1 className="review-title text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold leading-tight mb-2" data-testid="text-racket-title">
-                    {racket.model}
+                    {`${racket.brand} ${displayModel} ${racket.year || ""}`.trim()}
                   </h1>
                   <p className="text-muted-foreground font-medium text-lg capitalize">
                     {t("racket.detail.shape", { shape: racket.shape || "" })}
@@ -307,6 +311,13 @@ export default function RacketDetailPage() {
                               <span className="text-xs font-bold tracking-widest text-muted-foreground uppercase">{t("racket.detail.currentPriceShort")}</span>
                               <span className="text-2xl font-black text-foreground">{formattedCurrentPrice}</span>
                             </div>
+                          )}
+                          {racket.feedLastUpdated && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {t("racket.detail.priceChecked", {
+                                date: new Date(racket.feedLastUpdated).toLocaleDateString(locale === "en" ? "en-GB" : locale),
+                              })}
+                            </p>
                           )}
                         </div>
                       )}
@@ -417,13 +428,15 @@ export default function RacketDetailPage() {
                   <h2 className="font-heading font-bold text-xl sm:text-2xl mb-6">
                     {t("racket.detail.performanceMetrics")}
                   </h2>
-                  <RatingRadar
-                    power={racket.powerRating}
-                    control={racket.controlRating}
-                    rebound={racket.reboundRating}
-                    maneuverability={racket.maneuverabilityRating}
-                    sweetSpot={racket.sweetSpotRating}
-                  />
+                  <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                    <RatingRadar
+                      power={racket.powerRating}
+                      control={racket.controlRating}
+                      rebound={racket.reboundRating}
+                      maneuverability={racket.maneuverabilityRating}
+                      sweetSpot={racket.sweetSpotRating}
+                    />
+                  </Suspense>
                 </CardContent>
               </Card>
             </div>
@@ -435,34 +448,33 @@ export default function RacketDetailPage() {
                   {t("racket.detail.specifications")}
                 </h2>
                 <dl className="space-y-4">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
-                    <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{t("racket.detail.specs.balance")}</dt>
-                    <dd className="text-sm font-semibold text-white">{racket.balance || "-"}</dd>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
-                    <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{t("racket.detail.specs.surface")}</dt>
-                    <dd className="text-sm font-semibold text-white">{racket.surface || "-"}</dd>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
-                    <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{t("racket.detail.specs.core")}</dt>
-                    <dd className="text-sm font-semibold text-white">{racket.core || "-"}</dd>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
-                    <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{t("racket.detail.specs.hardness")}</dt>
-                    <dd className="text-sm font-semibold text-white">{racket.hardness || "-"}</dd>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
-                    <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{t("racket.detail.specs.gameLevel")}</dt>
-                    <dd className="text-sm font-semibold text-white">{racket.gameLevel || "-"}</dd>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
-                    <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{t("racket.detail.specs.gameType")}</dt>
-                    <dd className="text-sm font-semibold text-white">{racket.gameType || "-"}</dd>
-                  </div>
+                  {[
+                    { label: t("racket.detail.specs.shape") || "Shape", value: racket.shape },
+                    { label: t("racket.detail.specs.year") || "Year", value: racket.year ? String(racket.year) : null },
+                    { label: t("racket.detail.specs.balance"), value: racket.balance },
+                    { label: t("racket.detail.specs.surface"), value: racket.surface },
+                    { label: t("racket.detail.specs.core"), value: racket.core },
+                    { label: t("racket.detail.specs.hardness"), value: racket.hardness },
+                    { label: t("racket.detail.specs.gameLevel"), value: racket.gameLevel },
+                    { label: t("racket.detail.specs.gameType"), value: racket.gameType },
+                  ]
+                    .filter((spec) => spec.value && String(spec.value).trim())
+                    .map((spec) => (
+                      <div key={spec.label} className="flex justify-between items-center border-b border-white/10 pb-3 last:border-0">
+                        <dt className="text-xs uppercase tracking-wider font-semibold text-white/70">{spec.label}</dt>
+                        <dd className="text-sm font-semibold text-white capitalize">{spec.value}</dd>
+                      </div>
+                    ))}
                 </dl>
               </div>
             </div>
           </div>
+
+          {/* REAL PHOTOS: community-submitted images of the actual racket */}
+          <UserPhotoGallery
+            slug={getRacketSlug(racket)}
+            racketName={`${racket.brand} ${racket.model}`}
+          />
 
           {/* DEEP DIVE: 2-Column Layout (Article + Sidebar) */}
           <div className="review-deep-dive mb-16">
@@ -562,7 +574,7 @@ export default function RacketDetailPage() {
               ) : (
                 <div className="text-center py-10">
                   <p className="text-muted-foreground text-lg">
-                    {t("racket.detail.reviewComingSoon")} <span className="font-semibold text-foreground">{racket.brand} {racket.model}</span>.
+                    {t("racket.detail.reviewComingSoon")} <span className="font-semibold text-foreground">{`${racket.brand} ${displayModel}`}</span>.
                   </p>
                 </div>
               )}
@@ -611,11 +623,13 @@ export default function RacketDetailPage() {
               )}
 
               {/* Price History Chart */}
-              <PriceHistoryChart racketId={racket.id} currentPrice={racket.currentPrice} />
+              <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+                <PriceHistoryChart racketId={racket.id} currentPrice={racket.currentPrice} />
+              </Suspense>
 
               {/* Share Buttons */}
               <ShareButtons
-                title={`${racket.brand} ${racket.model} Review`}
+                title={`${racket.brand} ${displayModel} Review`}
                 url={`/rackets/${getRacketSlug(racket)}`}
               />
             </div>

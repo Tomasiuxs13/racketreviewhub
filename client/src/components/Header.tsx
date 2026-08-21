@@ -22,6 +22,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useI18n } from "@/i18n/useI18n";
 import { useCompare } from "@/hooks/useCompare";
+import { formatRacketDisplayName } from "@shared/utils";
 
 const NAV_LINKS = [
   { id: "rackets", path: "/rackets", labelKey: "header.menu.rackets" },
@@ -163,7 +164,7 @@ export function Header() {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <p className="font-semibold truncate">
-                                    {racket.brand} {racket.model}
+                                    {`${racket.brand} ${formatRacketDisplayName(racket.brand, racket.model, racket.year)}`}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
                                     €{Number(racket.currentPrice).toFixed(2)}
@@ -268,7 +269,7 @@ export function Header() {
                             )}
                             <div className="flex-1 min-w-0">
                               <p className="font-semibold truncate">
-                                {racket.brand} {racket.model}
+                                {`${racket.brand} ${formatRacketDisplayName(racket.brand, racket.model, racket.year)}`}
                               </p>
                               <p className="text-sm text-muted-foreground">
                                 €{Number(racket.currentPrice).toFixed(2)}

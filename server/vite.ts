@@ -69,12 +69,10 @@ export async function setupVite(app: Express, server: Server) {
       const seoMeta = await resolveSeoMeta(seoPath);
       let statusCode = 200;
 
-      if (seoMeta) {
-        if ("is404" in seoMeta && seoMeta.is404) {
-          statusCode = 404;
-        } else {
-          template = injectSeoMeta(template, seoMeta as Extract<typeof seoMeta, { title: string }>);
-        }
+      if ("is404" in seoMeta && seoMeta.is404) {
+        statusCode = 404;
+      } else {
+        template = injectSeoMeta(template, seoMeta as Extract<typeof seoMeta, { title: string }>);
       }
 
       const page = await vite.transformIndexHtml(url, template);
@@ -127,7 +125,6 @@ export function serveStatic(app: Express) {
       const langParam = urlParams.get("lang");
       const seoPath = langParam && langParam !== "en" ? `/${langParam}${urlPath}` : urlPath;
       const seoMeta = await resolveSeoMeta(seoPath);
-      let statusCode = 200;
 
       const headers = {
         "Content-Type": "text/html",
@@ -136,21 +133,20 @@ export function serveStatic(app: Express) {
         "Expires": "0",
       };
 
-      if (seoMeta) {
-        if ("is404" in seoMeta && seoMeta.is404) {
-          statusCode = 404;
-          res.status(statusCode).set(headers).end(indexHtml);
-        } else {
-          const html = injectSeoMeta(indexHtml, seoMeta as Extract<typeof seoMeta, { title: string }>);
-          res.status(statusCode).set(headers).end(html);
-        }
+      if ("is404" in seoMeta && seoMeta.is404) {
+        res.status(404).set(headers).end(indexHtml);
       } else {
-        res.status(statusCode).set(headers).end(indexHtml);
+        const html = injectSeoMeta(indexHtml, seoMeta as Extract<typeof seoMeta, { title: string }>);
+        res.status(200).set(headers).end(html);
       }
     } catch {
-      res.status(200).set({
+      // A transient failure (e.g. DB hiccup) must not serve the bare SPA shell
+      // with a 200 — crawlers would file the page as a soft 404. 503 tells
+      // them to retry later without touching the index.
+      res.status(503).set({
         "Content-Type": "text/html",
         "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Retry-After": "300",
       }).end(indexHtml);
     }
   });

@@ -239,7 +239,8 @@
         "rebound": "Rebound",
         "maneuverability": "Maneuverability",
         "sweetSpot": "Sweet Spot"
-      }
+      },
+      "priceChecked": "Price last checked {{date}} — the retailer may show a newer price."
     }
   }
 }

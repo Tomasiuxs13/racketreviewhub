@@ -95,3 +95,45 @@ export function upscaleProductserveUrl(url: string | null | undefined, size = 60
         .replace(/([?&])w=\d+/, `$1w=${size}`)
         .replace(/([?&])h=\d+/, `$1h=${size}`);
 }
+
+/**
+ * Normalizes a feed-supplied racket model string for human/SEO display.
+ * Feed models often arrive as "ADIDAS ADIPOWER CARBON CTRL 2025":
+ * all-caps, with the brand and year embedded — which produced title tags like
+ * "Adidas ADIDAS ADIPOWER CARBON CTRL 2025 2025 Review".
+ * Strips a leading brand name, strips a trailing year, and title-cases
+ * all-caps words (words containing digits, e.g. "AT10"/"18K", are kept as-is).
+ */
+export function formatRacketDisplayName(brand: string, model: string, year?: number | null): string {
+    let name = (model || "").trim();
+
+    // Strip leading brand (case-insensitive), possibly repeated
+    const brandPattern = new RegExp(`^${brand.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+`, "i");
+    while (brandPattern.test(name)) {
+        name = name.replace(brandPattern, "");
+    }
+
+    // Strip a trailing 4-digit year (either the racket's year or any 20xx)
+    name = name.replace(/\s+(20\d{2})\s*$/i, (m, y) => {
+        if (!year || Number(y) === Number(year)) return "";
+        return m;
+    }).trim();
+
+    // Title-case fully-uppercase words without digits
+    name = name
+        .split(/\s+/)
+        .map((word) => {
+            if (/\d/.test(word)) return word; // keep AT10, 18K, 3.2 as-is
+            if (word.length > 1 && word === word.toUpperCase()) {
+                // Title-case each hyphenated part: "X-HERO" -> "X-Hero"
+                return word
+                    .split("-")
+                    .map((part) => (part.length > 1 ? part.charAt(0) + part.slice(1).toLowerCase() : part))
+                    .join("-");
+            }
+            return word;
+        })
+        .join(" ");
+
+    return name || model;
+}

@@ -117,6 +117,9 @@
       "description": "Reseña experta de la pala de pádel {{brand}} {{model}} {{year}}. Calificaciones detalladas de potencia, control y rendimiento. Puntuación total: {{rating}}/100. Encuentra el mejor precio.",
       "defaultTitle": "Reseña de Pala de Pádel",
       "defaultDescription": "Reseña experta de pala de pádel con calificaciones detalladas y comparación del mejor precio"
+    },
+    "detail": {
+      "priceChecked": "Precio comprobado el {{date}} — la tienda puede mostrar un precio más reciente."
     }
   },
   "about": {
